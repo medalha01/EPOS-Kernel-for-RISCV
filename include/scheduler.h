@@ -219,6 +219,8 @@ public:
     static const bool dynamic = true;
     static const bool preemptive = true; // LLF é Preemptivo
 
+    LLF(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
+
     LLF(const Microsecond &deadline, const Microsecond &period = SAME, const Microsecond &capacity = UNKNOWN, unsigned int cpu = ANY)
         : Real_Time_Scheduler_Common(Alarm::ticks(deadline), Alarm::ticks(deadline), period, capacity) {}
 

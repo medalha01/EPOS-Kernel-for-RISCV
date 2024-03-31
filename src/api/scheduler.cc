@@ -23,7 +23,17 @@ void LLF::update()
 {
     if ((_priority >= PERIODIC) && (_priority < APERIODIC))
     {
-        _priority = Alarm::elapsed() + _deadline - _capacity;
+
+        if (_remaining_time == 0)
+        {
+            _remaining_time = _capacity - Alarm::elapsed() - _init_time;
+            _priority = Alarm::elapsed() + _deadline - _remaining_time;
+        }
+        else
+        {
+            _remaining_time = _remaining_time - Alarm::elapsed() - _init_time;
+            _priority = Alarm::elapsed() + _deadline - _remaining_time;
+        }
     }
 }
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.

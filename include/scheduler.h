@@ -103,6 +103,9 @@ public:
 
     static void init() {}
 
+    Microsecond _init_time = 0;
+    Microsecond _remaining_time = 0;
+
 protected:
     Statistics _statistics;
 };
@@ -221,11 +224,16 @@ public:
 
     LLF(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
 
-    LLF(const Microsecond &deadline, const Microsecond &period = SAME, const Microsecond &capacity = UNKNOWN, unsigned int cpu = ANY)
-        : Real_Time_Scheduler_Common(Alarm::ticks(deadline), Alarm::ticks(deadline), period, capacity) {}
+    LLF(const Microsecond &deadline, const Microsecond &period = SAME, const Microsecond &capacity = UNKNOWN, unsigned int cpu = ANY);
 
     // O update vai ser usado para re-calcular o laxity time
     void update();
+
+    void reset()
+    {
+        _remaining_time = 0;
+        _init_time = 0;
+    };
 };
 __END_SYS
 

@@ -94,6 +94,8 @@ public:
     void queue(unsigned int q) {}
 
     bool update() { return false; }
+    bool reset() { return false; }
+    bool set_start(const Microsecond &start) { return false; }
 
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }
@@ -102,9 +104,6 @@ public:
     volatile Statistics &statistics() { return _statistics; }
 
     static void init() {}
-
-    Microsecond _init_time = 0;
-    Microsecond _remaining_time = 0;
 
 protected:
     Statistics _statistics;
@@ -234,6 +233,15 @@ public:
         _remaining_time = 0;
         _init_time = 0;
     };
+
+    void set_start(const Microsecond &start)
+    {
+        _init_time = start;
+    }
+
+private:
+    Microsecond _remaining_time;
+    Microsecond _init_time;
 };
 __END_SYS
 

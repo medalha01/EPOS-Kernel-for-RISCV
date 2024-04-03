@@ -103,8 +103,6 @@ void Thread::priority(const Criterion &c)
     else
         _link.rank(Criterion(c));
 
-    if (dynamic)
-        calculate_priorities();
     if (preemptive)
         reschedule();
 
@@ -187,8 +185,6 @@ void Thread::resume()
         _state = READY;
         _scheduler.resume(this);
 
-        if (dynamic)
-            calculate_priorities();
         if (preemptive)
             reschedule();
     }
@@ -270,8 +266,6 @@ void Thread::wakeup(Queue *q)
         t->_waiting = 0;
         _scheduler.resume(t);
 
-        if (dynamic)
-            calculate_priorities();
         if (preemptive)
             reschedule();
     }
@@ -295,14 +289,13 @@ void Thread::wakeup_all(Queue *q)
 
         if (preemptive)
             reschedule();
-
-        if (dynamic)
-            calculate_priorities();
     }
 }
 
 void Thread::reschedule()
 {
+    if (dynamic)
+        calculate_priorities();
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
 

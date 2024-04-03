@@ -37,17 +37,17 @@ void LLF::update()
         if (_remaining_time == 0)
         {
             _remaining_time = _capacity;
-            _priority = Alarm::elapsed() + _deadline - _remaining_time + _init_time;
+            _priority = Alarm::elapsed() + _deadline * 1000 - _remaining_time + _init_time;
         }
         else
         {
-            _remaining_time = _remaining_time - Alarm::elapsed() - _init_time;
-            _priority = Alarm::elapsed() + _deadline - _remaining_time;
+            _remaining_time = _remaining_time - Alarm::elapsed() + _init_time;
+            _priority = Alarm::elapsed() + _deadline * 1000 - _remaining_time;
         }
         db<LLF>(WRN) << "\nLLF::update() => " << _priority << endl;
         db<LLF>(WRN) << "Remaining_Time => " << _remaining_time << endl;
         db<LLF>(WRN) << "Init_Time => " << _init_time << endl;
-        db<LLF>(WRN) << "Deadline => " << _deadline << endl;
+        db<LLF>(WRN) << "Deadline => " << _deadline * 1000 << endl;
         db<LLF>(WRN) << "Capacity => " << _capacity << endl;
         db<LLF>(WRN) << "Elapsed => " << Alarm::elapsed() << endl;
     }

@@ -4,7 +4,7 @@
 #include <real-time.h>
 
 using namespace EPOS;
-
+/*
 const unsigned int iterations = 100;
 const unsigned int period_a = 100;   // ms
 const unsigned int period_b = 80;    // ms
@@ -14,7 +14,18 @@ const unsigned int wcet_b = 20;      // ms
 const unsigned int wcet_c = 10;      // ms
 const unsigned int deadline_a = 100; // ms
 const unsigned int deadline_b = 80;  // ms
-const unsigned int deadline_c = 60;  // ms
+const unsigned int deadline_c = 60;  // ms*/
+
+const unsigned int iterations = 100;
+const unsigned int period_a = 333;   // ms
+const unsigned int period_b = 333;   // ms
+const unsigned int period_c = 333;   // ms
+const unsigned int wcet_a = 80;      // ms
+const unsigned int wcet_b = 80;      // ms
+const unsigned int wcet_c = 80;      // ms
+const unsigned int deadline_a = 100; // ms
+const unsigned int deadline_b = 100; // ms
+const unsigned int deadline_c = 100; // ms
 
 int func_a();
 int func_b();
@@ -65,9 +76,9 @@ int main()
     cout << "Threads will now be created and I'll wait for them to finish..." << endl;
 
     // p,d,c,act,t
-    thread_a = new Periodic_Thread(RTConf(period_a * 1000, deadline_a, wcet_a, 0, iterations), &func_a);
-    thread_b = new Periodic_Thread(RTConf(period_b * 1000, deadline_b, wcet_b, 0, iterations), &func_b);
-    thread_c = new Periodic_Thread(RTConf(period_c * 1000, deadline_c, wcet_c, 0, iterations), &func_c);
+    thread_a = new Periodic_Thread(RTConf(period_a * 1000, deadline_a * 1000, wcet_a * 1000, 0, iterations), &func_a);
+    thread_b = new Periodic_Thread(RTConf(period_b * 1000, deadline_b * 1000, wcet_b * 1000, 0, iterations), &func_b);
+    thread_c = new Periodic_Thread(RTConf(period_c * 1000, deadline_c * 1000, wcet_c * 1000, 0, iterations), &func_c);
 
     exec('M');
 

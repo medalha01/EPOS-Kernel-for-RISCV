@@ -51,11 +51,8 @@ protected:
 
         void operator()()
         {
-            _thread->criterion().set_start(Alarm::elapsed());
 
             _thread->criterion().update();
-
-            _thread->criterion().reset();
 
             Semaphore_Handler::operator()();
         }

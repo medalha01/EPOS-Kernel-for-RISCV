@@ -226,14 +226,9 @@ public:
 
     LLF(const Microsecond &deadline, const Microsecond &period = SAME, const Microsecond &capacity = UNKNOWN, unsigned int cpu = ANY);
 
-    // O update vai ser usado para re-calcular o laxity time
     void update();
 
-    void reset()
-    {
-        _remaining_time = 0;
-        _init_time = 0;
-    };
+    void reset();
 
     void set_start();
 

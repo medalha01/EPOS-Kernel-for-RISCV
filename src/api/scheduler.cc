@@ -23,6 +23,12 @@ void LLF::set_start()
 {
     _init_time = Alarm::elapsed();
 }
+
+void LLF::reset()
+{
+    _remaining_time = _capacity;
+    _init_time = Alarm::elapsed();
+}
 void LLF::update()
 {
     if ((_priority >= PERIODIC) && (_priority < APERIODIC))

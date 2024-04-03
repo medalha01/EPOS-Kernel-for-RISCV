@@ -342,7 +342,7 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         if (prev->_state == RUNNING)
             prev->_state = READY;
         next->_state = RUNNING;
-        next->criterion().set_start();
+        // next->criterion().set_start();
         db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if (Traits<Thread>::debugged && Traits<Debug>::info)
         {

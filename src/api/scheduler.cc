@@ -37,7 +37,7 @@ void LLF::update()
         if (_remaining_time == 0)
         {
             _remaining_time = _capacity;
-            _priority = Alarm::elapsed() + _deadline - _remaining_time;
+            _priority = Alarm::elapsed() + _deadline - _remaining_time + _init_time;
         }
         else
         {

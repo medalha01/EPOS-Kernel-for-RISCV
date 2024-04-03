@@ -9,6 +9,7 @@
 #include <utility/scheduling.h>
 #include <utility/math.h>
 #include <utility/convert.h>
+#include <utility/debug.h>
 
 __BEGIN_SYS
 
@@ -239,6 +240,15 @@ public:
 private:
     Microsecond _remaining_time;
     Microsecond _init_time;
+};
+
+template <>
+struct Traits<LLF> : public Traits<Build>
+{
+    static const bool error = true;   // Enable error level debugging for MyClass
+    static const bool warning = true; // Enable warning level debugging for MyClass
+    static const bool info = true;    // Enable info level debugging for MyClass
+    static const bool trace = true;   // Enable trace level debugging for MyClass
 };
 __END_SYS
 

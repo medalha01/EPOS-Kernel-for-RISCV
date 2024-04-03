@@ -37,13 +37,13 @@ struct Traits<Debug> : public Traits<Build>
 template <>
 struct Traits<Lists> : public Traits<Build>
 {
-    static const bool debugged = true;
+    static const bool debugged = hysterically_debugged;
 };
 
 template <>
 struct Traits<Spin> : public Traits<Build>
 {
-    static const bool debugged = true;
+    static const bool debugged = hysterically_debugged;
 };
 
 template <>
@@ -139,12 +139,11 @@ struct Traits<Thread> : public Traits<Build>
 template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
-    // static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
-    static const bool debugged = true; // Enable debugging for MyClass
-    static const bool error = true;    // Enable error level debugging for MyClass
-    static const bool warning = true;  // Enable warning level debugging for MyClass
-    static const bool info = true;     // Enable info level debugging for MyClass
-    static const bool trace = true;    // Enable trace level debugging for MyClass
+    static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
+    static const bool error = true;   // Enable error level debugging for MyClass
+    static const bool warning = true; // Enable warning level debugging for MyClass
+    static const bool info = true;    // Enable info level debugging for MyClass
+    static const bool trace = true;   // Enable trace level debugging for MyClass
 };
 
 template <>

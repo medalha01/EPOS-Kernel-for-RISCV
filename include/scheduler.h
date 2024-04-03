@@ -95,7 +95,7 @@ public:
 
     bool update() { return false; }
     bool reset() { return false; }
-    bool set_start(const Microsecond &start) { return false; }
+    bool set_start() { return false; }
 
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }
@@ -234,10 +234,7 @@ public:
         _init_time = 0;
     };
 
-    void set_start(const Microsecond &start)
-    {
-        _init_time = start;
-    }
+    void set_start();
 
 private:
     Microsecond _remaining_time;

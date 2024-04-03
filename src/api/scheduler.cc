@@ -19,6 +19,10 @@ void EDF::update()
 
 LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline), Alarm::ticks(_deadline), _period, _capacity) {}
 
+void LLF::set_start()
+{
+    _init_time = Alarm::elapsed();
+}
 void LLF::update()
 {
     if ((_priority >= PERIODIC) && (_priority < APERIODIC))
@@ -26,7 +30,7 @@ void LLF::update()
 
         if (_remaining_time == 0)
         {
-            _remaining_time = _capacity - Alarm::elapsed() - _init_time;
+            _remaining_time = _capacity;
             _priority = Alarm::elapsed() + _deadline - _remaining_time;
         }
         else

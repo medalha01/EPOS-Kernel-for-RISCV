@@ -17,15 +17,15 @@ const unsigned int deadline_b = 80;  // ms
 const unsigned int deadline_c = 60;  // ms*/
 
 const unsigned int iterations = 100;
-const unsigned int period_a = 100;   // ms
-const unsigned int period_b = 150;   // ms
-const unsigned int period_c = 100;   // ms
-const unsigned int wcet_a = 10;      // ms
-const unsigned int wcet_b = 15;      // ms
-const unsigned int wcet_c = 20;      // ms
-const unsigned int deadline_a = 50;  // ms
-const unsigned int deadline_b = 100; // ms
-const unsigned int deadline_c = 100; // ms
+const unsigned int period_a = 100;    // ms
+const unsigned int period_b = 150;    // ms
+const unsigned int period_c = 1200;   // ms
+const unsigned int wcet_a = 10;       // ms
+const unsigned int wcet_b = 30;       // ms
+const unsigned int wcet_c = 50;     // ms
+const unsigned int deadline_a = 50;   // ms
+const unsigned int deadline_b = 150;  // ms
+const unsigned int deadline_c = 1000; // ms
 
 int func_a();
 int func_b();

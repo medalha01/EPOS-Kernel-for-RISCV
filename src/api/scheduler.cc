@@ -17,7 +17,7 @@ void EDF::update()
         _priority = Alarm::elapsed() + _deadline;
 }
 
-LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline), Alarm::ticks(_deadline), _period, _capacity) {}
+LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline - _capacity), Alarm::ticks(_deadline), _period, _capacity) {}
 
 void LLF::set_start()
 {
@@ -37,13 +37,14 @@ void LLF::update()
         if (_remaining_time == 0)
         {
             _remaining_time = _capacity;
-            _priority = Alarm::elapsed() + _deadline * 1000 - _remaining_time + _init_time;
         }
         else
         {
             _remaining_time = _remaining_time - Alarm::elapsed() + _init_time;
-            _priority = Alarm::elapsed() + _deadline * 1000 - _remaining_time;
         }
+
+        _priority = _init_time + _deadline * 1000 - _remaining_time;
+
         db<LLF>(WRN) << "\nLLF::update() => " << _priority << endl;
         db<LLF>(WRN) << "Remaining_Time => " << _remaining_time << endl;
         db<LLF>(WRN) << "Init_Time => " << _init_time << endl;

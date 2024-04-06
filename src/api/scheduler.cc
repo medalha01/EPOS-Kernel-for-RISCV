@@ -24,7 +24,7 @@ void LLF::reset()
 {
     _computed_time = 0;
     _init_time = Alarm::elapsed();
-    _start_of_computation = 0;
+    _start_of_computation = Alarm::elapsed();
 }
 
 void LLF::start_calculation()
@@ -40,7 +40,7 @@ void LLF::set_calculated_time()
 
 void LLF::update()
 {
-    if ((_priority >= PERIODIC) && (_priority < APERIODIC))
+    if ((_priority >= 0) && (_priority < APERIODIC))
     {
         _priority = _deadline + _init_time - _capacity + _computed_time;
     }

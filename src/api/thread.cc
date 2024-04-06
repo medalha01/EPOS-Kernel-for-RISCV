@@ -316,7 +316,8 @@ void Thread::calculate_priorities()
     for (auto t = _scheduler.size(); t > 0; t--)
     {
         Thread *th = _scheduler[t - 1];
-        th->criterion().update();
+        if (th->_state == READY)
+            th->criterion().update();
     }
 }
 

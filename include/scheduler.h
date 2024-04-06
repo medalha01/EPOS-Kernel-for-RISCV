@@ -96,7 +96,9 @@ public:
 
     bool update() { return false; }
     bool reset() { return false; }
-    bool set_start() { return false; }
+
+    bool start_calculation() { return false; }
+    bool set_calculated_time() { return false; }
 
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }
@@ -230,11 +232,14 @@ public:
 
     void reset();
 
-    void set_start();
+    void start_calculation();
+
+    void set_calculated_time();
 
 private:
-    Microsecond _remaining_time;
-    Microsecond _init_time;
+    unsigned int _init_time = 0;
+    unsigned int _computed_time = 0;
+    unsigned int _start_of_computation = 0;
 };
 
 template <>

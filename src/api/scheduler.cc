@@ -17,37 +17,32 @@ void EDF::update()
         _priority = Alarm::elapsed() + _deadline;
 }
 
-LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline - _capacity), Alarm::ticks(_deadline), _period, _capacity) {}
+LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline - _capacity), Alarm::ticks(_deadline), _period, Alarm::ticks(_capacity)) {}
 
-void LLF::set_start()
-{
-    _init_time = Alarm::elapsed();
-}
 
 void LLF::reset()
 {
-    _remaining_time = _capacity;
+    _computed_time = 0;
     _init_time = Alarm::elapsed();
+    _start_of_computation = 0;
 }
+
+void LLF::start_calculation()
+{
+    _start_of_computation = Alarm::elapsed();
+}
+
+void LLF::set_calculated_time()
+{
+
+    _computed_time = Alarm::elapsed() - _start_of_computation;
+}
+
 void LLF::update()
 {
     if ((_priority >= PERIODIC) && (_priority < APERIODIC))
     {
-
-        if (_remaining_time == 0)
-        {
-            _remaining_time = _capacity;
-        }
-    
-
-        _priority =  _deadline * 1000 - _remaining_time - (Alarm::elapsed() -_init_time);
-
-        db<LLF>(WRN) << "\nLLF::update() => " << _priority << endl;
-        db<LLF>(WRN) << "Remaining_Time => " << _remaining_time << endl;
-        db<LLF>(WRN) << "Init_Time => " << _init_time << endl;
-        db<LLF>(WRN) << "Deadline => " << _deadline * 1000 << endl;
-        db<LLF>(WRN) << "Capacity => " << _capacity << endl;
-        db<LLF>(WRN) << "Elapsed => " << Alarm::elapsed() << endl;
+        _priority = _deadline + _init_time - _capacity + _computed_time;
     }
 }
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.

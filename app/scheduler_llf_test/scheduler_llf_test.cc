@@ -112,7 +112,9 @@ int func_a()
 
     do
     {
+        cout << "\n Start of A";
         exec('a', wcet_a);
+        cout << "\n End of A\n";
     } while (Periodic_Thread::wait_next());
 
     exec('A');
@@ -126,7 +128,9 @@ int func_b()
 
     do
     {
+        cout << "\n Start of B";
         exec('b', wcet_b);
+        cout << "\n End of B\n";
     } while (Periodic_Thread::wait_next());
 
     exec('B');
@@ -140,7 +144,9 @@ int func_c()
 
     do
     {
+        cout << "\n Start of C";
         exec('c', wcet_c);
+        cout << "\n End of C\n";
     } while (Periodic_Thread::wait_next());
 
     exec('C');

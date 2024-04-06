@@ -309,11 +309,11 @@ void Thread::reschedule()
 
 void Thread::calculate_priorities()
 {
-    db<Thread>(TRC) << "Thread::calculate_priorities()" << endl;
+    db<Thread>(WRN) << "Thread::calculate_priorities()" << endl;
 
     assert(locked()); // locking handled by caller
 
-    for (auto t = _scheduler.size(); t; t--)
+    for (auto t = _scheduler.size(); t > 0; t--)
     {
         Thread *th = _scheduler[t - 1];
         th->criterion().update();
@@ -342,6 +342,8 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         if (prev->_state == RUNNING)
             prev->_state = READY;
         next->_state = RUNNING;
+        next->criterion().start_calculation();
+        prev->criterion().set_calculated_time();
         // next->criterion().set_start();
         db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if (Traits<Thread>::debugged && Traits<Debug>::info)

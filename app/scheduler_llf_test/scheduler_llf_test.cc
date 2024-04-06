@@ -16,24 +16,24 @@ const unsigned int deadline_a = 100; // ms
 const unsigned int deadline_b = 80;  // ms
 const unsigned int deadline_c = 60;  // ms*/
 
-const unsigned int iterations = 100;
-const unsigned int period_a = 100;    // ms
-const unsigned int period_b = 150;    // ms
-const unsigned int period_c = 1200;   // ms
-const unsigned int wcet_a = 10;       // ms
-const unsigned int wcet_b = 30;       // ms
-const unsigned int wcet_c = 50;     // ms
-const unsigned int deadline_a = 50;   // ms
-const unsigned int deadline_b = 150;  // ms
-const unsigned int deadline_c = 1000; // ms
+const unsigned int iterations = 50;
+const unsigned int period_a = 6;    // ms
+const unsigned int period_b = 8;    // ms
+const unsigned int period_c = 10;   // ms
+const unsigned int wcet_a = 2;      // ms
+const unsigned int wcet_b = 2;      // ms
+const unsigned int wcet_c = 3;      // ms
+const unsigned int deadline_a = 6;  // ms
+const unsigned int deadline_b = 8;  // ms
+const unsigned int deadline_c = 10; // ms
 
 int func_a();
 int func_b();
 int func_c();
 long max(unsigned int a, unsigned int b, unsigned int c) { return ((a >= b) && (a >= c)) ? a : ((b >= a) && (b >= c) ? b : c); }
 
-OStream cout;
 Chronometer chrono;
+OStream cout;
 Periodic_Thread *thread_a;
 Periodic_Thread *thread_b;
 Periodic_Thread *thread_c;

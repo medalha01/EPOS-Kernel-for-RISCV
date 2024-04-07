@@ -179,7 +179,6 @@ void Thread::resume()
     lock();
 
     db<Thread>(TRC) << "Thread::resume(this=" << this << ")" << endl;
-
     if (_state == SUSPENDED)
     {
         _state = READY;
@@ -294,8 +293,8 @@ void Thread::wakeup_all(Queue *q)
 
 void Thread::reschedule()
 {
-    if (dynamic)
-        calculate_priorities();
+    // if (dynamic)
+    //     calculate_priorities();
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
 
@@ -309,7 +308,6 @@ void Thread::reschedule()
 
 void Thread::calculate_priorities()
 {
-    db<Thread>(WRN) << "Thread::calculate_priorities()" << endl;
 
     assert(locked()); // locking handled by caller
 
@@ -337,7 +335,8 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         if (Criterion::timed)
             _timer->restart();
     }
-
+    if (dynamic)
+        calculate_priorities();
     if (prev != next)
     {
         if (prev->_state == RUNNING)

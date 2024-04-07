@@ -310,6 +310,8 @@ void Thread::calculate_priorities()
 {
 
     assert(locked()); // locking handled by caller
+    db<Thread>(WRN) << "\nUpdating Priorities\n"
+                    << endl;
 
     for (auto t = _scheduler.size(); t > 0; t--)
     {

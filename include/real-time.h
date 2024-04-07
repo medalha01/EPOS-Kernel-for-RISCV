@@ -51,7 +51,7 @@ protected:
 
         void operator()()
         {
-
+            _thread->criterion().reset();
             _thread->criterion().update();
 
             Semaphore_Handler::operator()();
@@ -108,8 +108,8 @@ public:
         if (t->_alarm.times())
             t->_semaphore.p();
 
-        t->criterion().reset();
-        t->criterion().update();
+        // t->criterion().reset();
+        // t->criterion().update();
         return t->_alarm.times();
     }
 

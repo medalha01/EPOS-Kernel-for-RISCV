@@ -19,12 +19,11 @@ void EDF::update()
 
 LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline - _capacity), Alarm::ticks(_deadline), _period, Alarm::ticks(_capacity)) {}
 
-
 void LLF::reset()
 {
     _computed_time = 0;
     _init_time = Alarm::elapsed();
-    _start_of_computation = Alarm::elapsed();
+    _start_of_computation = 0;
 }
 
 void LLF::start_calculation()

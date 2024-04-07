@@ -95,7 +95,7 @@ public:
     void queue(unsigned int q) {}
 
     bool update() { return false; }
-    bool reset() { return false; }
+    bool reset_init_time() { return false; }
 
     bool start_calculation() { return false; }
     bool set_calculated_time() { return false; }
@@ -230,7 +230,7 @@ public:
 
     void update();
 
-    void reset();
+    void reset_init_time();
 
     void start_calculation();
 

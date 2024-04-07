@@ -114,7 +114,7 @@ protected:
     static void wakeup_all(Queue *q);
 
     static void reschedule();
-    static void calculate_priorities();
+    static void update_all();
     static void time_slicer(IC::Interrupt_Id interrupt);
 
     static void dispatch(Thread *prev, Thread *next, bool charge = true);

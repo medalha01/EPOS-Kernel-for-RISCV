@@ -294,7 +294,7 @@ void Thread::wakeup_all(Queue *q)
 void Thread::reschedule()
 {
     // if (dynamic)
-    //     calculate_priorities();
+    //     update_all();
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
 
@@ -306,7 +306,7 @@ void Thread::reschedule()
     dispatch(prev, next);
 }
 
-void Thread::calculate_priorities()
+void Thread::update_all()
 {
 
     assert(locked()); // locking handled by caller
@@ -338,7 +338,11 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
             _timer->restart();
     }
     if (dynamic)
-        calculate_priorities();
+    {
+        update_all();
+        next->criterion().update();
+    }
+
     if (prev != next)
     {
         if (prev->_state == RUNNING)
@@ -346,6 +350,7 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         next->_state = RUNNING;
         next->criterion().start_calculation();
         prev->criterion().set_calculated_time();
+
         // next->criterion().set_start();
         db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if (Traits<Thread>::debugged && Traits<Debug>::info)

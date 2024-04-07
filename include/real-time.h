@@ -109,6 +109,8 @@ public:
         if (t->_alarm.times())
             t->_semaphore.p();
 
+        t->criterion().reset();
+        t->criterion().update();
         return t->_alarm.times();
     }
 

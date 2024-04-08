@@ -115,6 +115,7 @@ protected:
 
     static void reschedule();
     static void update_all();
+    static void update_all_iterate();
     static void time_slicer(IC::Interrupt_Id interrupt);
 
     static void dispatch(Thread *prev, Thread *next, bool charge = true);

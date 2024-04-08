@@ -312,13 +312,37 @@ void Thread::update_all()
     assert(locked()); // locking handled by caller
     db<Thread>(WRN) << "\nUpdating Priorities\n"
                     << endl;
-
+    auto t = _scheduler.head();
+    while (t)
+    {
+        Thread *th = t->object();
+        if (th->_state == READY)
+            th->criterion().update();
+        t = t->next();
+    }
+    /*
     for (auto t = _scheduler.size(); t > 0; t--)
     {
         Thread *th = _scheduler[t - 1];
         if (th->_state == READY)
             th->criterion().update();
-    }
+    }*/
+}
+
+void Thread::update_all_iterate()
+{
+    _scheduler.iterate([](auto &el)
+                       {
+            auto currentRunningThread = Thread::running();
+
+            auto thread_object = el.object();
+        
+            if (currentRunningThread != thread_object) {
+                
+                Criterion criterion = thread_object->criterion();
+                if (thread_object._state == READY)
+                    thread_object.criterion().update();
+            } });
 }
 
 void Thread::time_slicer(IC::Interrupt_Id i)

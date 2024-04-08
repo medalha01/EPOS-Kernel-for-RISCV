@@ -107,7 +107,6 @@ protected:
     static void wakeup(Queue * q);
     static void wakeup_all(Queue * q);
     static void update_all();
-    static void update_all_iterate();
     static void reschedule();
     static void time_slicer(IC::Interrupt_Id interrupt);
 

@@ -338,10 +338,10 @@ void Thread::update_all_iterate()
             auto thread_object = el.object();
         
             if (currentRunningThread != thread_object) {
-                
+    
                 Criterion criterion = thread_object->criterion();
-                if (thread_object._state == READY)
-                    thread_object.criterion().update();
+                if (thread_object->_state == READY)
+                    criterion.update();
             } });
 }
 

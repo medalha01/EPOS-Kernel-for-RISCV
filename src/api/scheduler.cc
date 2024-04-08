@@ -38,7 +38,7 @@ void LLF::set_calculated_time()
 
 void LLF::update()
 {
-    if ((_priority > MAIN) && (_priority < IDLE))
+    if ((_priority > MAIN) && (_priority < IDLE)) // Não podemos dar update na IDLE, se não o avião cai. 
     {
         _priority = _deadline + _init_time - _capacity + _computed_time;
     }

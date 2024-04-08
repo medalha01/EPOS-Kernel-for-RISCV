@@ -314,18 +314,17 @@ void Thread::update_all()
     db<Thread>(WRN) << "\nUpdating Priorities\n"
                     << endl;
 
-    _scheduler.iterate([](auto &el)
-                       {
-            auto currentRunningThread = Thread::running();
+	_scheduler.iterate([](auto &el){
+			auto thread_object = el.object();
+			Criterion *criterion = &thread_object->criterion();
 
-            auto thread_object = el.object();
+			db<Thread>(WRN) "Valor do *criterion é " << *criterion << endl;
+			db<Thread>(WRN) "Valor da IDLE é     " << IDLE << endl;
 
-            if (currentRunningThread != thread_object) {
-
-                Criterion criterion = thread_object->criterion();
-                if (thread_object->_state == READY)
-                    criterion.update();
-            } });
+			// Já checamos se não é IDLE dentro do update.
+			if (thread_object->_state == READY)
+				criterion->update();
+		});
 }
 
 void Thread::time_slicer(IC::Interrupt_Id i)

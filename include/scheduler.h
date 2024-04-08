@@ -229,6 +229,8 @@ public:
 
     void set_calculated_time();
 
+    void update();
+
 private:
     unsigned int _init_time = 0;
     unsigned int _computed_time = 0;

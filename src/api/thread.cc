@@ -309,23 +309,20 @@ void Thread::reschedule()
 
 void Thread::update_all()
 {
-	assert(locked());
 
+    assert(locked()); // locking handled by caller
     db<Thread>(WRN) << "\nUpdating Priorities\n"
                     << endl;
-
-	_scheduler.iterate([](auto &el){
-			auto thread_object = el.object();
-			Criterion *criterion = &thread_object->criterion();
-
-			db<Thread>(WRN) "Valor do *criterion é " << *criterion << endl;
-			db<Thread>(WRN) "Valor da IDLE é     " << IDLE << endl;
-
-			// Já checamos se não é IDLE dentro do update.
-			if (thread_object->_state == READY)
-				criterion->update();
-		});
+    auto t = _scheduler.head();
+    while (t)
+    {
+        Thread *th = t->object();
+        if (th->_state == READY)
+            th->criterion().update();
+        t = t->next();
+    }
 }
+
 
 void Thread::time_slicer(IC::Interrupt_Id i)
 {

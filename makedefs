@@ -187,7 +187,7 @@ MACH_EMULATOR           := $(subst -m ,-gdb tcp::1235 -S -m ,$($(MACH)_EMULATOR)
 endif
 
 # Tools and flags to compile applications
-ACC             = $(BIN)/eposcc --echo $(MACH_CC_FLAGS) -c -ansi -O
+ACC             = $(BIN)/eposcc $(MACH_CC_FLAGS) -c -ansi -O
 ACCFLAGS        = $(MACH_CXX_FLAGS)
 ALD             = $(BIN)/eposcc --$(SMOD) --no-warn-mismatch --no-warn-rwx-segments
 ALDFLAGS        = --gc-sections $(MACH_MAGIC)

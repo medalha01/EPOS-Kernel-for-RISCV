@@ -8,6 +8,8 @@
 #include <utility/queue.h>
 #include <utility/handler.h>
 #include <scheduler.h>
+#include <utility/list.h>
+
 
 extern "C" { void __exit(); }
 
@@ -25,6 +27,7 @@ class Thread
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
+    static const bool dynamic = Traits<Thread>::Criterion::dynamic;
     static const bool reboot = Traits<System>::reboot;
 
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;

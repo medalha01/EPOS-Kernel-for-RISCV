@@ -311,8 +311,7 @@ void Thread::update_all()
 {
 
     assert(locked()); // locking handled by caller
-    db<Thread>(WRN) << "\nUpdating Priorities\n"
-                    << endl;
+
     auto t = _scheduler.head();
     while (t)
     {

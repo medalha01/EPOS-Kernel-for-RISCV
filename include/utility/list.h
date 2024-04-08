@@ -1166,6 +1166,7 @@ public:
     typedef El Element;
     typedef typename Base::Iterator Iterator;
 
+
 public:
     Multihead_Scheduling_List() {
         for(unsigned int i = 0; i < H; i++)
@@ -1180,6 +1181,17 @@ public:
     using Base::end;
 
     Element * volatile & chosen() { return _chosen[R::current_head()]; }
+    
+    template <typename Func>
+    void iterate(Func handler)
+    {
+        Element *el = this->head();
+        while (el != nullptr)
+        {
+            handler(*el);
+            el = el->next();
+        }
+    }
 
     void insert(Element * e) {
         db<Lists>(TRC) << "Scheduling_List::insert(e=" << e

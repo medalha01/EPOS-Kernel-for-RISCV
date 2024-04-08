@@ -103,24 +103,6 @@ public:
 
         return obj;
     }
-        T *operator[](unsigned int index)
-    {
-        Element *current = Base::head(); // Assuming Scheduling_List has a head() method for accessing the first element
-        for (unsigned int i = 0; current != nullptr && i < index; ++i)
-        {
-            current = current->next(); // Assuming each Element has a next() method to get the next element in the list
-        }
-
-        if (current == nullptr)
-        {
-            // Index is out of bounds
-            return nullptr;
-        }
-        else
-        {
-            return current->object(); // Assuming Element has an object() method to get the object it points to
-        }
-    }
 };
 
 __END_UTIL

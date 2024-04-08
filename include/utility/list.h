@@ -1081,6 +1081,17 @@ public:
             _chosen = e;
     }
 
+    template <typename Func>
+    void iterate(Func handler)
+    {
+        Element *el = this->head();
+        while (el != nullptr)
+        {
+            handler(*el);
+            el = el->next();
+        }
+    }
+
     Element * remove(Element * e) {
         db<Lists>(TRC) << "Scheduling_List::remove(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *) -1)
@@ -1182,16 +1193,7 @@ public:
 
     Element * volatile & chosen() { return _chosen[R::current_head()]; }
     
-    template <typename Func>
-    void iterate(Func handler)
-    {
-        Element *el = this->head();
-        while (el != nullptr)
-        {
-            handler(*el);
-            el = el->next();
-        }
-    }
+
 
     void insert(Element * e) {
         db<Lists>(TRC) << "Scheduling_List::insert(e=" << e

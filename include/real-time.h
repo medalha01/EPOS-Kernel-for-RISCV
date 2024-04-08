@@ -49,6 +49,7 @@ protected:
         ~Dynamic_Handler() {}
 
         void operator()() {
+            _thread->criterion().reset_init_time();
             _thread->criterion().update();
 
             Semaphore_Handler::operator()();
@@ -61,9 +62,10 @@ protected:
     typedef IF<Criterion::dynamic, Dynamic_Handler, Static_Handler>::Result Handler;
 
 public:
-    struct Configuration: public Thread::Configuration {
-        Configuration(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & cap = UNKNOWN, const Microsecond & act = NOW, const unsigned int n = INFINITE, const State & s = READY, const Criterion & c = NORMAL, unsigned int ss = STACK_SIZE)
-        : Thread::Configuration(s, c, ss), period(p), deadline(d == SAME ? p : d), capacity(cap), activation(act), times(n) {}
+    struct Configuration : public Thread::Configuration
+    {
+        Configuration(const Microsecond &p, const Microsecond &d = SAME, const Microsecond &cap = UNKNOWN, const Microsecond &act = NOW, const unsigned int n = INFINITE, const State &s = READY, const Criterion &c = NORMAL, unsigned int ss = STACK_SIZE)
+            : Thread::Configuration(s, c, ss), period(p), deadline(d == SAME ? p : d), capacity(cap), activation(act), times(n) {}
 
         Microsecond period;
         Microsecond deadline;
@@ -73,16 +75,18 @@ public:
     };
 
 public:
-    template<typename ... Tn>
-    Periodic_Thread(const Microsecond & p, int (* entry)(Tn ...), Tn ... an)
-    : Thread(Thread::Configuration(SUSPENDED, Criterion(p)), entry, an ...),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(p, &_handler, INFINITE) { resume(); }
+    template <typename... Tn>
+    Periodic_Thread(const Microsecond &p, int (*entry)(Tn...), Tn... an)
+        : Thread(Thread::Configuration(SUSPENDED, Criterion(p)), entry, an...),
+          _semaphore(0), _handler(&_semaphore, this), _alarm(p, &_handler, INFINITE) { resume(); }
 
-    template<typename ... Tn>
-    Periodic_Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
-    : Thread(Thread::Configuration(SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.stack_size), entry, an ...),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times) {
-        if((conf.state == READY) || (conf.state == RUNNING)) {
+    template <typename... Tn>
+    Periodic_Thread(const Configuration &conf, int (*entry)(Tn...), Tn... an)
+        : Thread(Thread::Configuration(SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.deadline, conf.period, conf.capacity), conf.stack_size), entry, an...),
+          _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times)
+    {
+        if ((conf.state == READY) || (conf.state == RUNNING))
+        {
             _state = SUSPENDED;
             resume();
         } else

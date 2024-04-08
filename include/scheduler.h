@@ -90,6 +90,9 @@ public:
     void queue(unsigned int q) {}
 
     bool update() { return false; }
+    bool reset_init_time() { return false; }
+    bool start_calculation() { return false; }
+    bool set_calculated_time() { return false; }
 
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }
@@ -206,6 +209,30 @@ public:
     EDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY);
 
     void update();
+};
+
+// Least Laxity First
+class LLF : public Real_Time_Scheduler_Common
+{
+public:
+    static const bool timed = true;
+    static const bool dynamic = true;
+    static const bool preemptive = true; // LLF é Preemptivo
+
+    LLF(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
+
+    LLF(const Microsecond &deadline, const Microsecond &period = SAME, const Microsecond &capacity = UNKNOWN, unsigned int cpu = ANY);
+    
+    void reset_init_time();
+
+    void start_calculation();
+
+    void set_calculated_time();
+
+private:
+    unsigned int _init_time = 0;
+    unsigned int _computed_time = 0;
+    unsigned int _start_of_computation = 0;
 };
 
 __END_SYS

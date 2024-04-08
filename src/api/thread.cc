@@ -99,10 +99,9 @@ void Thread::priority(const Criterion & c)
 
     if(_state != RUNNING) { // reorder the scheduling queue
         _scheduler.remove(this);
-        _link.rank(c);
-        _scheduler.insert(this);
+        _link.rank(Criterion(c));        _scheduler.insert(this);
     } else
-        _link.rank(c);
+        _link.rank(Criterion(c));
 
     if(preemptive)
         reschedule();
@@ -308,6 +307,44 @@ void Thread::reschedule()
     dispatch(prev, next);
 }
 
+void Thread::update_all()
+{
+
+    assert(locked()); // locking handled by caller
+    db<Thread>(WRN) << "\nUpdating Priorities\n"
+                    << endl;
+    auto t = _scheduler.head();
+    while (t)
+    {
+        Thread *th = t->object();
+        if (th->_state == READY)
+            th->criterion().update();
+        t = t->next();
+    }
+    /*
+    for (auto t = _scheduler.size(); t > 0; t--)
+    {
+        Thread *th = _scheduler[t - 1];
+        if (th->_state == READY)
+            th->criterion().update();
+    }*/
+}
+
+void Thread::update_all_iterate()
+{
+    _scheduler.iterate([](auto &el)
+                       {
+            auto currentRunningThread = Thread::running();
+
+            auto thread_object = el.object();
+
+            if (currentRunningThread != thread_object) {
+
+                Criterion criterion = thread_object->criterion();
+                if (thread_object->_state == READY)
+                    criterion.update();
+            } });
+}
 
 void Thread::time_slicer(IC::Interrupt_Id i)
 {
@@ -326,10 +363,18 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
             _timer->restart();
     }
 
+    if (dynamic)
+    {
+        update_all();
+        next->criterion().update();
+    }
+    
     if(prev != next) {
         if(prev->_state == RUNNING)
             prev->_state = READY;
         next->_state = RUNNING;
+        next->criterion().start_calculation();
+        prev->criterion().set_calculated_time();
 
         db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if(Traits<Thread>::debugged && Traits<Debug>::info) {

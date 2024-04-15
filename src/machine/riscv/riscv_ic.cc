@@ -6,7 +6,10 @@
 #include <machine/timer.h>
 #include <process.h>
 
-extern "C" { static void print_context(bool push); }
+extern "C"
+{
+    static void print_context(bool push);
+}
 
 __BEGIN_SYS
 
@@ -15,19 +18,29 @@ IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 
 void IC::entry()
 {
+    // Log SP and EPC at ISR entry
+    CPU::Log_Addr sp_entry = CPU::sp();
+    CPU::Log_Addr epc_entry = CPU::epc();
+    db<IC, System>(TRC) << "ISR Entry [SP=" << hex << sp_entry << ", EPC=" << hex << epc_entry << "]" << dec;
+
     // Save context into the stack
     CPU::Context::push(true);
 
-    if(Traits<IC>::hysterically_debugged)
+    if (Traits<IC>::hysterically_debugged)
         print_context(true);
 
     dispatch();
 
-    if(Traits<IC>::hysterically_debugged)
+    if (Traits<IC>::hysterically_debugged)
         print_context(false);
 
     // Restore context from the stack
     CPU::Context::pop(true);
+
+    CPU::Log_Addr sp_exit = CPU::sp();
+    CPU::Log_Addr epc_exit = CPU::epc();
+    db<IC, System>(TRC) << "ISR Exit [SP=" << hex << sp_exit << ", EPC=" << hex << epc_exit << "]" << dec;
+
     CPU::iret();
 }
 
@@ -35,26 +48,27 @@ void IC::dispatch()
 {
     Interrupt_Id id = int_id();
 
-    if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
+    if ((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [sp=" << CPU::sp() << "]" << endl;
 
-    if(id == INT_SYS_TIMER) {
-        if(supervisor)
-            CPU::ecall();   // we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
+    if (id == INT_SYS_TIMER)
+    {
+        if (supervisor)
+            CPU::ecall(); // we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
         else
             Timer::reset(); // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer seems to be the only way to clear it
     }
 
     _int_vector[id](id);
 
-    if(id >= EXCS)
+    if (id >= EXCS)
         CPU::fr(0); // tell CPU::Context::pop(true) not to increment PC since it is automatically incremented for hardware interrupts
 }
 
 void IC::int_not(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
-    if(Traits<Build>::hysterically_debugged)
+    if (Traits<Build>::hysterically_debugged)
         Machine::panic();
 }
 
@@ -65,11 +79,14 @@ void IC::exception(Interrupt_Id id)
     CPU::Reg status = CPU::status();
     CPU::Reg cause = CPU::cause();
     CPU::Log_Addr tval = CPU::tval();
-    Thread * thread = Thread::self();
+    Thread *thread = Thread::self();
 
-    db<IC,System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
+    if (id == 5 || id == 7)
+        db<Thread>(TRC) << "Exception Start [SP=" << hex << sp << "]" << dec;
+    db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
 
-    switch(id) {
+    switch (id)
+    {
     case CPU::EXC_IALIGN: // instruction address misaligned
         db<IC, System>(WRN) << " => unaligned instruction";
         break;
@@ -104,7 +121,7 @@ void IC::exception(Interrupt_Id id)
         db<IC, System>(WRN) << " => instruction page fault";
         break;
     case CPU::EXC_DRPF: // load page fault
-    case CPU::EXC_RES: // reserved
+    case CPU::EXC_RES:  // reserved
     case CPU::EXC_DWPF: // store/AMO page fault
         db<IC, System>(WRN) << " => data page fault";
         break;
@@ -115,9 +132,10 @@ void IC::exception(Interrupt_Id id)
 
     db<IC, System>(WRN) << endl;
 
-    if(Traits<Build>::hysterically_debugged)
+    if (Traits<Build>::hysterically_debugged)
         db<IC, System>(ERR) << "Exception stopped execution due to hysterically debugging!" << endl;
-    else {
+    else
+    {
         db<IC, Machine>(WRN) << "The running thread will now be terminated!" << endl;
         Thread::exit(-1);
     }
@@ -127,9 +145,9 @@ void IC::exception(Interrupt_Id id)
 
 __END_SYS
 
-static void print_context(bool push) {
+static void print_context(bool push)
+{
     __USING_SYS
     db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx=" << *static_cast<CPU::Context *>(CPU::sp() + 3 * sizeof(CPU::Reg) + (push ? sizeof(CPU::Context) : 0)) << endl; // 3 words for function's stack frame
     CPU::fr(0);
 }
-

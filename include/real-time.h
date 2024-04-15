@@ -22,35 +22,33 @@ typedef Thread Aperiodic_Thread;
 // is dispatched by resume() (thus the _state = SUSPENDED statement)
 
 // Periodic Thread
-class Periodic_Thread : public Thread
+class Periodic_Thread: public Thread
 {
 public:
-    enum
-    {
-        SAME = Real_Time_Scheduler_Common::SAME,
-        NOW = Real_Time_Scheduler_Common::NOW,
+    enum {
+        SAME    = Real_Time_Scheduler_Common::SAME,
+        NOW     = Real_Time_Scheduler_Common::NOW,
         UNKNOWN = Real_Time_Scheduler_Common::UNKNOWN,
-        ANY = Real_Time_Scheduler_Common::ANY
+        ANY     = Real_Time_Scheduler_Common::ANY
     };
 
 protected:
     // Alarm Handler for periodic threads under static scheduling policies
-    class Static_Handler : public Semaphore_Handler
+    class Static_Handler: public Semaphore_Handler
     {
     public:
-        Static_Handler(Semaphore *s, Periodic_Thread *t) : Semaphore_Handler(s) {}
+        Static_Handler(Semaphore * s, Periodic_Thread * t): Semaphore_Handler(s) {}
         ~Static_Handler() {}
     };
 
     // Alarm Handler for periodic threads under dynamic scheduling policies
-    class Dynamic_Handler : public Semaphore_Handler
+    class Dynamic_Handler: public Semaphore_Handler
     {
     public:
-        Dynamic_Handler(Semaphore *s, Periodic_Thread *t) : Semaphore_Handler(s), _thread(t) {}
+        Dynamic_Handler(Semaphore * s, Periodic_Thread * t): Semaphore_Handler(s), _thread(t) {}
         ~Dynamic_Handler() {}
 
-        void operator()()
-        {
+        void operator()() {
             _thread->criterion().reset_init_time();
             _thread->criterion().update();
 
@@ -58,7 +56,7 @@ protected:
         }
 
     private:
-        Periodic_Thread *_thread;
+        Periodic_Thread * _thread;
     };
 
     typedef IF<Criterion::dynamic, Dynamic_Handler, Static_Handler>::Result Handler;
@@ -91,25 +89,21 @@ public:
         {
             _state = SUSPENDED;
             resume();
-        }
-        else
+        } else
             _state = conf.state;
     }
 
-    const Microsecond &period() const { return _alarm.period(); }
-    void period(const Microsecond &p) { _alarm.period(p); }
+    const Microsecond & period() const { return _alarm.period(); }
+    void period(const Microsecond & p) { _alarm.period(p); }
 
-    static volatile bool wait_next()
-    {
-        Periodic_Thread *t = reinterpret_cast<Periodic_Thread *>(running());
+    static volatile bool wait_next() {
+        Periodic_Thread * t = reinterpret_cast<Periodic_Thread *>(running());
 
         db<Thread>(TRC) << "Thread::wait_next(this=" << t << ",times=" << t->_alarm.times() << ")" << endl;
 
-        if (t->_alarm.times())
+        if(t->_alarm.times())
             t->_semaphore.p();
 
-        // t->criterion().reset_init_time();
-        // t->criterion().update();
         return t->_alarm.times();
     }
 

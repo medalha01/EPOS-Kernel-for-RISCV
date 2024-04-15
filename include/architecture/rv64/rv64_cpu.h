@@ -673,7 +673,7 @@ inline void CPU::Context::push(bool interrupt)
 {
     Log_Addr push_sp = CPU::sp();
     Log_Addr push_epc = CPU::epc();
-    db<CPU>(TRC) << "Context Push Start [SP=" << hex << push_sp << ", EPC=" << hex << push_epc << "]" << dec;
+    db<IC, System>(TRC) << "Context Push Start [SP=" << hex << push_sp << ", EPC=" << hex << push_epc << "]" << dec;
 
     ASM("       addi     sp, sp, %0             \n" : : "i"(-sizeof(Context))); // adjust SP for the pushes below
     if (interrupt)
@@ -740,12 +740,12 @@ inline void CPU::Context::push(bool interrupt)
     }
     push_sp = CPU::sp();
     push_epc = CPU::epc();
-    db<CPU>(TRC) << "Context Push Finish [SP=" << hex << push_sp << ", EPC=" << hex << push_epc << "]" << dec;
+    db<IC, System>(TRC) << "Context Push Finish [SP=" << hex << push_sp << ", EPC=" << hex << push_epc << "]" << dec;
 }
 
 inline void CPU::Context::pop(bool interrupt)
 {
-    db<CPU>(TRC) << "Context POP Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    db<IC, System>(TRC) << "Context POP Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
     if (interrupt)
     {
         int_disable(); // atomize Context::pop() by disabling interrupts (SPIE will restore the flag on iret())
@@ -806,7 +806,7 @@ inline void CPU::Context::pop(bool interrupt)
     {
         ASM("       csrw    mstatus, x3             \n"); // MSTATUS = ST
     }
-    db<CPU>(TRC) << "Context POP Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    db<IC, System>(TRC) << "Context POP Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline CPU::Reg64 htole64(CPU::Reg64 v) { return CPU::htole64(v); }

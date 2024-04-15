@@ -56,13 +56,13 @@ TOUCH           = touch
 
 # Tools and flags to compile system tools
 TCC             = gcc -ansi -c -Werror
-TCCFLAGS        = -Wall -O -g -I$(INC)
-TCXX            = g++ -c -ansi -fno-exceptions -std=c++14 
-TCXXFLAGS       = -Wall -O -g -O0 -I$(INC)
+TCCFLAGS        = -Wall -O -I$(INC)
+TCXX            = g++ -c -ansi -fno-exceptions -std=c++14
+TCXXFLAGS       = -Wall -O -I$(INC)
 TCPP            = gcc -E
 TCPPFLAGS       = -I$(INC)
 TLD             = gcc
-TLDFLAGS        = -g
+TLDFLAGS        = 
 
 # Export variables to submakes
 export

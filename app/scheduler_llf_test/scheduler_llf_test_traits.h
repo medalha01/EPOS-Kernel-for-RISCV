@@ -20,7 +20,7 @@ struct Traits<Build> : public Traits_Tokens
 
     // Default flags
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
 };
 
@@ -107,7 +107,7 @@ struct Traits<Application> : public Traits<Build>
 template <>
 struct Traits<System> : public Traits<Build>
 {
-    static const bool debugged = true;
+    static const bool debugged =false;
     static const bool trace = true;
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
     static const bool multiheap = Traits<Scratchpad>::enabled;
@@ -125,7 +125,7 @@ template <>
 struct Traits<Thread> : public Traits<Build>
 
 {
-    static const bool debugged = true; // Enable debugging for MyClass
+    static const bool debugged =false; // Enable debugging for MyClass
     static const bool error = true;    // Enable error level debugging for MyClass
     static const bool warning = true;  // Enable warning level debugging for MyClass
     static const bool info = true;     // Enable info level debugging for MyClass

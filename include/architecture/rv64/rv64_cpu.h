@@ -5,6 +5,10 @@
 
 #include <architecture/cpu.h>
 
+extern "C"
+{
+   static void print_ctx(bool push, bool exit);
+}
 __BEGIN_SYS
 
 class CPU : protected CPU_Common
@@ -671,8 +675,9 @@ private:
 
 inline void CPU::Context::push(bool interrupt)
 {
-
-    db<IC, System>(TRC) << "Context Push Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+        if (Traits<CPU>::hysterically_debugged)
+    print_ctx(true, false);
+    //db<IC>(TRC) << "Context Push Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 
     ASM("       addi     sp, sp, %0             \n" : : "i"(-sizeof(Context))); // adjust SP for the pushes below
     if (interrupt)
@@ -737,12 +742,16 @@ inline void CPU::Context::push(bool interrupt)
     {
         ASM("       mv       x3, sp                 \n"); // leave TMP pointing the context to easy subsequent access to the saved context
     }
-    db<IC, System>(TRC) << "Context Push Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    if (Traits<CPU>::hysterically_debugged)
+    print_ctx(true, true);
+    //db<IC>(TRC) << "Context Push Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline void CPU::Context::pop(bool interrupt)
 {
-    db<IC, System>(TRC) << "Context POP Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    if (Traits<CPU>::hysterically_debugged)
+    print_ctx(false, false);
+    //db<IC>(TRC) << "Context POP Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
     if (interrupt)
     {
         int_disable(); // atomize Context::pop() by disabling interrupts (SPIE will restore the flag on iret())
@@ -803,7 +812,9 @@ inline void CPU::Context::pop(bool interrupt)
     {
         ASM("       csrw    mstatus, x3             \n"); // MSTATUS = ST
     }
-    db<IC, System>(TRC) << "Context POP Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    if (Traits<CPU>::hysterically_debugged)
+    print_ctx(false, true);
+    //db<IC>(TRC) << "Context POP Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline CPU::Reg64 htole64(CPU::Reg64 v) { return CPU::htole64(v); }
@@ -827,4 +838,9 @@ inline CPU::Reg16 ntohs(CPU::Reg16 v) { return CPU::ntohs(v); }
 
 __END_SYS
 
+static void print_ctx(bool push, bool exit){
+    __USING_SYS
+    db<IC>(TRC) << "CPU" << (push ? "push" : "pop") << ":" << (exit ? "exit" : "entry")  << "SP:" << hex << CPU::sp() << "EPC:" << hex << CPU::epc() << dec; 
+
+}
 #endif

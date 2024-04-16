@@ -94,9 +94,9 @@ public:
     bool start_calculation() { return false; }
     bool set_calculated_time() { return false; }
 
-    bool enter_critical() {return false}
+    bool enter_critical() {return false;}
 
-    bool leave_critical(){ return false}
+    bool leave_critical(){ return false;}
 
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }

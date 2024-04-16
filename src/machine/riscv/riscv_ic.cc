@@ -9,6 +9,8 @@
 extern "C"
 {
     static void print_context(bool push);
+    static void print_entry();
+    static void print_end();
 }
 
 __BEGIN_SYS
@@ -19,8 +21,8 @@ IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 void IC::entry()
 {
     // Log SP and EPC at ISR entry
-
-    db<IC, System>(TRC) << "ISR Entry [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    if (Traits<IC>::debugged)
+        print_entry();
 
     // Save context into the stack
     CPU::Context::push(true);
@@ -36,9 +38,8 @@ void IC::entry()
     // Restore context from the stack
     CPU::Context::pop(true);
 
-    //CPU::Log_Addr sp_exit = CPU::sp();
-    //CPU::Log_Addr epc_exit = CPU::epc();
-    db<IC, System>(TRC) << "ISR Exit [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+    if (Traits<IC>::debugged)
+        print_end();
 
     CPU::iret();
 }
@@ -80,7 +81,7 @@ void IC::exception(Interrupt_Id id)
     CPU::Log_Addr tval = CPU::tval();
     Thread *thread = Thread::self();
 
-    db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
+    db<IC>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
 
     switch (id)
     {
@@ -147,4 +148,16 @@ static void print_context(bool push)
     __USING_SYS
     db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx=" << *static_cast<CPU::Context *>(CPU::sp() + 3 * sizeof(CPU::Reg) + (push ? sizeof(CPU::Context) : 0)) << endl; // 3 words for function's stack frame
     CPU::fr(0);
+}
+
+static void print_entry()
+{
+    __USING_SYS
+    db<IC>(TRC) << "ISR Entry [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+}
+
+static void print_end()
+{
+    __USING_SYS
+    db<IC>(TRC) << "ISR Exit [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }

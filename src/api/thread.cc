@@ -262,6 +262,7 @@ void Thread::wakeup(Queue *q)
     {
         Thread *t = q->remove()->object();
         t->_state = READY;
+        t->criterion().update();
         t->_waiting = 0;
         _scheduler.resume(t);
 
@@ -409,6 +410,14 @@ void Thread::start_critical()
     if (t)
     {
         t->criterion().enter_critical();
+    }
+}
+
+void Thread::periodic_critical(Thread *_lock_holder)
+{
+    if (_lock_holder)
+    {
+        _lock_holder->criterion().enter_critical();
     }
 }
 

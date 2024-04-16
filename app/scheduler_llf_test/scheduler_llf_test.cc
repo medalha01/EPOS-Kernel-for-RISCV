@@ -16,7 +16,7 @@ const unsigned int deadline_a = 100; // ms
 const unsigned int deadline_b = 80;  // ms
 const unsigned int deadline_c = 60;  // ms*/
 
-const unsigned int iterations = 50;
+const unsigned int iterations = 250;
 const unsigned int period_a = 6;    // ms
 const unsigned int period_b = 8;    // ms
 const unsigned int period_c = 10;   // ms

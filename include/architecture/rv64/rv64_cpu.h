@@ -671,9 +671,8 @@ private:
 
 inline void CPU::Context::push(bool interrupt)
 {
-    Log_Addr push_sp = CPU::sp();
-    Log_Addr push_epc = CPU::epc();
-    db<IC, System>(TRC) << "Context Push Start [SP=" << hex << push_sp << ", EPC=" << hex << push_epc << "]" << dec;
+
+    db<IC, System>(TRC) << "Context Push Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 
     ASM("       addi     sp, sp, %0             \n" : : "i"(-sizeof(Context))); // adjust SP for the pushes below
     if (interrupt)
@@ -738,9 +737,7 @@ inline void CPU::Context::push(bool interrupt)
     {
         ASM("       mv       x3, sp                 \n"); // leave TMP pointing the context to easy subsequent access to the saved context
     }
-    push_sp = CPU::sp();
-    push_epc = CPU::epc();
-    db<IC, System>(TRC) << "Context Push Finish [SP=" << hex << push_sp << ", EPC=" << hex << push_epc << "]" << dec;
+    db<IC, System>(TRC) << "Context Push Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline void CPU::Context::pop(bool interrupt)

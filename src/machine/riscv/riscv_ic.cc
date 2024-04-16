@@ -19,9 +19,8 @@ IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 void IC::entry()
 {
     // Log SP and EPC at ISR entry
-    CPU::Log_Addr sp_entry = CPU::sp();
-    CPU::Log_Addr epc_entry = CPU::epc();
-    db<IC, System>(TRC) << "ISR Entry [SP=" << hex << sp_entry << ", EPC=" << hex << epc_entry << "]" << dec;
+
+    db<IC, System>(TRC) << "ISR Entry [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 
     // Save context into the stack
     CPU::Context::push(true);
@@ -37,9 +36,9 @@ void IC::entry()
     // Restore context from the stack
     CPU::Context::pop(true);
 
-    CPU::Log_Addr sp_exit = CPU::sp();
-    CPU::Log_Addr epc_exit = CPU::epc();
-    db<IC, System>(TRC) << "ISR Exit [SP=" << hex << sp_exit << ", EPC=" << hex << epc_exit << "]" << dec;
+    //CPU::Log_Addr sp_exit = CPU::sp();
+    //CPU::Log_Addr epc_exit = CPU::epc();
+    db<IC, System>(TRC) << "ISR Exit [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 
     CPU::iret();
 }
@@ -81,8 +80,6 @@ void IC::exception(Interrupt_Id id)
     CPU::Log_Addr tval = CPU::tval();
     Thread *thread = Thread::self();
 
-    if (id == 5 || id == 7)
-        db<Thread>(TRC) << "Exception Start [SP=" << hex << sp << "]" << dec;
     db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
 
     switch (id)

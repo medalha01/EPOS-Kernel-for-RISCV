@@ -62,7 +62,7 @@ public:
 
 template <> struct Traits<IC>: public Traits<Machine_Common>
 {
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool trace = true;
 
     static const unsigned int PLIC_IRQS = 54;           // IRQ0 is used by PLIC to signalize that there is no interrupt being serviced or pending
@@ -96,7 +96,7 @@ template <> struct Traits<Timer>: public Traits<Machine_Common>
     // choice must respect the scheduler time-slice, i. e., it must be higher
     // than the scheduler invocation frequency.
     //static const long FREQUENCY = 285; // Hz
-    static const long FREQUENCY = 285;
+    static const long FREQUENCY = 300;
 };
 
 template <> struct Traits<UART>: public Traits<Machine_Common>

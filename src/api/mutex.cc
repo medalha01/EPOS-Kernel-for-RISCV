@@ -24,6 +24,8 @@ void Mutex::lock()
     if(tsl(_locked))
         sleep();
     end_atomic();
+    Thread::start_critical();
+
 }
 
 
@@ -37,6 +39,8 @@ void Mutex::unlock()
     else
         wakeup();
     end_atomic();
+    Thread::end_critical();
+
 }
 
 __END_SYS

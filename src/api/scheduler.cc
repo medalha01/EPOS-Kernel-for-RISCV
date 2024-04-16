@@ -24,6 +24,7 @@ void LLF::reset_init_time()
     _computed_time = 0;
     _init_time = Alarm::elapsed();
     _start_of_computation = 0;
+    //_locked = false;
 }
 
 void LLF::start_calculation()
@@ -47,17 +48,29 @@ void LLF::update()
 
 void LLF::enter_critical()
 {
+    if (_locked)
+    {
+        db<Thread>(WRN) << "Entering a critical zone while inside a critical zone" << endl;
+    }
     if ((_priority > MAIN) && (_priority < IDLE)) // Não podemos dar update na IDLE, se não o avião cai.
     {
-        _priority = HIGH;
+        db<Thread>(WRN) << "Thread entering critical zone priority" << endl;
+
+        _priority = 1;
         _locked = true;
     }
 }
 
 void LLF::leave_critical()
 {
+    if (!_locked)
+    {
+        db<Thread>(WRN) << "Trying to unlock a already unlock Thread" << endl;
+    }
     if ((_priority > MAIN) && (_priority < IDLE)) // Não podemos dar update na IDLE, se não o avião cai.
     {
+        db<Thread>(WRN) << "Removing thread from critical zone priority" << endl;
+
         _locked = false;
         update();
     }

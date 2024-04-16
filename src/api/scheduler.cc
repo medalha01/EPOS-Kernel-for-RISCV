@@ -6,13 +6,14 @@
 __BEGIN_SYS
 
 // The following Scheduling Criteria depend on Alarm, which is not available at scheduler.h
-template <typename ... Tn>
-FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : Alarm::elapsed()) {}
+template <typename... Tn>
+FCFS::FCFS(int p, Tn &...an) : Priority((p == IDLE) ? IDLE : Alarm::elapsed()) {}
 
-EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, unsigned int): Real_Time_Scheduler_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
+EDF::EDF(const Microsecond &d, const Microsecond &p, const Microsecond &c, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
 
-void EDF::update() {
-    if((_priority >= PERIODIC) && (_priority < APERIODIC))
+void EDF::update()
+{
+    if ((_priority >= PERIODIC) && (_priority < APERIODIC))
         _priority = Alarm::elapsed() + _deadline;
 }
 
@@ -38,9 +39,27 @@ void LLF::set_calculated_time()
 
 void LLF::update()
 {
-    if ((_priority > MAIN) && (_priority < IDLE)) // Não podemos dar update na IDLE, se não o avião cai. 
+    if ((_priority > MAIN) && (_priority < IDLE) && (!_locked)) // Não podemos dar update na IDLE, se não o avião cai.
     {
         _priority = _deadline + _init_time - _capacity + _computed_time;
+    }
+}
+
+void LLF::enter_critical()
+{
+    if ((_priority > MAIN) && (_priority < IDLE)) // Não podemos dar update na IDLE, se não o avião cai.
+    {
+        _priority = HIGH;
+        _locked = true;
+    }
+}
+
+void LLF::leave_critical()
+{
+    if ((_priority > MAIN) && (_priority < IDLE)) // Não podemos dar update na IDLE, se não o avião cai.
+    {
+        _locked = false;
+        update();
     }
 }
 

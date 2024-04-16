@@ -94,6 +94,10 @@ public:
     bool start_calculation() { return false; }
     bool set_calculated_time() { return false; }
 
+    bool enter_critical() {return false}
+
+    bool leave_critical(){ return false}
+
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }
     bool award(bool end = false) { return true; }
@@ -229,12 +233,17 @@ public:
 
     void set_calculated_time();
 
+    void enter_critical();
+
+    void leave_critical();
+
     void update();
 
 private:
     unsigned int _init_time = 0;
     unsigned int _computed_time = 0;
     unsigned int _start_of_computation = 0;
+    bool _locked = false;
 };
 
 __END_SYS

@@ -2,6 +2,7 @@
 
 #include <time.h>
 #include <real-time.h>
+// #include <ceiling_utils.h>  // Make sure this includes all matrix operations and necessary headers
 
 using namespace EPOS;
 /*
@@ -16,16 +17,16 @@ const unsigned int deadline_a = 100; // ms
 const unsigned int deadline_b = 80;  // ms
 const unsigned int deadline_c = 60;  // ms*/
 
-const unsigned int iterations = 250;
-const unsigned int period_a = 6;    // ms
-const unsigned int period_b = 8;    // ms
-const unsigned int period_c = 10;   // ms
-const unsigned int wcet_a = 2;      // ms
-const unsigned int wcet_b = 2;      // ms
-const unsigned int wcet_c = 3;      // ms
-const unsigned int deadline_a = 6;  // ms
-const unsigned int deadline_b = 8;  // ms
-const unsigned int deadline_c = 10; // ms
+const unsigned int iterations = 10;
+const unsigned int period_a = 600;    // ms
+const unsigned int period_b = 800;    // ms
+const unsigned int period_c = 1000;   // ms
+const unsigned int wcet_a = 200;      // ms
+const unsigned int wcet_b = 200;      // ms
+const unsigned int wcet_c = 300;      // ms
+const unsigned int deadline_a = 600;  // ms
+const unsigned int deadline_b = 800;  // ms
+const unsigned int deadline_c = 1000; // ms
 
 int func_a();
 int func_b();
@@ -37,6 +38,64 @@ OStream cout;
 Periodic_Thread *thread_a;
 Periodic_Thread *thread_b;
 Periodic_Thread *thread_c;
+
+int matrix_a[512][512], matrix_b[512][512], matrix_c[512][512], matrix_d[512][512], matrix_e[512][512];
+
+
+
+int N = 512;
+int A = 1103515245;
+int C = 12345;
+int M = 2147483648;
+
+unsigned int rand_state = 123; // Initial seed
+// OStream cout;
+
+// Pseudo-random number generator using the Linear Congruential Generator method
+unsigned int my_rand(int seed) {
+    rand_state = (A * seed + C) % M;
+    return rand_state;
+}
+
+void generate_matrix(int matrix[512][512], int seed) {
+    int i, j;
+
+    // Populate the matrix with random numbers
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            matrix[i][j] = my_rand(seed) % 100; // Random numbers between 0 and 99
+        }
+    }
+}
+
+void matrix_multiply(int n, int A[512][512], int B[512][512], int C[512][512], int D[512][512], int E[512][512]) {
+    int i, j, k;
+
+    // Initialize the result matrix to zero
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            D[i][j] = 0;
+            E[i][j] = 0;
+        }
+    }
+
+    // Multiply matrices
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < n; k++) {
+                D[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < n; k++) {
+                E[i][j] += D[i][k] * C[k][j];
+            }
+        }
+    }
+}
 
 inline void exec(char c, unsigned int time = 0) // in miliseconds
 {
@@ -106,15 +165,19 @@ int main()
     return 0;
 }
 
-int func_a()
-{
-    exec('A');
+int func_a() {
+    exec('A'); // Initial logging
 
-    do
-    {
-        cout << "\n Start of A";
-        exec('a', wcet_a);
-        cout << "\n End of A\n";
+    // Define and initialize matrices
+    generate_matrix(matrix_a, 123);
+    generate_matrix(matrix_b, 123);
+    generate_matrix(matrix_c, 123);
+
+    do {
+        cout << "\nStart of A - Priority: " << thread_a->priority();
+        exec('a', wcet_a); // Simulating work with priority logging
+        matrix_multiply(512, matrix_a, matrix_b, matrix_c, matrix_d, matrix_e);
+        cout << "\nEnd of A - Priority: " << thread_a->priority() << "\n";
     } while (Periodic_Thread::wait_next());
 
     exec('A');
@@ -122,15 +185,19 @@ int func_a()
     return 'A';
 }
 
-int func_b()
-{
-    exec('B');
+int func_b() {
+    exec('B'); // Initial logging
 
-    do
-    {
-        cout << "\n Start of B";
-        exec('b', wcet_b);
-        cout << "\n End of B\n";
+    // Define and initialize matrices
+    generate_matrix(matrix_a, 123);
+    generate_matrix(matrix_b, 123);
+    generate_matrix(matrix_c, 123);
+
+    do {
+        cout << "\nStart of B - Priority: " << thread_b->priority();
+        exec('b', wcet_b); // Simulating work with priority logging
+        matrix_multiply(512, matrix_a, matrix_b, matrix_c, matrix_d, matrix_e);
+        cout << "\nEnd of B - Priority: " << thread_b->priority() << "\n";
     } while (Periodic_Thread::wait_next());
 
     exec('B');
@@ -138,15 +205,19 @@ int func_b()
     return 'B';
 }
 
-int func_c()
-{
-    exec('C');
+int func_c() {
+    exec('C'); // Initial logging
 
-    do
-    {
-        cout << "\n Start of C";
-        exec('c', wcet_c);
-        cout << "\n End of C\n";
+    // Define and initialize matrices
+    generate_matrix(matrix_a, 123);
+    generate_matrix(matrix_b, 123);
+    generate_matrix(matrix_c, 123);
+
+    do {
+        cout << "\nStart of C - Priority: " << thread_c->priority();
+        exec('c', wcet_c); // Simulating work with priority logging
+        matrix_multiply(512, matrix_a, matrix_b, matrix_c, matrix_d, matrix_e);
+        cout << "\nEnd of C - Priority: " << thread_c->priority() << "\n";
     } while (Periodic_Thread::wait_next());
 
     exec('C');

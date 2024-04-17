@@ -107,7 +107,7 @@ struct Traits<Application> : public Traits<Build>
 template <>
 struct Traits<System> : public Traits<Build>
 {
-    static const bool debugged =false;
+    static const bool debugged =true;
     static const bool trace = true;
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
     static const bool multiheap = Traits<Scratchpad>::enabled;

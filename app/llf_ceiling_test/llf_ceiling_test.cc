@@ -6,15 +6,15 @@
 
 using namespace EPOS;
 
-Semaphore matrix_semaphore(2); // Semaphore to control matrix access, allows 2 threads concurrently
+Semaphore matrix_semaphore(1); // Semaphore to control matrix access, allows 2 threads concurrently
 
 long max(unsigned int a, unsigned int b, unsigned int c) { return ((a >= b) && (a >= c)) ? a : ((b >= a) && (b >= c) ? b : c); }
 
 // Global configuration constants
-const unsigned int iterations = 5;
-const unsigned int periods[] = {2000, 2200, 2400};   // ms for threads A, B, C
-const unsigned int wcets[] = {500, 500, 500};        // ms for threads A, B, C
-const unsigned int deadlines[] = {2000, 2200, 2400}; // ms for threads A, B, C
+const unsigned int iterations = 4;
+const unsigned int periods[] = {4000, 4000, 4000};   // ms for threads A, B, C
+const unsigned int wcets[] = {1000, 1000, 1000};     // ms for threads A, B, C
+const unsigned int deadlines[] = {4000, 4000, 4000}; // ms for threads A, B, C
 const unsigned int period_w = 100;                   // ms for watcher thread
 const unsigned int wcet_w = 10;                      // ms for watcher thread
 const unsigned int deadline_w = 100;                 // ms for watcher thread
@@ -162,7 +162,7 @@ void matrix_multiply(int index_a, int index_b, int index_c, int index_d, int ind
             {
                 matrices[index_d][i][j] += matrices[index_a][i][k] * matrices[index_b][k][j];
                 matrices[index_e][i][j] += matrices[index_d][i][k] * matrices[index_c][k][j];
-                if (i < 10)
+                if ((i < 7) & (j < 3))
                     cout << "Matrix"
                          << "I" << i << "J" << j << "Value" << matrices[index_e][i][j] << endl;
             }

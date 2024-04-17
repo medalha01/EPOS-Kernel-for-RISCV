@@ -406,6 +406,7 @@ int Thread::idle()
 }
 void Thread::start_critical()
 {
+    assert(locked());
     Thread *t = running(); // Direct call to the protected method
     if (t)
     {
@@ -415,6 +416,7 @@ void Thread::start_critical()
 
 void Thread::end_critical()
 {
+    assert(locked());
     Thread *t = running(); // Direct call to the protected method
     if (t)
     {
@@ -424,14 +426,18 @@ void Thread::end_critical()
 
 void Thread::start_periodic_critical(Thread *_lock_holder)
 {
+    assert(locked()); // locking handled by caller
+
     if (_lock_holder)
     {
         _lock_holder->criterion().enter_critical();
     }
+    // unlock();
 }
 
 void Thread::end_periodic_critical(Thread *_leaving_thread)
 {
+    assert(locked()); // locking handled by caller
     if (_leaving_thread)
     {
         _leaving_thread->criterion().leave_critical();

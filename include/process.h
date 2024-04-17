@@ -95,8 +95,9 @@ public:
     void suspend();
     void resume();
     static void start_critical();
-    static void periodic_critical(Thread *_lock_holder);
     static void end_critical();
+    static void start_periodic_critical(Thread *_lock_holder);
+    static void end_periodic_critical(Thread *_leaving_thread);
 
     static Thread *volatile self() { return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1); }
     static void yield();

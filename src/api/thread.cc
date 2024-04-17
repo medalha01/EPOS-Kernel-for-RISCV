@@ -413,7 +413,16 @@ void Thread::start_critical()
     }
 }
 
-void Thread::periodic_critical(Thread *_lock_holder)
+void Thread::end_critical()
+{
+    Thread *t = running(); // Direct call to the protected method
+    if (t)
+    {
+        t->criterion().leave_critical();
+    }
+}
+
+void Thread::start_periodic_critical(Thread *_lock_holder)
 {
     if (_lock_holder)
     {
@@ -421,12 +430,11 @@ void Thread::periodic_critical(Thread *_lock_holder)
     }
 }
 
-void Thread::end_critical()
+void Thread::end_periodic_critical(Thread *_leaving_thread)
 {
-    Thread *t = running(); // Direct call to the protected method
-    if (t)
+    if (_leaving_thread)
     {
-        t->criterion().leave_critical();
+        _leaving_thread->criterion().leave_critical();
     }
 }
 __END_SYS

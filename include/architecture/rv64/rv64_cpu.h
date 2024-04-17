@@ -535,6 +535,10 @@ if(interrupt) {
 
 inline void CPU::Context::pop(bool interrupt)
 {
+	// Log de debug para ajudar a achar problemas com SP e EPC, e talvez até 
+	// ajudar a achar uma frequência ideal de operação do EPOS
+	//db<IC, System>(WRN) << "Context POP Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
+
 if(interrupt) {
     int_disable();                                      // atomize Context::pop() by disabling interrupts (SPIE will restore the flag on iret())
 }
@@ -586,6 +590,10 @@ if(supervisor) {
 } else {
     ASM("       csrw    mstatus, x3             \n");   // MSTATUS = ST
 }
+
+// Log de tracing para verificar o stack pointer e o EPC, e ajudar a determinar
+// uma frequência ideal.
+//db<IC, System>(WRN) << "Context POP Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline CPU::Reg64 htole64(CPU::Reg64 v) { return CPU::htole64(v); }

@@ -17,20 +17,24 @@ const unsigned int deadline_a = 100; // ms
 const unsigned int deadline_b = 80;  // ms
 const unsigned int deadline_c = 60;  // ms*/
 
-const unsigned int iterations = 10;
-const unsigned int period_a = 600;    // ms
-const unsigned int period_b = 800;    // ms
-const unsigned int period_c = 1000;   // ms
-const unsigned int wcet_a = 200;      // ms
-const unsigned int wcet_b = 200;      // ms
-const unsigned int wcet_c = 300;      // ms
-const unsigned int deadline_a = 600;  // ms
-const unsigned int deadline_b = 800;  // ms
-const unsigned int deadline_c = 1000; // ms
+const unsigned int iterations = 5;
+const unsigned int period_a = 2000; // ms
+const unsigned int period_b = 2200; // ms
+const unsigned int period_c = 2400; // ms
+const unsigned int period_w = 100;
+const unsigned int wcet_a = 500; // ms
+const unsigned int wcet_b = 500; // ms
+const unsigned int wcet_c = 500; // ms
+const unsigned int wcet_w = 10;
+const unsigned int deadline_a = 2000; // ms
+const unsigned int deadline_b = 2200; // ms
+const unsigned int deadline_c = 2400; // ms
+const unsigned int deadline_w = 100;
 
 int func_a();
 int func_b();
 int func_c();
+int func_w();
 long max(unsigned int a, unsigned int b, unsigned int c) { return ((a >= b) && (a >= c)) ? a : ((b >= a) && (b >= c) ? b : c); }
 
 Chronometer chrono;
@@ -38,10 +42,10 @@ OStream cout;
 Periodic_Thread *thread_a;
 Periodic_Thread *thread_b;
 Periodic_Thread *thread_c;
+Periodic_Thread *watcher;
 
-int matrix_a[512][512], matrix_b[512][512], matrix_c[512][512], matrix_d[512][512], matrix_e[512][512];
-
-
+int matrix_a[512][512],
+    matrix_b[512][512], matrix_c[512][512], matrix_d[512][512], matrix_e[512][512];
 
 int N = 512;
 int A = 1103515245;
@@ -52,45 +56,58 @@ unsigned int rand_state = 123; // Initial seed
 // OStream cout;
 
 // Pseudo-random number generator using the Linear Congruential Generator method
-unsigned int my_rand(int seed) {
+unsigned int my_rand(int seed)
+{
     rand_state = (A * seed + C) % M;
     return rand_state;
 }
 
-void generate_matrix(int matrix[512][512], int seed) {
+void generate_matrix(int matrix[512][512], int seed)
+{
     int i, j;
 
     // Populate the matrix with random numbers
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++)
+    {
+        for (j = 0; j < N; j++)
+        {
             matrix[i][j] = my_rand(seed) % 100; // Random numbers between 0 and 99
         }
     }
 }
 
-void matrix_multiply(int n, int A[512][512], int B[512][512], int C[512][512], int D[512][512], int E[512][512]) {
+void matrix_multiply(int n, int A[512][512], int B[512][512], int C[512][512], int D[512][512], int E[512][512])
+{
     int i, j, k;
 
     // Initialize the result matrix to zero
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
             D[i][j] = 0;
             E[i][j] = 0;
         }
     }
 
     // Multiply matrices
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-            for (k = 0; k < n; k++) {
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            for (k = 0; k < n; k++)
+            {
                 D[i][j] += A[i][k] * B[k][j];
             }
         }
     }
 
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-            for (k = 0; k < n; k++) {
+    for (i = 0; i < n; i++)
+    {
+        for (j = 0; j < n; j++)
+        {
+            for (k = 0; k < n; k++)
+            {
                 E[i][j] += D[i][k] * C[k][j];
             }
         }
@@ -138,6 +155,7 @@ int main()
     thread_a = new Periodic_Thread(RTConf(period_a * 1000, deadline_a * 1000, wcet_a * 1000, 0, iterations), &func_a);
     thread_b = new Periodic_Thread(RTConf(period_b * 1000, deadline_b * 1000, wcet_b * 1000, 0, iterations), &func_b);
     thread_c = new Periodic_Thread(RTConf(period_c * 1000, deadline_c * 1000, wcet_c * 1000, 0, iterations), &func_c);
+    watcher = new Periodic_Thread(RTConf(period_w * 1000, deadline_w * 1000, wcet_w * 1000, 0, 200), &func_w);
 
     exec('M');
 
@@ -146,6 +164,7 @@ int main()
     int status_a = thread_a->join();
     int status_b = thread_b->join();
     int status_c = thread_c->join();
+    watcher->join();
 
     chrono.stop();
 
@@ -165,62 +184,71 @@ int main()
     return 0;
 }
 
-int func_a() {
-    exec('A'); // Initial logging
+int func_a()
+{
 
     // Define and initialize matrices
     generate_matrix(matrix_a, 123);
     generate_matrix(matrix_b, 123);
     generate_matrix(matrix_c, 123);
 
-    do {
+    do
+    {
         cout << "\nStart of A - Priority: " << thread_a->priority();
-        exec('a', wcet_a); // Simulating work with priority logging
         matrix_multiply(512, matrix_a, matrix_b, matrix_c, matrix_d, matrix_e);
         cout << "\nEnd of A - Priority: " << thread_a->priority() << "\n";
     } while (Periodic_Thread::wait_next());
 
-    exec('A');
-
     return 'A';
 }
 
-int func_b() {
-    exec('B'); // Initial logging
+int func_b()
+{
 
     // Define and initialize matrices
     generate_matrix(matrix_a, 123);
     generate_matrix(matrix_b, 123);
     generate_matrix(matrix_c, 123);
 
-    do {
+    do
+    {
         cout << "\nStart of B - Priority: " << thread_b->priority();
-        exec('b', wcet_b); // Simulating work with priority logging
         matrix_multiply(512, matrix_a, matrix_b, matrix_c, matrix_d, matrix_e);
         cout << "\nEnd of B - Priority: " << thread_b->priority() << "\n";
     } while (Periodic_Thread::wait_next());
 
-    exec('B');
-
     return 'B';
 }
 
-int func_c() {
-    exec('C'); // Initial logging
+int func_c()
+{
 
     // Define and initialize matrices
     generate_matrix(matrix_a, 123);
     generate_matrix(matrix_b, 123);
     generate_matrix(matrix_c, 123);
 
-    do {
+    do
+    {
         cout << "\nStart of C - Priority: " << thread_c->priority();
-        exec('c', wcet_c); // Simulating work with priority logging
         matrix_multiply(512, matrix_a, matrix_b, matrix_c, matrix_d, matrix_e);
         cout << "\nEnd of C - Priority: " << thread_c->priority() << "\n";
     } while (Periodic_Thread::wait_next());
 
-    exec('C');
-
     return 'C';
+}
+int func_w()
+{
+    exec('W');
+
+    do
+    {
+        cout << "\n Start of Watcher";
+        exec('W', wcet_c);
+        cout << "\n End of Watcher\n";
+    } while (Periodic_Thread::wait_next());
+
+    exec('W');
+
+    return 'W';
 }

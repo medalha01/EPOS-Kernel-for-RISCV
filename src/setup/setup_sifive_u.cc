@@ -12,14 +12,19 @@
 extern "C" {
     void _start();
 
-    // SETUP entry point is in .init (and not in .text), so it will be linked first and will be the first function after the ELF header in the image
-    void _entry() __attribute__ ((used, naked, section(".init")));
+    // SETUP entry point is in .init (and not in .text), so it will be linked
+    // first and will be the first function after the ELF header in the image
+    void _entry() __attribute__((used, naked, section(".init")));
     void _int_m2s() __attribute((naked, aligned(4)));
     void _setup();
 
-    // LD eliminates this variable while performing garbage collection, that's why the used attribute.
-    char __boot_time_system_info[sizeof(EPOS::S::System_Info)] __attribute__ ((used)) = "<System_Info placeholder>"; // actual System_Info will be added by mkbi!
-}
+    // LD eliminates this variable while performing garbage collection, that's
+    // why the used attribute.
+    char __boot_time_system_info[sizeof(EPOS::S::System_Info)]
+        __attribute__((used)) =
+            "<System_Info placeholder>"; // actual System_Info will be added by
+                                         // mkbi!
+    }
 
 __BEGIN_SYS
 
@@ -106,14 +111,16 @@ Setup::Setup()
 {
     si = reinterpret_cast<System_Info *>(&__boot_time_system_info);
 
-    // SETUP doesn't handle global constructors, so we need to manually initialize any object with a non-empty default constructor
+    // SETUP doesn't handle global constructors, so we need to manually
+    // initialize any object with a non-empty default constructor
     new (&kout) OStream;
     new (&kerr) OStream;
     Display::init();
     kout << endl;
     kerr << endl;
 
-    db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si) << ",sp=" << CPU::sp() << ")" << endl;
+    db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si)
+                   << ",sp=" << CPU::sp() << ")" << endl;
     db<Setup>(INF) << "Setup:si=" << *si << endl;
 
     // Print basic facts about this EPOS instance
@@ -128,6 +135,22 @@ Setup::Setup()
     // Enable paging
     enable_paging();
 
+	// NOTE: nós achamos esse valor de 267 utilizando o seguinte cálculo, 
+	// (1 / maior_valor_irq_exec_time) * frequência 
+	//
+	// onde maior_valor_irq_exec_time é a diferença em ticks do último tick
+	// para o primeiro
+	if (Traits<Timer>::FREQUENCY >= 267) {
+		db<Setup>(ERR) << "The chosen frequency is very likely to" 
+			<< " cause errors, please pick a lower one with an error margin\n";
+		Machine::panic();
+	} else if (Traits<Timer>::FREQUENCY >= 220) {
+		db<Setup>(WRN) << "The chosen frequency is technically within the limit, "
+			<< "but it is dangerously close to the upper bounds that the RISC-V"
+			<< " interruption handling can take in EPOS. Consider choosing a lower"
+			<< " one for running your application.\n";
+	} 
+	
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();
 }
@@ -671,17 +694,30 @@ void _entry() // machine mode
 
     Machine::clear_bss();
 
-    CPU::mtvec(CPU::INT_DIRECT, Memory_Map::INT_M2S);   // setup a machine mode interrupt handler to forward timer interrupts (which cannot be delegated via mideleg)
-    CPU::mideleg(CPU::SSI | CPU::STI | CPU::SEI);       // delegate supervisor interrupts to supervisor mode
-    CPU::medeleg(0xf1ff);                               // delegate all exceptions to supervisor mode but ecalls
-    CPU::mie(CPU::MSI | CPU::MTI | CPU::MEI);           // enable interrupt generation by at machine level before going into supervisor mode
-    CLINT::mtimecmp(-1ULL);                             // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
-    CPU::mstatus(CPU::MPP_S | CPU::MPIE | CPU::MXR);    // prepare jump into supervisor mode at MRET with interrupts enabled at machine level
-    CPU::mstatusc(CPU::SIE);                            // disable interrupts (they will be reenabled at Init_End)
-    CPU::sstatuss(CPU::SUM);                            // allows User Memory access in supervisor mode
+    CPU::mtvec(CPU::INT_DIRECT,
+               Memory_Map::INT_M2S); // setup a machine mode interrupt handler
+                                     // to forward timer interrupts (which
+                                     // cannot be delegated via mideleg)
+    CPU::mideleg(CPU::SSI | CPU::STI |
+                 CPU::SEI); // delegate supervisor interrupts to supervisor mode
+    CPU::medeleg(
+        0xf1ff); // delegate all exceptions to supervisor mode but ecalls
+    CPU::mie(CPU::MSI | CPU::MTI |
+             CPU::MEI);     // enable interrupt generation by at machine level
+                            // before going into supervisor mode
+    CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer
+                            // interrupt before we can setup_m2s()
+    CPU::mstatus(CPU::MPP_S | CPU::MPIE |
+                 CPU::MXR); // prepare jump into supervisor mode at MRET with
+                            // interrupts enabled at machine level
+    CPU::mstatusc(
+        CPU::SIE); // disable interrupts (they will be reenabled at Init_End)
+    CPU::sstatuss(CPU::SUM); // allows User Memory access in supervisor mode
 
-    CPU::pmpcfg0(0b11111); 				// configure PMP region 0 as (L=unlocked [0], [00], A = NAPOT [11], X [1], W [1], R [1])
-    CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1);          // comprising the whole memory space
+    CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
+                           // = NAPOT [11], X [1], W [1], R [1])
+    CPU::pmpaddr0((1ULL << MMU::LA_BITS) -
+                  1); // comprising the whole memory space
 
     CPU::mepc(CPU::Reg(&_setup));                       // entry = _setup
     CPU::mret();                                        // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
@@ -699,6 +735,7 @@ void _setup() // supervisor mode
 // Therefore, an interrupt forwarder must be installed in machine mode to catch MTI and manually trigger STI. We use RAM_TOP for this, with the code at the beginning of the last page and per-core 256 bytes stacks at the end of the same page.
 void _int_m2s()
 {
+	//unsigned int start_time = 50;
     // Save context
     ASM("       csrw    mscratch, sp            \n");
 if(Traits<CPU>::WORD_SIZE == 32) {
@@ -725,14 +762,16 @@ if(Traits<CPU>::WORD_SIZE == 32) {
 
     CPU::Reg id = CPU::mcause();
 
-    if((id & CLINT::INT_MASK) == CLINT::IRQ_MAC_TIMER) {
-        Timer::reset();                                 // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer (i.e. adjusting MTIMECMP) seems to be the only way to clear it
-        CPU::mips(CPU::STI);                            // forward desired interrupts to supervisor mode
-    } else if(id == CPU::EXC_ENVS) {
-        CPU::mipc(CPU::STI);                            // STI was handled in supervisor mode, so clear the corresponding pending bit
-        CPU::mepc(CPU::mepc() + 4);
+    if ((id & CLINT::INT_MASK) == CLINT::IRQ_MAC_TIMER) {
+      Timer::reset(); // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and
+                      // reseting the Timer (i.e. adjusting MTIMECMP) seems to
+                      // be the only way to clear it
+      CPU::mips(CPU::STI); // forward desired interrupts to supervisor mode
+    } else if (id == CPU::EXC_ENVS) {
+      CPU::mipc(CPU::STI); // STI was handled in supervisor mode, so clear the
+                           // corresponding pending bit
+      CPU::mepc(CPU::mepc() + 4);
     }
-
     // Restore context
 if(Traits<CPU>::WORD_SIZE == 32) {
     ASM("       lw       a0,  -8(sp)            \n"

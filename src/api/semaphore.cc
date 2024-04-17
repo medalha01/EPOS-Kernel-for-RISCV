@@ -16,30 +16,34 @@ Semaphore::~Semaphore()
 
 void Semaphore::p()
 {
-    db<Synchronizer>(TRC) << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
+    Thread *running_thread = Thread::running();
 
+    db<Synchronizer>(TRC)
+        << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
     begin_atomic();
     if (fdec(_value) < 1)
     {
-        Thread::periodic_critical(_lock_holder);
+        Thread::start_periodic_critical(_lock_holder);
         sleep();
     }
+    if (!_lock_holder)
+        _lock_holder = running_thread;
     end_atomic();
-
-    if (_value == 0)
-    {
-        _lock_holder = Thread::running();
-    }
 }
 
 void Semaphore::v()
 {
-    db<Synchronizer>(TRC) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
+    Thread *running_thread = Thread::running();
+
+    db<Synchronizer>(TRC)
+        << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
+
     begin_atomic();
     if (finc(_value) < 0)
         wakeup();
-    Thread::end_critical();
-
+    if (running_thread == _lock_holder)
+        _lock_holder = nullptr;
+    Thread::end_periodic_critical(running_thread);
     end_atomic();
 }
 

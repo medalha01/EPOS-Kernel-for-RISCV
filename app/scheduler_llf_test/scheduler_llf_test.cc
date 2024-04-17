@@ -2,8 +2,8 @@
 
 #include <time.h>
 #include <real-time.h>
-
 using namespace EPOS;
+
 /*
 const unsigned int iterations = 100;
 const unsigned int period_a = 100;   // ms
@@ -16,16 +16,16 @@ const unsigned int deadline_a = 100; // ms
 const unsigned int deadline_b = 80;  // ms
 const unsigned int deadline_c = 60;  // ms*/
 
-const unsigned int iterations = 250;
-const unsigned int period_a = 6;    // ms
-const unsigned int period_b = 8;    // ms
-const unsigned int period_c = 10;   // ms
-const unsigned int wcet_a = 2;      // ms
-const unsigned int wcet_b = 2;      // ms
-const unsigned int wcet_c = 3;      // ms
-const unsigned int deadline_a = 6;  // ms
-const unsigned int deadline_b = 8;  // ms
-const unsigned int deadline_c = 10; // ms
+const unsigned int iterations = 10;
+const unsigned int period_a = 50;    // ms
+const unsigned int period_b = 50;    // ms
+const unsigned int period_c = 50;   // ms
+const unsigned int wcet_a = 15;      // ms
+const unsigned int wcet_b = 15;      // ms
+const unsigned int wcet_c = 30;      // ms
+const unsigned int deadline_a = 50;  // ms
+const unsigned int deadline_b = 50;  // ms
+const unsigned int deadline_c = 50; // ms
 
 int func_a();
 int func_b();

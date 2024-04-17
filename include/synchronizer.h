@@ -64,6 +64,8 @@ public:
 
 private:
     volatile long _value;
+    Thread::Queue ResourceHolderQueue = Thread::Queue();
+
     Thread *_lock_holder;
 };
 

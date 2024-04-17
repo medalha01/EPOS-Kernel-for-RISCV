@@ -8,7 +8,7 @@ using namespace EPOS;
 long max(unsigned int a, unsigned int b, unsigned int c) { return ((a >= b) && (a >= c)) ? a : ((b >= a) && (b >= c) ? b : c); }
 
 // Global configuration constants
-const unsigned int iterations = 2;
+const unsigned int iterations = 5;
 const unsigned int periods[] = {2000, 2200, 2400};   // ms for threads A, B, C
 const unsigned int wcets[] = {500, 500, 500};        // ms for threads A, B, C
 const unsigned int deadlines[] = {2000, 2200, 2400}; // ms for threads A, B, C
@@ -118,13 +118,13 @@ int func_w()
 unsigned int my_rand(unsigned int seed)
 {
     unsigned int rand_state = seed;
-    rand_state = (1103515245 * rand_state + 12345) % 2147483648;
+    rand_state = (1103515245 * rand_state + 12345) % 21474836418;
     return rand_state;
 }
 
 void generate_matrix(int index, unsigned int seed)
 {
-    cout << "Starting Matrix Generation" << endl;
+    cout << "Starting Matrix Generation:" << chrono.read() / 1000 << endl;
     for (int i = 0; i < 12; i++)
     {
         for (int j = 0; j < 12; j++)
@@ -132,12 +132,12 @@ void generate_matrix(int index, unsigned int seed)
             matrices[index][i][j] = my_rand(seed + i + j) % 100;
         }
     }
-    cout << "Ending Matrix Generation" << endl;
+    cout << "Ending Matrix Generation" << chrono.read() / 1000 << endl;
 }
 
 void matrix_multiply(int index_a, int index_b, int index_c, int index_d, int index_e)
 {
-    cout << "Starting Matrix Multiplication" << endl;
+    cout << "Starting Matrix Multiplication" << chrono.read() / 1000 << endl;
 
     int n = 12;
     // Initialize matrices D and E
@@ -165,7 +165,7 @@ void matrix_multiply(int index_a, int index_b, int index_c, int index_d, int ind
         }
     }
 
-    cout << "Ending Matrix Multiplication" << endl;
+    cout << "Ending Matrix Multiplication " << chrono.read() / 1000 << endl;
 }
 
 void exec(char c, unsigned int time)
@@ -175,10 +175,12 @@ void exec(char c, unsigned int time)
 
     if (time)
     {
-        Microsecond end = elapsed + time;
-        while (chrono.read() / 1000 < end)
-        {
-            // This loop simulates a delay
-        }
+        for (Microsecond end = elapsed + time, last = end; end > elapsed; elapsed = chrono.read() / 1000)
+            if (last != elapsed)
+            {
+                cout << elapsed << "\t" << c << "\t Priority levels: [A=" << threads[0]->priority() << ", B=" << threads[1]->priority() << ", C=" << threads[2]->priority() << "]" << endl;
+
+                last = elapsed;
+            }
     }
 }

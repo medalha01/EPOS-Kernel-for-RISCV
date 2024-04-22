@@ -52,11 +52,11 @@ void LLF::enter_critical()
     {
         db<Thread>(WRN) << "Entering a critical zone while inside a critical zone" << endl;
     }
-    if ((_priority > MAIN) && (_priority < IDLE) && !_locked) // Não podemos dar update na IDLE, se não o avião cai.
+    if ((_priority < IDLE) && !_locked) // Não podemos dar update na IDLE, se não o avião cai.
     {
         db<Thread>(WRN) << "Thread entering critical zone priority" << endl;
 
-        _priority = 1;
+        _priority = CEILING;
         _locked = true;
     }
 }
@@ -67,7 +67,7 @@ void LLF::leave_critical()
     {
         db<Thread>(WRN) << "Trying to unlock a already unlock Thread" << endl;
     }
-    if ((_priority > MAIN) && (_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
+    if ((_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
     {
         db<Thread>(WRN) << "Removing thread from critical zone priority" << endl;
 
@@ -82,7 +82,7 @@ void LLF::leave_critical(int priority)
     {
         db<Thread>(WRN) << "Trying to unlock a already unlock Thread" << endl;
     }
-    if ((_priority > MAIN) && (_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
+    if ((_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
     {
         db<Thread>(WRN) << "Removing thread from critical zone priority" << endl;
 

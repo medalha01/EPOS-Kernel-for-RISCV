@@ -426,21 +426,45 @@ void Thread::end_critical()
 
 void Thread::start_periodic_critical(Thread *_lock_holder)
 {
-    assert(locked()); // locking handled by caller
+    // Ensure that the thread has been locked before proceeding.
+    // This check assumes that locking is managed by the calling function.
+    assert(locked());
 
     if (_lock_holder)
     {
+        // Increment the count of critical sections held by the lock holder.
+        _lock_holder->_number_of_critical_areas++;
+
+        // If the thread scheduling policy is not dynamic, update the prior priority.
+        if (!dynamic)
+        {
+            _lock_holder->_prior_priority = _lock_holder->criterion()._priority;
+        }
+
+        // Enter the critical section for the lock holder.
         _lock_holder->criterion().enter_critical();
     }
-    // unlock();
 }
 
 void Thread::end_periodic_critical(Thread *_leaving_thread)
 {
     assert(locked()); // locking handled by caller
+
     if (_leaving_thread)
     {
-        _leaving_thread->criterion().leave_critical();
+        _leaving_thread->_number_of_critical_areas--;
+
+        if (_leaving_thread->_number_of_critical_areas > 1)
+        {
+            if (dynamic)
+            {
+                _leaving_thread->criterion().leave_critical();
+            }
+            else
+            {
+                _leaving_thread->criterion().leave_critical(_leaving_thread->_prior_priority);
+            }
+        }
     }
 }
 __END_SYS

@@ -76,6 +76,21 @@ void LLF::leave_critical()
     }
 }
 
+void LLF::leave_critical(int priority)
+{
+    if (!_locked)
+    {
+        db<Thread>(WRN) << "Trying to unlock a already unlock Thread" << endl;
+    }
+    if ((_priority > MAIN) && (_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
+    {
+        db<Thread>(WRN) << "Removing thread from critical zone priority" << endl;
+
+        _locked = false;
+        _priority = priority;
+    }
+}
+
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
 template FCFS::FCFS<>(int p);
 

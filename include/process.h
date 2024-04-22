@@ -146,7 +146,7 @@ protected:
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
     int _number_of_critical_locks = 0;
-    int _previous_priority = 0
+    int _previous_priority = 0;
 };
 
 template <typename... Tn>

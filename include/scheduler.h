@@ -25,6 +25,7 @@ class Scheduling_Criterion_Common
 public:
     // Priorities
     enum : int {
+        CEILING = -2147483648 - 1,
         ISR    = -1000,
         MAIN   = -1,
         HIGH   = 0,

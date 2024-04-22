@@ -13,7 +13,7 @@ EDF::EDF(const Microsecond &d, const Microsecond &p, const Microsecond &c, unsig
 
 void EDF::update()
 {
-    if ((_priority >= PERIODIC) && (_priority < APERIODIC))
+    if ((_priority >= PERIODIC) && (_priority < APERIODIC) && !locked)
         _priority = Alarm::elapsed() + _deadline;
 }
 
@@ -24,7 +24,7 @@ void LLF::reset_init_time()
     _computed_time = 0;
     _init_time = Alarm::elapsed();
     _start_of_computation = 0;
-    _locked = false;
+    locked = false;
 }
 
 void LLF::start_calculation()
@@ -40,54 +40,9 @@ void LLF::set_calculated_time()
 
 void LLF::update()
 {
-    if ((_priority > MAIN) && (_priority < IDLE) && (!_locked)) // Não podemos dar update na IDLE, se não o avião cai.
+    if ((_priority < IDLE) && (!locked)) // Não podemos dar update na IDLE, se não o avião cai.
     {
         _priority = _deadline + _init_time - _capacity + _computed_time;
-    }
-}
-
-void LLF::enter_critical()
-{
-    if (_locked)
-    {
-        db<Thread>(WRN) << "Entering a critical zone while inside a critical zone" << endl;
-    }
-    if ((_priority < IDLE) && !_locked) // Não podemos dar update na IDLE, se não o avião cai.
-    {
-        db<Thread>(WRN) << "Thread entering critical zone priority" << endl;
-
-        _priority = CEILING;
-        _locked = true;
-    }
-}
-
-void LLF::leave_critical()
-{
-    if (!_locked)
-    {
-        db<Thread>(WRN) << "Trying to unlock a already unlock Thread" << endl;
-    }
-    if ((_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
-    {
-        db<Thread>(WRN) << "Removing thread from critical zone priority" << endl;
-
-        _locked = false;
-        update();
-    }
-}
-
-void LLF::leave_critical(int priority)
-{
-    if (!_locked)
-    {
-        db<Thread>(WRN) << "Trying to unlock a already unlock Thread" << endl;
-    }
-    if ((_priority < IDLE) && _locked) // Não podemos dar update na IDLE, se não o avião cai.
-    {
-        db<Thread>(WRN) << "Removing thread from critical zone priority" << endl;
-
-        _locked = false;
-        _priority = priority;
     }
 }
 

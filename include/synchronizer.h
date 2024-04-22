@@ -38,9 +38,6 @@ protected:
 
 protected:
     Queue _queue;
-
-private:
-    bool _hasCeiling;
 };
 
 class Mutex : protected Synchronizer_Common
@@ -54,6 +51,7 @@ public:
 
 private:
     volatile bool _locked;
+    bool _hasCeiling;
 };
 
 class Semaphore : protected Synchronizer_Common
@@ -67,6 +65,7 @@ public:
 
 private:
     volatile long _value;
+    bool _hasCeiling;
 
     Thread *_lock_holder;
 };

@@ -97,6 +97,7 @@ public:
     bool enter_critical() {return false;}
 
     bool leave_critical(){ return false;}
+    bool leave_critical(int priority){return false;}
 
     bool collect(bool end = false) { return false; }
     bool charge(bool end = false) { return true; }
@@ -236,6 +237,9 @@ public:
     void enter_critical();
 
     void leave_critical();
+    
+    void leave_critical(int priority);
+
 
     void update();
 

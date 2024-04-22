@@ -38,12 +38,15 @@ protected:
 
 protected:
     Queue _queue;
+
+private:
+    bool _hasCeiling;
 };
 
 class Mutex : protected Synchronizer_Common
 {
 public:
-    Mutex();
+    Mutex(bool = false);
     ~Mutex();
 
     void lock();
@@ -56,7 +59,7 @@ private:
 class Semaphore : protected Synchronizer_Common
 {
 public:
-    Semaphore(long v = 1);
+    Semaphore(long v = 1, bool = false);
     ~Semaphore();
 
     void p();
@@ -64,7 +67,6 @@ public:
 
 private:
     volatile long _value;
-    Thread::Queue ResourceHolderQueue = Thread::Queue();
 
     Thread *_lock_holder;
 };

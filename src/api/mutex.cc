@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-Mutex::Mutex() : _locked(false)
+Mutex::Mutex(bool useCeiling) : _locked(false), _hasCeiling(useCeiling)
 {
     db<Synchronizer>(TRC) << "Mutex() => " << this << endl;
 }
@@ -21,7 +21,8 @@ void Mutex::lock()
     begin_atomic();
     if (tsl(_locked))
         sleep();
-    Thread::start_critical();
+    if (_hasCeiling)
+        Thread::start_critical();
 
     end_atomic();
 }
@@ -35,7 +36,8 @@ void Mutex::unlock()
         _locked = false;
     else
         wakeup();
-    Thread::end_critical();
+    if (_hasCeiling)
+        Thread::end_critical();
     end_atomic();
 }
 

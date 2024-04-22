@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-Semaphore::Semaphore(long v) : _value(v)
+Semaphore::Semaphore(long value, bool useCeiling) : _value(value), _hasCeiling(useCeiling)
 {
     db<Synchronizer>(TRC) << "Semaphore(value=" << _value << ") => " << this << endl;
 }
@@ -23,7 +23,8 @@ void Semaphore::p()
     begin_atomic();
     if (fdec(_value) < 1)
     {
-        Thread::start_periodic_critical(_lock_holder);
+        if (_hasCeiling)
+            Thread::start_periodic_critical(_lock_holder);
         sleep();
     }
     if (!_lock_holder)
@@ -43,7 +44,8 @@ void Semaphore::v()
         wakeup();
     if (running_thread == _lock_holder)
         _lock_holder = nullptr;
-    Thread::end_periodic_critical(running_thread);
+    if (_hasCeiling)
+        Thread::end_periodic_critical(running_thread);
     end_atomic();
 }
 

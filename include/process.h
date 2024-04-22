@@ -96,6 +96,9 @@ public:
     void resume();
     static void start_critical();
     static void end_critical();
+    
+    
+
     static void start_periodic_critical(Thread *_lock_holder);
     static void end_periodic_critical(Thread *_leaving_thread);
 
@@ -137,11 +140,12 @@ protected:
     Queue *_waiting;
     Thread *volatile _joining;
     Queue::Element _link;
-
     static bool _not_booting;
     static volatile unsigned int _thread_count;
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
+    int _number_of_critical_areas = 0;
+    int _prior_priority = 0
 };
 
 template <typename... Tn>

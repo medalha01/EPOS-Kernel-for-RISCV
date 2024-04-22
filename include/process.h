@@ -55,6 +55,7 @@ public:
     typedef Traits<Thread>::Criterion Criterion;
     enum
     {
+        CEILING = Criterion::CEILING,
         ISR = Criterion::ISR,
         HIGH = Criterion::HIGH,
         NORMAL = Criterion::NORMAL,
@@ -99,8 +100,8 @@ public:
     
     
 
-    static void start_periodic_critical(Thread *_lock_holder);
-    static void end_periodic_critical(Thread *_leaving_thread);
+    static void start_periodic_critical(Thread *t);
+    static void end_periodic_critical(Thread *t);
 
     static Thread *volatile self() { return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1); }
     static void yield();
@@ -144,8 +145,8 @@ protected:
     static volatile unsigned int _thread_count;
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
-    int _number_of_critical_areas = 0;
-    int _prior_priority = 0
+    int _number_of_critical_locks = 0;
+    int _previous_priority = 0
 };
 
 template <typename... Tn>

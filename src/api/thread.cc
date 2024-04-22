@@ -404,66 +404,39 @@ int Thread::idle()
 
     return 0;
 }
-void Thread::start_critical()
-{
-    assert(locked());
-    Thread *t = running(); // Direct call to the protected method
-    if (t)
-    {
-        t->criterion().enter_critical();
-    }
-}
 
-void Thread::end_critical()
-{
-    assert(locked());
-    Thread *t = running(); // Direct call to the protected method
-    if (t)
-    {
-        t->criterion().leave_critical();
-    }
-}
-
-void Thread::start_periodic_critical(Thread *_lock_holder)
+void Thread::start_periodic_critical(Thread *t)
 {
     // Ensure that the thread has been locked before proceeding.
     // This check assumes that locking is managed by the calling function.
     assert(locked());
 
-    if (_lock_holder)
+    if (t)
     {
-        // Increment the count of critical sections held by the lock holder.
-        _lock_holder->_number_of_critical_areas++;
-
-        // If the thread scheduling policy is not dynamic, update the prior priority.
-        if (!dynamic)
-        {
-            _lock_holder->_prior_priority = _lock_holder->criterion()._priority;
-        }
-
-        // Enter the critical section for the lock holder.
-        _lock_holder->criterion().enter_critical();
+        t->_number_of_critical_locks++;
+        if (!dynamic && !t->criterion().locked)
+            t->_previous_priority = t->criterion()._priority;
+        t->criterion()._priority = CEILING;
+        t->criterion().locked = true;
     }
 }
 
-void Thread::end_periodic_critical(Thread *_leaving_thread)
+void Thread::end_periodic_critical(Thread *t)
 {
     assert(locked()); // locking handled by caller
 
-    if (_leaving_thread)
+    if (t)
     {
-        _leaving_thread->_number_of_critical_areas--;
-
-        if (_leaving_thread->_number_of_critical_areas > 1)
+        if (t->criterion().locked)
+            t->_number_of_critical_locks--;
+        if (t->_number_of_critical_locks < 1)
         {
+
+            t->criterion().locked = false;
             if (dynamic)
-            {
-                _leaving_thread->criterion().leave_critical();
-            }
+                t->criterion().update();
             else
-            {
-                _leaving_thread->criterion().leave_critical(_leaving_thread->_prior_priority);
-            }
+                t->criterion()._priority = t->_previous_priority;
         }
     }
 }

@@ -21,6 +21,9 @@ void Semaphore::p()
     db<Synchronizer>(TRC)
         << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
     begin_atomic();
+
+    // running_thread->_number_of_critical_locks++;
+
     if (fdec(_value) < 1)
     {
         if (_hasCeiling)
@@ -40,12 +43,14 @@ void Semaphore::v()
         << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
 
     begin_atomic();
+    // running_thread->_number_of_critical_locks--;
+    if (_hasCeiling)
+        Thread::end_periodic_critical(running_thread);
     if (finc(_value) < 0)
         wakeup();
     if (running_thread == _lock_holder)
         _lock_holder = nullptr;
-    if (_hasCeiling)
-        Thread::end_periodic_critical(running_thread);
+
     end_atomic();
 }
 

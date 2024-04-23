@@ -95,8 +95,7 @@ public:
     void pass();
     void suspend();
     void resume();
-    static void start_critical();
-    static void end_critical();
+
     
     
 

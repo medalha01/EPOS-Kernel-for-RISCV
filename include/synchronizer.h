@@ -66,6 +66,7 @@ public:
 private:
     volatile long _value;
     bool _hasCeiling;
+    Thread **resource_holders;
 
     Thread *_lock_holder;
 };

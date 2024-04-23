@@ -7,6 +7,8 @@ __BEGIN_SYS
 Semaphore::Semaphore(long value, bool useCeiling) : _value(value), _hasCeiling(useCeiling)
 {
     db<Synchronizer>(TRC) << "Semaphore(value=" << _value << ") => " << this << endl;
+    Thread *threadHolder[value] = {nullptr};
+    resource_holders = threadHolder;
 }
 
 Semaphore::~Semaphore()

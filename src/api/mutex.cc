@@ -17,12 +17,12 @@ Mutex::~Mutex()
 void Mutex::lock()
 {
     db<Synchronizer>(TRC) << "Mutex::lock(this=" << this << ")" << endl;
-
+    Thread *t = Thread::running();
     begin_atomic();
     if (tsl(_locked))
         sleep();
     if (_hasCeiling)
-        Thread::start_critical();
+        Thread::start_periodic_critical(t);
 
     end_atomic();
 }
@@ -30,14 +30,14 @@ void Mutex::lock()
 void Mutex::unlock()
 {
     db<Synchronizer>(TRC) << "Mutex::unlock(this=" << this << ")" << endl;
-
+    Thread *t = Thread::running();
     begin_atomic();
     if (_queue.empty())
         _locked = false;
     else
         wakeup();
     if (_hasCeiling)
-        Thread::end_critical();
+        Thread::end_periodic_critical(t);
     end_atomic();
 }
 

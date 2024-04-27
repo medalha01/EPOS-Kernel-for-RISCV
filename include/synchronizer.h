@@ -58,7 +58,7 @@ private:
 class Semaphore : protected Synchronizer_Common
 {
 public:
-    Semaphore(long v = 1, bool = false, bool _inherintance = false);
+    Semaphore(long v = 1, bool = false, bool _inheritance = false);
     ~Semaphore();
 
     void p();
@@ -67,7 +67,7 @@ public:
 private:
     volatile long _value;
     bool _hasCeiling;
-    bool _inherintance;
+    bool _inheritance;
     Thread **resource_holders;
     bool incrementFlag = true;
 

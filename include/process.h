@@ -99,8 +99,8 @@ public:
     
     
 
-    static void start_periodic_critical(Thread *t);
-    static void end_periodic_critical(Thread *t);
+    static void start_periodic_critical(Thread *t, bool incrementFlag);
+    static void end_periodic_critical(Thread *t, bool incrementFlag);
 
     static Thread *volatile self() { return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1); }
     static void yield();

@@ -52,6 +52,7 @@ public:
 private:
     volatile bool _locked;
     bool _hasCeiling;
+    bool incrementFlag = true;
 };
 
 class Semaphore : protected Synchronizer_Common
@@ -67,8 +68,10 @@ private:
     volatile long _value;
     bool _hasCeiling;
     Thread **resource_holders;
+    bool incrementFlag = true;
 
-    Thread *_lock_holder;
+    Thread *
+        _lock_holder;
 };
 
 // This is actually no Condition Variable

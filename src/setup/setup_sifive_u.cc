@@ -72,7 +72,7 @@ private:
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Log_Addr Log_Addr;
     //    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
-    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
+    typedef No_MMU MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
     typedef MMU::Page Page;
     typedef MMU::Page_Flags Flags;
     typedef MMU::Page_Table Page_Table;
@@ -163,7 +163,7 @@ Setup::Setup()
     call_next();
 }
 
-void Setup::setup_flat_paging()
+/*void Setup::setup_flat_paging()
 {
     db<Setup>(TRC) << "Setup::setup_flat_paging()" << endl;
 
@@ -180,7 +180,7 @@ void Setup::setup_flat_paging()
     // Free chunks (passed to MMU::init())
     si->pmm.free1_base = MMU::align_page(FREE_BASE);
     si->pmm.free1_top = MMU::align_page(FREE_TOP);
-}
+}*/
 
 void Setup::build_lm()
 {
@@ -398,7 +398,7 @@ void Setup::say_hi()
 
     kout << endl;
 }
-
+/*
 void Setup::setup_sys_pt()
 {
     db<Setup>(TRC) << "Setup::setup_sys_pt(pmm="
@@ -549,7 +549,7 @@ void Setup::setup_sys_pd()
 
     db<Setup>(INF) << "SYS_PD[" << reinterpret_cast<Page_Directory *>(si->pmm.sys_pd) << "]=" << *reinterpret_cast<Page_Directory *>(si->pmm.sys_pd) << endl;
 }
-
+*/
 void Setup::setup_m2s()
 {
     db<Setup>(TRC) << "Setup::setup_m2s()" << endl;
@@ -670,7 +670,7 @@ void Setup::load_parts()
         memcpy(Log_Addr(si->lm.app_extra), &bi[si->bm.extras_offset], si->lm.app_extra_size);
     }
 }
-
+/*
 void Setup::adjust_perms()
 {
     db<Setup>(TRC) << "Setup::adjust_perms(appc={b=" << reinterpret_cast<void *>(si->pmm.app_code) << ",s=" << MMU::pages(si->lm.app_code_size) << "}"
@@ -686,7 +686,7 @@ void Setup::adjust_perms()
     app_code_pt->reflag(MMU::pti(si->lm.app_code), MMU::pti(si->lm.app_code) + MMU::pages(si->lm.app_code_size), Flags::APPC);
     app_data_pt->reflag(MMU::pti(si->lm.app_data), MMU::pti(si->lm.app_data) + MMU::pages(si->lm.app_data_size), Flags::APPD);
 }
-
+*/
 void Setup::call_next()
 {
     // Check for next stage and obtain the entry point
@@ -709,7 +709,8 @@ using namespace EPOS::S;
 
 void _entry() // machine mode
 {
-    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
+    // typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
+    // typedef IF<Traits<CPU>::WORD_SIZE == 32, No_MMU, No_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
 
     if (CPU::mhartid() == 0) // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
         CPU::halt();
@@ -741,10 +742,10 @@ void _entry() // machine mode
         CPU::SIE);           // disable interrupts (they will be reenabled at Init_End)
     CPU::sstatuss(CPU::SUM); // allows User Memory access in supervisor mode
 
-    CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
-                           //  = NAPOT [11], X [1], W [1], R [1])
-    CPU::pmpaddr0((1ULL << MMU::LA_BITS) -
-                  1); // comprising the whole memory space
+    // CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
+    //   = NAPOT [11], X [1], W [1], R [1])
+    // CPU::pmpaddr0((1ULL << MMU::LA_BITS) -
+    //               1); // comprising the whole memory space
 
     CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
     CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)

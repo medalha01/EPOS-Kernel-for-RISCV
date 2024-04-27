@@ -6,7 +6,7 @@
 
 using namespace EPOS;
 
-Semaphore matrix_semaphore(1, true); // Semaphore to control matrix access, allows 2 threads concurrently
+Semaphore matrix_semaphore(1, true, true); // Semaphore to control matrix access, allows 2 threads concurrently
 
 long max(unsigned int a, unsigned int b, unsigned int c) { return ((a >= b) && (a >= c)) ? a : ((b >= a) && (b >= c) ? b : c); }
 

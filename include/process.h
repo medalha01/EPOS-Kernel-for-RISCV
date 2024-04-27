@@ -99,7 +99,7 @@ public:
     
     
 
-    static void start_periodic_critical(Thread *t, bool incrementFlag);
+    static void start_periodic_critical(Thread *t, bool incrementFlag, int temp_priority);
     static void end_periodic_critical(Thread *t, bool incrementFlag);
 
     static Thread *volatile self() { return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1); }

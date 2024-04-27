@@ -405,7 +405,7 @@ int Thread::idle()
     return 0;
 }
 
-void Thread::start_periodic_critical(Thread *t)
+void Thread::start_periodic_critical(Thread *t, bool incrementFlag)
 {
     // Ensure that the thread has been locked before proceeding.
     // This check assumes that locking is managed by the calling function.
@@ -413,7 +413,9 @@ void Thread::start_periodic_critical(Thread *t)
 
     if (t)
     {
-        t->_number_of_critical_locks++;
+        db<Thread>(TRC) << "Resource conflict: Raising Priority" << endl;
+        if (incrementFlag)
+            t->_number_of_critical_locks++;
         if (!dynamic && !t->criterion().locked)
             t->_previous_priority = t->criterion()._priority;
         t->criterion()._priority = CEILING;
@@ -421,20 +423,31 @@ void Thread::start_periodic_critical(Thread *t)
     }
 }
 
-void Thread::end_periodic_critical(Thread *t)
+void Thread::end_periodic_critical(Thread *t, bool incrementFlag)
 {
     assert(locked()); // locking handled by caller
 
     if (t)
     {
+
         if (t->criterion().locked)
-            t->_number_of_critical_locks--;
-        if (t->_number_of_critical_locks < 1)
         {
+            db<Thread>(TRC) << "\n Number of Critical Zones:" << t->_number_of_critical_locks << endl;
+
+            t->_number_of_critical_locks--;
+            db<Thread>(TRC) << "\n Number of Critical Zones:" << t->_number_of_critical_locks << endl;
+        }
+
+        if (t->_number_of_critical_locks < 1 && t->criterion().locked)
+        {
+            db<Thread>(TRC) << "Unlocking Zone" << endl;
 
             t->criterion().locked = false;
             if (dynamic)
+            {
+                db<Thread>(TRC) << "Resetting Priority" << endl;
                 t->criterion().update();
+            }
             else
                 t->criterion()._priority = t->_previous_priority;
         }

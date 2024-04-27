@@ -22,7 +22,8 @@ void Mutex::lock()
     if (tsl(_locked))
         sleep();
     if (_hasCeiling)
-        Thread::start_periodic_critical(t);
+        Thread::start_periodic_critical(t, incrementFlag);
+    incrementFlag = false;
 
     end_atomic();
 }
@@ -37,7 +38,9 @@ void Mutex::unlock()
     else
         wakeup();
     if (_hasCeiling)
-        Thread::end_periodic_critical(t);
+        Thread::end_periodic_critical(t, incrementFlag);
+    incrementFlag = true;
+
     end_atomic();
 }
 

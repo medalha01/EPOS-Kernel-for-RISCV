@@ -29,7 +29,11 @@ void Semaphore::p()
     if (fdec(_value) < 1)
     {
         if (_hasCeiling)
-            Thread::start_periodic_critical(_lock_holder);
+        {
+            Thread::start_periodic_critical(_lock_holder, incrementFlag);
+            incrementFlag = false;
+        }
+
         sleep();
     }
     if (!_lock_holder)
@@ -47,11 +51,12 @@ void Semaphore::v()
     begin_atomic();
     // running_thread->_number_of_critical_locks--;
     if (_hasCeiling)
-        Thread::end_periodic_critical(running_thread);
-    if (finc(_value) < 0)
-        wakeup();
+        Thread::end_periodic_critical(running_thread, incrementFlag);
     if (running_thread == _lock_holder)
         _lock_holder = nullptr;
+    if (finc(_value) < 0)
+        wakeup();
+    incrementFlag = true;
 
     end_atomic();
 }

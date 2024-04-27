@@ -118,10 +118,14 @@ class Priority : public Scheduling_Criterion_Common
     friend class _SYS::Thread;
     friend class _SYS::Periodic_Thread;
     friend class _SYS::RT_Thread;
+    friend class _SYS::Semaphore;
+    friend class _SYS::Mutex;
 
 public:
     template <typename... Tn>
-    Priority(int p = NORMAL, Tn &...an) : _priority(p) {}
+    Priority(int p = NORMAL, Tn &...an) : _priority(p)
+    {
+    }
 
     operator const volatile int() const volatile { return _priority; }
 

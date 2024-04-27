@@ -405,7 +405,7 @@ int Thread::idle()
     return 0;
 }
 
-void Thread::start_periodic_critical(Thread *t, bool incrementFlag)
+void Thread::start_periodic_critical(Thread *t, bool incrementFlag, int temp_priority)
 {
     // Ensure that the thread has been locked before proceeding.
     // This check assumes that locking is managed by the calling function.
@@ -418,7 +418,8 @@ void Thread::start_periodic_critical(Thread *t, bool incrementFlag)
             t->_number_of_critical_locks++;
         if (!dynamic && !t->criterion().locked)
             t->_previous_priority = t->criterion()._priority;
-        t->criterion()._priority = CEILING;
+        if (temp_priority < t->criterion()._priority)
+            t->criterion()._priority = temp_priority;
         t->criterion().locked = true;
     }
 }

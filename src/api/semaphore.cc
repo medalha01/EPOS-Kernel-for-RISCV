@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-Semaphore::Semaphore(long value, bool useCeiling) : _value(value), _hasCeiling(useCeiling)
+Semaphore::Semaphore(long value, bool useCeiling, bool useInherintace) : _value(value), _hasCeiling(useCeiling), _inheritance(useInherintace)
 {
     db<Synchronizer>(TRC) << "Semaphore(value=" << _value << ") => " << this << endl;
     Thread *threadHolder[value] = {nullptr};
@@ -20,17 +20,21 @@ void Semaphore::p()
 {
     Thread *running_thread = Thread::running();
 
+    int temp_priority = Thread::CEILING;
     db<Synchronizer>(TRC)
         << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
     begin_atomic();
 
-    // running_thread->_number_of_critical_locks++;
+    if (_inheritance)
+
+        temp_priority = running_thread->criterion()._priority;
 
     if (fdec(_value) < 1)
     {
+
         if (_hasCeiling)
         {
-            Thread::start_periodic_critical(_lock_holder, incrementFlag);
+            Thread::start_periodic_critical(_lock_holder, incrementFlag, temp_priority);
             incrementFlag = false;
         }
 

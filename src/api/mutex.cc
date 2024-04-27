@@ -18,11 +18,14 @@ void Mutex::lock()
 {
     db<Synchronizer>(TRC) << "Mutex::lock(this=" << this << ")" << endl;
     Thread *t = Thread::running();
+
+    int temp_priority = Thread::CEILING;
+
     begin_atomic();
     if (tsl(_locked))
         sleep();
     if (_hasCeiling)
-        Thread::start_periodic_critical(t, incrementFlag);
+        Thread::start_periodic_critical(t, incrementFlag, temp_priority);
     incrementFlag = false;
 
     end_atomic();

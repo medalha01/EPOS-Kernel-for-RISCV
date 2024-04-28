@@ -218,6 +218,8 @@ public:
 
     public:
         PT_Entry &operator[](unsigned int i) { return _entry[i]; }
+
+        // Dummy function for compilation.
         void remap(Phy_Addr addr, int from, int to, Page_Flags flags) {}
         void remap(Phy_Addr addr, int from, int to, Flags flags) {}
         void remap(Phy_Addr addr, int from, int to, Reg flags) {}

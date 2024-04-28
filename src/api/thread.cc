@@ -414,12 +414,20 @@ void Thread::start_periodic_critical(Thread *t, bool incrementFlag, int temp_pri
     if (t)
     {
         db<Thread>(TRC) << "Resource conflict: Raising Priority" << endl;
+        db<Thread>(TRC) << "\n Number of Critical Zones:" << t->_number_of_critical_locks << endl;
+
         if (incrementFlag)
             t->_number_of_critical_locks++;
         if (!dynamic && !t->criterion().locked)
             t->_previous_priority = t->criterion()._priority;
         if (temp_priority < t->criterion()._priority)
+        {
+            db<Thread>(TRC) << "Old Priority:" << t->criterion()._priority << endl;
+
             t->criterion()._priority = temp_priority;
+
+            db<Thread>(TRC) << "New Priority:" << t->criterion()._priority << endl;
+        }
         t->criterion().locked = true;
     }
 }

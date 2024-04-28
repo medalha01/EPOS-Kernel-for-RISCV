@@ -172,7 +172,6 @@ Setup::Setup()
 
 void Setup::setup_flat_paging()
 {
-    db<Thread>(TRC) << "Drauzio Vrau Nelas" << endl;
     db<Setup>(TRC) << "Setup::setup_flat_paging()" << endl;
 
     // Single-level mapping, 2 MB pages with SV32 and 1 GB pages with SV39

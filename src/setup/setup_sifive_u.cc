@@ -72,7 +72,12 @@ private:
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Log_Addr Log_Addr;
     //    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
-    typedef No_MMU MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
+    typedef IF<Traits<Machine>::supervisor == false,
+               No_MMU, // Use No_MMU if supervisor is false
+               IF<Traits<CPU>::WORD_SIZE == 32,
+                  SV32_MMU, // Use SV32_MMU for 32-bit words
+                  SV39_MMU  // Use SV39_MMU for other cases, assuming 64-bit words
+                  >::Result>::Result MMU;
     typedef MMU::Page Page;
     typedef MMU::Page_Flags Flags;
     typedef MMU::Page_Table Page_Table;
@@ -101,7 +106,6 @@ private:
     void load_parts();
     void adjust_perms();
     void call_next();
-
 private:
     char *bi;
     System_Info *si;
@@ -128,23 +132,26 @@ Setup::Setup()
     say_hi();
 
     // Configure a flat memory model for the single task in the system
-    // setup_flat_paging();
+    if (Traits<Machine>::supervisor)
+        setup_flat_paging();
 
     // Relocate the machine to supervisor interrupt forwarder
     setup_m2s();
 
     // Enable paging
-    // enable_paging();
+    if (Traits<Machine>::supervisor)
+        enable_paging();
 
-    asm volatile("li t0, 0");      // Load immediate 0 into temporary register t0
-    asm volatile("csrw satp, t0"); // Write 0 to the satp register, disabling paging
-    asm volatile("sfence.vma");
+    if (Traits<Machine>::supervisor == false)
+    {
+
+        asm volatile("li t0, 0");      // Load immediate 0 into temporary register t0
+        asm volatile("csrw satp, t0"); // Write 0 to the satp register, disabling paging
+        asm volatile("sfence.vma");
+    }
 
     // NOTE: nós achamos esse valor de 267 utilizando o seguinte cálculo,
-    // (1 / maior_valor_irq_exec_time) * frequência
-    //
-    // onde maior_valor_irq_exec_time é a diferença em ticks do último tick
-    // para o primeiro
+    // RTClock/Maior Tick
     if (Traits<Timer>::FREQUENCY >= 267)
     {
         db<Setup>(ERR) << "The chosen frequency is very likely to"
@@ -163,8 +170,9 @@ Setup::Setup()
     call_next();
 }
 
-/*void Setup::setup_flat_paging()
+void Setup::setup_flat_paging()
 {
+    db<Thread>(TRC) << "Drauzio Vrau Nelas" << endl;
     db<Setup>(TRC) << "Setup::setup_flat_paging()" << endl;
 
     // Single-level mapping, 2 MB pages with SV32 and 1 GB pages with SV39
@@ -180,7 +188,7 @@ Setup::Setup()
     // Free chunks (passed to MMU::init())
     si->pmm.free1_base = MMU::align_page(FREE_BASE);
     si->pmm.free1_top = MMU::align_page(FREE_TOP);
-}*/
+}
 
 void Setup::build_lm()
 {
@@ -349,13 +357,13 @@ void Setup::build_pmm()
     if (si->pmm.usr_mem_top <= si->lm.stp_code + si->lm.stp_code_size + si->lm.stp_data_size)
         db<Setup>(ERR) << "SETUP would have been overwritten!" << endl;
 }
-
 void Setup::say_hi()
 {
     db<Setup>(TRC) << "Setup::say_hi()" << endl;
     db<Setup>(INF) << "System_Info=" << *si << endl;
 
     kout << "This is EPOS!\n"
+ 
          << endl;
     kout << "Setting up this machine as follows: " << endl;
     kout << "  Mode:         " << ((Traits<Build>::SMOD == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::SMOD == Traits<Build>::BUILTIN) ? "built-in"
@@ -398,7 +406,6 @@ void Setup::say_hi()
 
     kout << endl;
 }
-/*
 void Setup::setup_sys_pt()
 {
     db<Setup>(TRC) << "Setup::setup_sys_pt(pmm="
@@ -549,7 +556,6 @@ void Setup::setup_sys_pd()
 
     db<Setup>(INF) << "SYS_PD[" << reinterpret_cast<Page_Directory *>(si->pmm.sys_pd) << "]=" << *reinterpret_cast<Page_Directory *>(si->pmm.sys_pd) << endl;
 }
-*/
 void Setup::setup_m2s()
 {
     db<Setup>(TRC) << "Setup::setup_m2s()" << endl;
@@ -571,10 +577,6 @@ void Setup::enable_paging()
 
     // Flush TLB to ensure we've got the right memory organization
     MMU::flush_tlb();
-
-    asm volatile("li t0, 0");      // Load immediate 0 into temporary register t0
-    asm volatile("csrw satp, t0"); // Write 0 to the satp register, disabling paging
-    asm volatile("sfence.vma");
 
     if (Traits<Setup>::hysterically_debugged)
     {
@@ -670,7 +672,7 @@ void Setup::load_parts()
         memcpy(Log_Addr(si->lm.app_extra), &bi[si->bm.extras_offset], si->lm.app_extra_size);
     }
 }
-/*
+
 void Setup::adjust_perms()
 {
     db<Setup>(TRC) << "Setup::adjust_perms(appc={b=" << reinterpret_cast<void *>(si->pmm.app_code) << ",s=" << MMU::pages(si->lm.app_code_size) << "}"
@@ -686,7 +688,7 @@ void Setup::adjust_perms()
     app_code_pt->reflag(MMU::pti(si->lm.app_code), MMU::pti(si->lm.app_code) + MMU::pages(si->lm.app_code_size), Flags::APPC);
     app_data_pt->reflag(MMU::pti(si->lm.app_data), MMU::pti(si->lm.app_data) + MMU::pages(si->lm.app_data_size), Flags::APPD);
 }
-*/
+
 void Setup::call_next()
 {
     // Check for next stage and obtain the entry point
@@ -712,6 +714,13 @@ void _entry() // machine mode
     // typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
     // typedef IF<Traits<CPU>::WORD_SIZE == 32, No_MMU, No_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
 
+    typedef IF<Traits<Machine>::supervisor == false,
+               No_MMU, // Use No_MMU if supervisor is false
+               IF<Traits<CPU>::WORD_SIZE == 32,
+                  SV32_MMU, // Use SV32_MMU for 32-bit words
+                  SV39_MMU  // Use SV39_MMU for other cases, assuming 64-bit words
+                  >::Result>::Result MMU;
+
     if (CPU::mhartid() == 0) // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
         CPU::halt();
 
@@ -735,18 +744,29 @@ void _entry() // machine mode
                             // before going into supervisor mode
     CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer
                             // interrupt before we can setup_m2s()
-    CPU::mstatus(CPU::MPP_M | CPU::MPIE |
-                 CPU::MXR); // prepare jump into supervisor mode at MRET with
-                            // interrupts enabled at machine level
+
+    if (Traits<Machine>::supervisor)
+    {
+        CPU::mstatus(CPU::MPP_S | CPU::MPIE |
+                     CPU::MXR);
+    } // prepare jump into supervisor mode at MRET with
+      // interrupts enabled at machine level
+    else
+    {
+        CPU::mstatus(CPU::MPP_M | CPU::MPIE |
+                     CPU::MXR);
+    };
     CPU::mstatusc(
         CPU::SIE);           // disable interrupts (they will be reenabled at Init_End)
     CPU::sstatuss(CPU::SUM); // allows User Memory access in supervisor mode
+    if (Traits<Machine>::supervisor)
+    {
 
-    // CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
-    //   = NAPOT [11], X [1], W [1], R [1])
-    // CPU::pmpaddr0((1ULL << MMU::LA_BITS) -
-    //               1); // comprising the whole memory space
-
+        CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
+        //   = NAPOT [11], X [1], W [1], R [1])
+        CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1);
+        //               1); // comprising the whole memory space
+    };
     CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
     CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
 }

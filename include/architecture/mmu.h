@@ -13,7 +13,7 @@ __BEGIN_SYS
 // * A Page_Directory (PD), which is the higher level of the paging hierarchy, associated to an Address_Space via a Directory;
 // * A viable size Page_Table (PT), which is the lower level of the paging hierarchy, associated with a Segment via a Chunk;
 // * An eventual Attacher (AT), which comprises all the intermediate levels of the paging hierarchy (non existent for two-level paging, second level for three-level paging, second and third levels for four-level paging).
-template<unsigned int PD_BITS, unsigned int PT_BITS, unsigned int OFFSET_BITS, unsigned int AT_BITS = 0>
+template <unsigned int PD_BITS, unsigned int PT_BITS, unsigned int OFFSET_BITS, unsigned int AT_BITS = 0>
 class MMU_Common
 {
 protected:
@@ -27,7 +27,7 @@ protected:
 
 public:
     // Address Constants
-    static const unsigned long LA_BITS  = OFFSET_BITS + PT_BITS + AT_BITS + PD_BITS;
+    static const unsigned long LA_BITS = OFFSET_BITS + PT_BITS + AT_BITS + PD_BITS;
     static const unsigned long PT_SHIFT = OFFSET_BITS;
     static const unsigned long AT_SHIFT = OFFSET_BITS + PT_BITS;
     static const unsigned long PD_SHIFT = OFFSET_BITS + PT_BITS + AT_BITS;
@@ -57,43 +57,72 @@ public:
     class Flags
     {
     public:
-        enum : Reg {
-            PRE  = 1 << 0,  // Present
-            RD   = 1 << 1,  // Readable
-            WR   = 1 << 2,  // Writable
-            EX   = 1 << 3,  // Executable
-            USR  = 1 << 4,  // Access Control (0=supervisor, 1=user)
-            CD   = 1 << 5,  // Cache disable (0=cacheable, 1=non-cacheable)
-            CWT  = 1 << 6,  // Cache mode (0=write-back, 1=write-through)
-            AC   = 1 << 7,  // Accessed
-            DT   = 1 << 8,  // Dirty
-            IO   = 1 << 11, // Memory Mapped I/O (0=memory, 1=I/O)
-            CT   = 1 << 12, // Contiguous (0=non-contiguous, 1=contiguous)
-            SPE  = 1 << 13,
+        enum : Reg
+        {
+            PRE = 1 << 0, // Present
+            RD = 1 << 1,  // Readable
+            WR = 1 << 2,  // Writable
+            EX = 1 << 3,  // Executable
+            USR = 1 << 4, // Access Control (0=supervisor, 1=user)
+            CD = 1 << 5,  // Cache disable (0=cacheable, 1=non-cacheable)
+            CWT = 1 << 6, // Cache mode (0=write-back, 1=write-through)
+            AC = 1 << 7,  // Accessed
+            DT = 1 << 8,  // Dirty
+            IO = 1 << 11, // Memory Mapped I/O (0=memory, 1=I/O)
+            CT = 1 << 12, // Contiguous (0=non-contiguous, 1=contiguous)
+            SPE = 1 << 13,
             SYSC = (PRE | RD | EX),
             SYSD = (PRE | RD | WR),
             APPC = (PRE | RD | EX | USR),
             APPD = (PRE | RD | WR | USR),
-            DMA  = (PRE | RD | WR | CD | CT)
+            DMA = (PRE | RD | WR | CD | CT)
         };
 
     public:
         Flags() {}
-        Flags(Reg f): _flags(f) {}
-        Flags(const Flags & f): _flags(f._flags) {}
+        Flags(Reg f) : _flags(f) {}
+        Flags(const Flags &f) : _flags(f._flags) {}
 
         operator Reg() const { return _flags; }
 
-        friend OStream & operator<<(OStream & os, const Flags & f) {
-            if(f._flags & PRE) os << 'P'; else os << ' ';
-            if(f._flags & RD)  os << 'R'; else os << ' ';
-            if(f._flags & WR)  os << 'W'; else os << ' ';
-            if(f._flags & EX)  os << 'X'; else os << ' ';
-            if(f._flags & USR) os << 'U'; else os << ' ';
-            if(f._flags & CD)  os << 'C'; else os << ' ';
-            if(f._flags & AC)  os << 'A'; else os << ' ';
-            if(f._flags & DT)  os << 'D'; else os << ' ';
-            if(f._flags & SPE) os << 'S'; else os << ' ';
+        friend OStream &operator<<(OStream &os, const Flags &f)
+        {
+            if (f._flags & PRE)
+                os << 'P';
+            else
+                os << ' ';
+            if (f._flags & RD)
+                os << 'R';
+            else
+                os << ' ';
+            if (f._flags & WR)
+                os << 'W';
+            else
+                os << ' ';
+            if (f._flags & EX)
+                os << 'X';
+            else
+                os << ' ';
+            if (f._flags & USR)
+                os << 'U';
+            else
+                os << ' ';
+            if (f._flags & CD)
+                os << 'C';
+            else
+                os << ' ';
+            if (f._flags & AC)
+                os << 'A';
+            else
+                os << ' ';
+            if (f._flags & DT)
+                os << 'D';
+            else
+                os << ' ';
+            if (f._flags & SPE)
+                os << 'S';
+            else
+                os << ' ';
             return os;
         }
 
@@ -102,7 +131,13 @@ public:
     };
 
     // Page types
-    enum Page_Type {PG, PT, AT, PD};
+    enum Page_Type
+    {
+        PG,
+        PT,
+        AT,
+        PD
+    };
 
 public:
     // Functions to calculate quantities
@@ -123,12 +158,12 @@ public:
     constexpr static unsigned long pdi(Log_Addr addr) { return (addr >> PD_SHIFT) & (PD_ENTRIES - 1); }
 
     constexpr static Log_Addr align_page(Log_Addr addr) { return (addr + sizeof(Page) - 1) & ~(sizeof(Page) - 1); }
-    constexpr static Log_Addr align_segment(Log_Addr addr) { return (addr + PT_ENTRIES * sizeof(Page) - 1) &  ~(PT_ENTRIES * sizeof(Page) - 1); }
+    constexpr static Log_Addr align_segment(Log_Addr addr) { return (addr + PT_ENTRIES * sizeof(Page) - 1) & ~(PT_ENTRIES * sizeof(Page) - 1); }
 
     constexpr static Log_Addr directory_bits(Log_Addr addr) { return (addr & ~((1 << PD_BITS) - 1)); }
 };
 
-class No_MMU: public MMU_Common<0, 0, 0>
+class No_MMU : public MMU_Common<0, 0, 0>
 {
     friend class CPU;
     friend class Setup;
@@ -138,14 +173,60 @@ private:
 
 public:
     // Page Flags
-    typedef Flags Page_Flags;
+    class Page_Flags
+    {
+    public:
+        enum : Reg
+        {
+            V = 1 << 0,   // Valid
+            R = 1 << 1,   // Readable
+            W = 1 << 2,   // Writable
+            X = 1 << 3,   // Executable
+            U = 1 << 4,   // User accessible
+            G = 1 << 5,   // Global (mapped in multiple PTs)
+            A = 1 << 6,   // Accessed
+            D = 1 << 7,   // Dirty
+            CT = 1 << 8,  // Contiguous (reserved for use by supervisor RSW)
+            MIO = 1 << 9, // I/O (reserved for use by supervisor RSW)
 
+            IAD = (Traits<Build>::MODEL == Traits<Build>::SiFive_U) ? A | D : 0, // SiFive-U RV64 MMU can't handle A and D and requires it to be set
+
+            APP = (V | R | W | X | U | IAD),
+            APPC = (V | R | X | U | IAD),
+            APPD = (V | R | W | U | IAD),
+            SYS = (V | R | W | X | IAD),
+            SYSC = (V | R | X | IAD),
+            SYSD = (V | R | W | IAD),
+            IO = (SYSD | MIO),
+            DMA = (SYSD | CT),
+            MASK = (1 << 10) - 1,
+
+            PT = V,
+            PD = V,
+
+            FLAT_MEM_PD = SYS,
+        };
+    };
     // Page_Table
-    class Page_Table {
-        friend OStream & operator<<(OStream & os, Page_Table & pt) {
+    class Page_Table
+    {
+        friend OStream &operator<<(OStream &os, Page_Table &pt)
+        {
             os << "{}";
             return os;
         }
+
+    public:
+        PT_Entry &operator[](unsigned int i) { return _entry[i]; }
+        void remap(Phy_Addr addr, int from, int to, Page_Flags flags) {}
+        void remap(Phy_Addr addr, int from, int to, Flags flags) {}
+        void remap(Phy_Addr addr, int from, int to, Reg flags) {}
+        void reflag(int from, int to, Page_Flags flags) {}
+        void reflag(long unsigned int, long unsigned int, Page_Flags flag) {}
+        void reflag(long unsigned int, long unsigned int, Flags flag) {}
+
+    private:
+        PT_Entry _entry[PT_ENTRIES];
     };
 
     // Chunk (for Segment)
@@ -153,21 +234,25 @@ public:
     {
     public:
         Chunk() {}
-        Chunk(const Chunk & c): _free(false), _phy_addr(c._phy_addr), _bytes(c._bytes), _flags(c._flags) {} // avoid freeing memory when temporaries are created
-        Chunk(unsigned long bytes, Flags flags, Color color = WHITE): _free(true), _phy_addr(alloc(bytes)), _bytes(bytes), _flags(flags) {}
-        Chunk(Phy_Addr phy_addr, unsigned long bytes, Flags flags):  _free(false), _phy_addr(phy_addr), _bytes(bytes), _flags(flags) {}
-        Chunk(Phy_Addr pt, unsigned int from, unsigned int to, Flags flags):_free(false), _phy_addr(0), _bytes(to - from), _flags(flags) {}
-        Chunk(Phy_Addr pt, unsigned int from, unsigned int to, Flags flags, Phy_Addr phy_addr): _free(false), _phy_addr(phy_addr), _bytes(to - from), _flags(flags) {}
+        Chunk(const Chunk &c) : _free(false), _phy_addr(c._phy_addr), _bytes(c._bytes), _flags(c._flags) {} // avoid freeing memory when temporaries are created
+        Chunk(unsigned long bytes, Flags flags, Color color = WHITE) : _free(true), _phy_addr(alloc(bytes)), _bytes(bytes), _flags(flags) {}
+        Chunk(Phy_Addr phy_addr, unsigned long bytes, Flags flags) : _free(false), _phy_addr(phy_addr), _bytes(bytes), _flags(flags) {}
+        Chunk(Phy_Addr pt, unsigned int from, unsigned int to, Flags flags) : _free(false), _phy_addr(0), _bytes(to - from), _flags(flags) {}
+        Chunk(Phy_Addr pt, unsigned int from, unsigned int to, Flags flags, Phy_Addr phy_addr) : _free(false), _phy_addr(phy_addr), _bytes(to - from), _flags(flags) {}
 
-        ~Chunk() { if(_free) free(_phy_addr, _bytes); }
+        ~Chunk()
+        {
+            if (_free)
+                free(_phy_addr, _bytes);
+        }
 
         unsigned int pts() const { return 0; }
         Flags flags() const { return _flags; }
-        Page_Table * pt() const { return 0; }
+        Page_Table *pt() const { return 0; }
         unsigned long size() const { return _bytes; }
         void reflag(Flags flags) { _flags = flags; }
         Phy_Addr phy_address() const { return _phy_addr; } // always CT
-        long resize(unsigned long amount) { return 0; } // no resize in CT
+        long resize(unsigned long amount) { return 0; }    // no resize in CT
 
     private:
         bool _free;
@@ -184,29 +269,30 @@ public:
     {
     public:
         Directory() {}
-        Directory(Page_Directory * pd) {}
+        Directory(Page_Directory *pd) {}
 
-        Page_Table * pd() const { return 0; }
+        Page_Table *pd() const { return 0; }
 
         void activate() {}
 
-        Log_Addr attach(const Chunk & chunk) { return chunk.phy_address(); }
-        Log_Addr attach(const Chunk & chunk, Log_Addr addr) { return (addr == chunk.phy_address())? addr : Log_Addr(false); }
-        void detach(const Chunk & chunk) {}
-        void detach(const Chunk & chunk, Log_Addr addr) {}
+        Log_Addr attach(const Chunk &chunk) { return chunk.phy_address(); }
+        Log_Addr attach(const Chunk &chunk, Log_Addr addr) { return (addr == chunk.phy_address()) ? addr : Log_Addr(false); }
+        void detach(const Chunk &chunk) {}
+        void detach(const Chunk &chunk, Log_Addr addr) {}
 
         Phy_Addr physical(Log_Addr addr) { return addr; }
     };
 
     // DMA_Buffer (straightforward without paging)
-    class DMA_Buffer: public Chunk
+    class DMA_Buffer : public Chunk
     {
     public:
-        DMA_Buffer(unsigned long s): Chunk(s, Flags::DMA) {}
+        DMA_Buffer(unsigned long s) : Chunk(s, Flags::DMA) {}
 
         Log_Addr log_address() const { return phy_address(); }
 
-        friend OStream & operator<<(OStream & os, const DMA_Buffer & b) {
+        friend OStream &operator<<(OStream &os, const DMA_Buffer &b)
+        {
             os << "{phy=" << b.phy_address() << ",log=" << b.log_address() << ",size=" << b.size() << ",flags=" << b.flags() << "}";
             return os;
         }
@@ -216,10 +302,14 @@ public:
     class Translation
     {
     public:
-        Translation(Log_Addr addr, bool pt = false, Page_Directory * pd = 0): _addr(addr) {}
+        Translation(Log_Addr addr, bool pt = false, Page_Directory *pd = 0) : _addr(addr) {}
 
-        friend OStream & operator<<(OStream & os, const Translation & t) {
-            os << "{addr=" << static_cast<void *>(t._addr) << ",pd=0" << ",pd[???]=0" << ",pt[???]=0" << ",*addr=" << hex << *static_cast<unsigned int *>(t._addr) << "}";
+        friend OStream &operator<<(OStream &os, const Translation &t)
+        {
+            os << "{addr=" << static_cast<void *>(t._addr) << ",pd=0"
+               << ",pd[???]=0"
+               << ",pt[???]=0"
+               << ",*addr=" << hex << *static_cast<unsigned int *>(t._addr) << "}";
             return os;
         }
 
@@ -230,11 +320,13 @@ public:
 public:
     No_MMU() {}
 
-    static Phy_Addr alloc(unsigned long bytes = 1, Color color = WHITE) {
+    static Phy_Addr alloc(unsigned long bytes = 1, Color color = WHITE)
+    {
         Phy_Addr phy(false);
-        if(bytes) {
-            List::Element * e = _free.search_decrementing(bytes);
-            if(e)
+        if (bytes)
+        {
+            List::Element *e = _free.search_decrementing(bytes);
+            if (e)
                 phy = reinterpret_cast<unsigned long>(e->object()) + e->size();
             else
                 db<MMU>(ERR) << "MMU::alloc() failed!" << endl;
@@ -244,31 +336,34 @@ public:
         return phy;
     };
 
-    static Phy_Addr calloc(unsigned long bytes = 1, Color color = WHITE) {
+    static Phy_Addr calloc(unsigned long bytes = 1, Color color = WHITE)
+    {
         Phy_Addr phy = alloc(bytes);
         memset(phy, 0, bytes);
         return phy;
     }
 
-    static void free(Phy_Addr addr, unsigned long n = 1) {
+    static void free(Phy_Addr addr, unsigned long n = 1)
+    {
         db<MMU>(TRC) << "MMU::free(addr=" << addr << ",n=" << n << ")" << endl;
 
         // No unaligned addresses if the CPU doesn't support it
         assert(Traits<CPU>::unaligned_memory_access || !(addr % (Traits<CPU>::WORD_SIZE / 8)));
 
         // Free blocks must be large enough to contain a list element
-        assert(n > sizeof (List::Element));
+        assert(n > sizeof(List::Element));
 
-        if(addr && n) {
-            List::Element * e = new (addr) List::Element(addr, n);
-            List::Element * m1, * m2;
+        if (addr && n)
+        {
+            List::Element *e = new (addr) List::Element(addr, n);
+            List::Element *m1, *m2;
             _free.insert_merging(e, &m1, &m2);
         }
     }
 
     static unsigned long allocable(Color color = WHITE) { return _free.head() ? _free.head()->size() : 0; }
 
-    static Page_Directory * volatile current() { return 0; }
+    static Page_Directory *volatile current() { return 0; }
 
     static Phy_Addr physical(Log_Addr addr) { return addr; }
 

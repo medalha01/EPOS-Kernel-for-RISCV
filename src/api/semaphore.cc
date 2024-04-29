@@ -31,7 +31,7 @@ void Semaphore::p()
 
     if (fdec(_value) < 1)
     {
-
+        _addResource(running_thread, &waiting_threads);
         if (_hasCeiling)
         {
             Thread::start_periodic_critical(_lock_holder, incrementFlag, temp_priority);
@@ -39,7 +39,10 @@ void Semaphore::p()
         }
 
         sleep();
+        _removeResource(running_thread, &waiting_threads);
     }
+    _addResource(running_thread, &resource_holder_list);
+
     if (!_lock_holder)
         _lock_holder = running_thread;
     end_atomic();
@@ -62,7 +65,30 @@ void Semaphore::v()
         wakeup();
     incrementFlag = true;
 
+    _removeResource(running_thread, &resource_holder_list);
+
     end_atomic();
+}
+
+void Semaphore::_addResource(Thread *t, List<Thread, List_Elements::Doubly_Linked<Thread>> *list)
+{
+    if (t)
+    {
+
+        List_Elements::Doubly_Linked<Thread> *rt_object = new List_Elements::Doubly_Linked<Thread>(t);
+        list->insert(rt_object);
+    }
+}
+
+void Semaphore::_removeResource(Thread *t, List<Thread, List_Elements::Doubly_Linked<Thread>> *list)
+{
+    if (t)
+    {
+
+        List_Elements::Doubly_Linked<Thread> *rt_object = list->remove(t);
+        if (rt_object)
+            delete rt_object;
+    }
 }
 
 __END_SYS

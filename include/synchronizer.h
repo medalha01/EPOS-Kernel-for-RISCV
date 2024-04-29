@@ -71,18 +71,20 @@ public:
 private:
     void _addResource(Thread *, List<Thread, List_Elements::Doubly_Linked<Thread>> *);
     void _removeResource(Thread *, List<Thread, List_Elements::Doubly_Linked<Thread>> *);
+    Thread *_getHighestPriorityThread(List<Thread, List_Elements::Doubly_Linked<Thread>> *, bool);
 
 private:
     volatile long _value;
     bool _hasCeiling;
     bool _inheritance;
-    Thread **resource_holders;
     bool incrementFlag = true;
+
     List<Thread, List_Elements::Doubly_Linked<Thread>> resource_holder_list;
     List<Thread, List_Elements::Doubly_Linked<Thread>> waiting_threads;
 
     Thread *
         _lock_holder;
+    Thread *_most_urgent_in_await;
 };
 
 // This is actually no Condition Variable

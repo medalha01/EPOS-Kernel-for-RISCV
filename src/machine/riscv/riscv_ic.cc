@@ -18,6 +18,8 @@ __BEGIN_SYS
 PLIC::Reg32 PLIC::_claimed;
 IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 CLINT::Reg64 IC::irq_exec_highest_time = 0;
+CLINT::Reg64 IC::irq_iter_sum = 0;
+int IC::n_measures = 0;
 
 void IC::entry()
 {
@@ -70,7 +72,7 @@ void IC::dispatch(unsigned int start)
 
   db<IC, System>(WRN) << "highest time: " << IC::irq_exec_highest_time << endl;
 
-  if (id >= EXCS) // TODO: learn
+  if (id >= EXCS) 
     CPU::fr(0);   // tell CPU::Context::pop(true) not to increment PC since it is automatically incremented for hardware interrupts
 }
 

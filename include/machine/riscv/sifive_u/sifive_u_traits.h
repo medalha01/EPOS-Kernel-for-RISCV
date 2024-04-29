@@ -22,6 +22,7 @@ public:
 
     // RISC-V mode for library
     static const bool supervisor = false;                                                        // Run EPOS library in supervisor mode
+																								 
 
     // CPU numbering
     //static const unsigned long CPU_OFFSET       = supervisor ? 1 : 0;                           // We skip core zero, which is a E CPU without MMU
@@ -98,7 +99,8 @@ template <> struct Traits<Timer>: public Traits<Machine_Common>
     // choice must respect the scheduler time-slice, i. e., it must be higher
     // than the scheduler invocation frequency.
     //static const long FREQUENCY = 100; // Hz
-    static const long FREQUENCY = 200; // Hz
+    static const long FREQUENCY = 100; // Hz
+	static const bool profiled = false;
 };
 
 template <> struct Traits<UART>: public Traits<Machine_Common>

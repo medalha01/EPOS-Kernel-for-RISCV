@@ -151,22 +151,41 @@ Setup::Setup()
         asm volatile("sfence.vma");
     }
 
-    // NOTE: nós achamos esse valor de 267 utilizando o seguinte cálculo,
-    // RTClock/Maior Tick
-    if (Traits<Timer>::FREQUENCY >= 267)
-    {
-        db<Setup>(ERR) << "The chosen frequency is very likely to"
-                       << " cause errors, please pick a lower one with an error margin\n";
-        Machine::panic();
-    }
-    else if (Traits<Timer>::FREQUENCY >= 220)
-    {
-        db<Setup>(WRN) << "The chosen frequency is technically within the limit, "
-                       << "but it is dangerously close to the upper bounds that the RISC-V"
-                       << " interruption handling can take in EPOS. Consider choosing a lower"
-                       << " one for running your application.\n";
-    }
+	if (Traits<Timer>::profiled) {
+		CLINT::Reg64 avg_irq_ticks = IC::average_irq_handle_time();
 
+		// It is possible (albeit unlikely) that the average interruption request handle time is going to be zero. 
+		// This may happen when the frequency is at an idoneous enough value that no 
+		// interruptions are triggered during the setup or before, such that if a
+		// user has the `profiled` flag enabled, the subsequent code will be problematic 
+		long avg_frequency_needed = (avg_irq_ticks > 0) 
+			? Traits<Machine>::RTCCLK / avg_irq_ticks 
+			: 267; // 267 is the fallback value, calculated by hand, using RTCCLK / highest_handle_time
+
+		db<Setup>(WRN) << "average frequency needed = " << avg_frequency_needed << endl;
+
+		if (Traits<Timer>::FREQUENCY >= avg_frequency_needed + 50) { // some margin of error
+		  db<Setup>(ERR) << "The chosen frequency is very likely to"
+						 << " cause errors, please pick a lower one "
+							"with an error margin\n";
+		  Machine::panic();
+		} else if (Traits<Timer>::FREQUENCY >= avg_frequency_needed - 50) { // margin of error goes both ways for safety
+		  db<Setup>(WRN) << "The chosen frequency is technically "
+							"within the limit, "
+						 << "but it is dangerously close to the upper "
+							"bounds that the RISC-V"
+						 << " interruption handling can take in EPOS. "
+							"Consider choosing a lower"
+						 << " one for running your application.\n";
+		} else {
+		  db<Setup>(WRN) << "the avg_frequency_needed at setup is "
+						 << avg_frequency_needed
+						 << ", which is enough, it seems... "
+						 << "the highest irq_exec_time is "
+						 << IC::highest_irq_time() << endl;
+		}
+	}
+	
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();
 }

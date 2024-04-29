@@ -159,9 +159,10 @@ private:
     typedef CPU::Reg Reg;
 
     static const bool supervisor = Traits<Machine>::supervisor;
-	//static CLINT::Reg64 irq_exec_time_metric;
 	static CLINT::Reg64 irq_exec_highest_time;
-	//static int irq_counter;
+	static CLINT::Reg64 irq_iter_sum; // Sum of all measured irq_exec_times thus far
+	static int n_measures; // number of times irq handler was called 
+						   // --> useful for calculating the average later on
 
 public:
     static const unsigned int EXCS = CPU::EXCEPTIONS;
@@ -218,23 +219,28 @@ public:
         _int_vector[i] = h;
     }
 
-	static void update_if_highest_irq_time(CLINT::Reg64 cur_time) {
+	inline static void update_if_highest_irq_time(CLINT::Reg64 cur_time) {
 		if (cur_time > irq_exec_highest_time) {
 			irq_exec_highest_time = cur_time;
 		}
 	}
 
-	//static void increase_irq_counter() {
-	//	irq_counter++;
-	//}
+	static CLINT::Reg64 highest_irq_time() {
+		return irq_exec_highest_time;
+	}
 
-	//static void irq_exec_time(CLINT::Reg64 start) {
-	//	irq_exec_time_metric = CLINT::mtime() - start;
-	//}
+	static void record_irq_time(CLINT::Reg64 cur_time) {
+		n_measures++;
+		irq_iter_sum += cur_time;
+		update_if_highest_irq_time(cur_time);	
+	}
 
-	//static CLINT::Reg64 irq_exec_time() {
-	//	return irq_exec_time_metric;
-	//}
+	static CLINT::Reg64 average_irq_handle_time() {
+		if (n_measures <= 0) {
+			return irq_exec_highest_time;
+		}
+		return (long)(irq_iter_sum / n_measures);
+	}
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;

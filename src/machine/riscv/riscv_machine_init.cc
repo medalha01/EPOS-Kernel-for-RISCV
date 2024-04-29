@@ -7,8 +7,7 @@ __BEGIN_SYS
 void Machine::pre_init(System_Info * si)
 {
     CPU::tvec(CPU::INT_DIRECT, &IC::entry);
-
-    Display::init();
+    Display::init(); 
 
     db<Init, Machine>(TRC) << "Machine::pre_init()" << endl;
 }

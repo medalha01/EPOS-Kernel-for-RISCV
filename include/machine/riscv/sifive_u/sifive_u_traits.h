@@ -21,10 +21,12 @@ public:
     static const unsigned long NOT_USED         = -1UL;
 
     // RISC-V mode for library
-    static const bool supervisor = true;                                                        // Run EPOS library in supervisor mode
+    static const bool supervisor = false;                                                        // Run EPOS library in supervisor mode
+																								 
 
     // CPU numbering
-    static const unsigned long CPU_OFFSET       = supervisor ? 1 : 0;                           // We skip core zero, which is a E CPU without MMU
+    //static const unsigned long CPU_OFFSET       = supervisor ? 1 : 0;                           // We skip core zero, which is a E CPU without MMU
+    static const unsigned long CPU_OFFSET       = 1;                           // We skip core zero, which is a E CPU without MMU
 
     // Clocks
     static const unsigned long CLOCK            = 1000000000;                                   // CORECLK
@@ -62,7 +64,9 @@ public:
 
 template <> struct Traits<IC>: public Traits<Machine_Common>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
+    static const bool trace = true;
+    static const bool warning = true;
 
     static const unsigned int PLIC_IRQS = 54;           // IRQ0 is used by PLIC to signalize that there is no interrupt being serviced or pending
 
@@ -94,7 +98,9 @@ template <> struct Traits<Timer>: public Traits<Machine_Common>
     // Meaningful values for the timer frequency range from 100 to 10000 Hz. The
     // choice must respect the scheduler time-slice, i. e., it must be higher
     // than the scheduler invocation frequency.
-    static const long FREQUENCY = 1000; // Hz
+    //static const long FREQUENCY = 100; // Hz
+    static const long FREQUENCY = 100; // Hz
+	static const bool profiled = false;
 };
 
 template <> struct Traits<UART>: public Traits<Machine_Common>

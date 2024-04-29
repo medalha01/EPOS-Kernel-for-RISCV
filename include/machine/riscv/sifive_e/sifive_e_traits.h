@@ -59,7 +59,7 @@ public:
 
 template <> struct Traits<IC>: public Traits<Machine_Common>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged =false;
 
     static const unsigned int PLIC_IRQS = 53;           // IRQ0 is used by PLIC to signalize that there is no interrupt being serviced or pending
 

@@ -20,35 +20,40 @@ class Scheduling_Criterion_Common
     friend class _SYS::Thread;
     friend class _SYS::Periodic_Thread;
     friend class _SYS::RT_Thread;
-    friend class _SYS::Clerk<System>;         // for _statistics
+    friend class _SYS::Clerk<System>; // for _statistics
 
 public:
     // Priorities
-    enum : int {
-        ISR    = -1000,
-        MAIN   = -1,
-        HIGH   = 0,
+    enum : int
+    {
+        CEILING = -2147483648 + 1,
+        ISR = -1000,
+        MAIN = -1,
+        HIGH = 0,
         NORMAL = (unsigned(1) << (sizeof(int) * 8 - 2)) - 1,
-        LOW    = (unsigned(1) << (sizeof(int) * 8 - 1)) - 2,
-        IDLE   = (unsigned(1) << (sizeof(int) * 8 - 1)) - 1
+        LOW = (unsigned(1) << (sizeof(int) * 8 - 1)) - 2,
+        IDLE = (unsigned(1) << (sizeof(int) * 8 - 1)) - 1
     };
 
     // Constructor helpers
-    enum : unsigned int {
-        SAME        = 0,
-        NOW         = 0,
-        UNKNOWN     = 0,
-        ANY         = -1U
+    enum : unsigned int
+    {
+        SAME = 0,
+        NOW = 0,
+        UNKNOWN = 0,
+        ANY = -1U
     };
 
     // Policy types
-    enum : int {
-        PERIODIC    = HIGH,
-        APERIODIC   = NORMAL,
-        SPORADIC    = NORMAL
+    enum : int
+    {
+        PERIODIC = HIGH,
+        APERIODIC = NORMAL,
+        SPORADIC = NORMAL
     };
 
     // Policy traits
+    bool locked = false;
     static const bool timed = false;
     static const bool dynamic = false;
     static const bool preemptive = true;
@@ -63,28 +68,29 @@ public:
     static const unsigned int QUEUES = 1;
 
     // Runtime Statistics (for policies that don't use any; that's why its a union)
-    union Statistics {
+    union Statistics
+    {
         // Thread Execution Time
-        TSC::Time_Stamp thread_execution_time;  // accumulated thread execution time
-        TSC::Time_Stamp last_thread_dispatch;   // time stamp of last dispatch
+        TSC::Time_Stamp thread_execution_time; // accumulated thread execution time
+        TSC::Time_Stamp last_thread_dispatch;  // time stamp of last dispatch
 
         // Deadline Miss count - Used By Clerk
-        Alarm * alarm_times;                    // pointer to RT_Thread private alarm (for monitoring purposes)
-        unsigned int finished_jobs;             // number of finished jobs given by the number of times alarm->p() was called for this thread
-        unsigned int missed_deadlines;          // number of missed deadlines given by the number of finished jobs (finished_jobs) minus the number of dispatched jobs (alarm_times->times)
+        Alarm *alarm_times;            // pointer to RT_Thread private alarm (for monitoring purposes)
+        unsigned int finished_jobs;    // number of finished jobs given by the number of times alarm->p() was called for this thread
+        unsigned int missed_deadlines; // number of missed deadlines given by the number of finished jobs (finished_jobs) minus the number of dispatched jobs (alarm_times->times)
 
         // CPU Execution Time (capture ts)
-        static TSC::Time_Stamp _cpu_time[Traits<Build>::CPUS];              // accumulated CPU time in the current hyperperiod for each CPU
-        static TSC::Time_Stamp _last_dispatch_time[Traits<Build>::CPUS];    // time Stamp of last dispatch in each CPU
-        static TSC::Time_Stamp _last_activation_time;                       // global time stamp of the last heuristic activation
+        static TSC::Time_Stamp _cpu_time[Traits<Build>::CPUS];           // accumulated CPU time in the current hyperperiod for each CPU
+        static TSC::Time_Stamp _last_dispatch_time[Traits<Build>::CPUS]; // time Stamp of last dispatch in each CPU
+        static TSC::Time_Stamp _last_activation_time;                    // global time stamp of the last heuristic activation
     };
 
 protected:
     Scheduling_Criterion_Common() {}
 
 public:
-    const Microsecond period() { return 0;}
-    void period(const Microsecond & p) {}
+    const Microsecond period() { return 0; }
+    void period(const Microsecond &p) {}
 
     unsigned int queue() const { return 0; }
     void queue(unsigned int q) {}
@@ -98,7 +104,7 @@ public:
     bool charge(bool end = false) { return true; }
     bool award(bool end = false) { return true; }
 
-    volatile Statistics & statistics() { return _statistics; }
+    volatile Statistics &statistics() { return _statistics; }
 
     static void init() {}
 
@@ -107,15 +113,19 @@ protected:
 };
 
 // Priority (static and dynamic)
-class Priority: public Scheduling_Criterion_Common
+class Priority : public Scheduling_Criterion_Common
 {
     friend class _SYS::Thread;
     friend class _SYS::Periodic_Thread;
     friend class _SYS::RT_Thread;
+    friend class _SYS::Semaphore;
+    friend class _SYS::Mutex;
 
 public:
-    template <typename ... Tn>
-    Priority(int p = NORMAL, Tn & ... an): _priority(p) {}
+    template <typename... Tn>
+    Priority(int p = NORMAL, Tn &...an) : _priority(p)
+    {
+    }
 
     operator const volatile int() const volatile { return _priority; }
 
@@ -124,7 +134,7 @@ protected:
 };
 
 // Round-Robin
-class RR: public Priority
+class RR : public Priority
 {
 public:
     static const bool timed = true;
@@ -132,12 +142,12 @@ public:
     static const bool preemptive = true;
 
 public:
-    template <typename ... Tn>
-    RR(int p = NORMAL, Tn & ... an): Priority(p) {}
+    template <typename... Tn>
+    RR(int p = NORMAL, Tn &...an) : Priority(p) {}
 };
 
 // First-Come, First-Served (FIFO)
-class FCFS: public Priority
+class FCFS : public Priority
 {
 public:
     static const bool timed = false;
@@ -145,22 +155,21 @@ public:
     static const bool preemptive = false;
 
 public:
-    template <typename ... Tn>
-    FCFS(int p = NORMAL, Tn & ... an);
+    template <typename... Tn>
+    FCFS(int p = NORMAL, Tn &...an);
 };
 
-
 // Real-time Algorithms
-class Real_Time_Scheduler_Common: public Priority
+class Real_Time_Scheduler_Common : public Priority
 {
 protected:
-    Real_Time_Scheduler_Common(int p): Priority(p), _deadline(0), _period(0), _capacity(0) {} // aperiodic
-    Real_Time_Scheduler_Common(int i, const Microsecond & d, const Microsecond & p, const Microsecond & c)
-    : Priority(i), _deadline(d), _period(p), _capacity(c) {}
+    Real_Time_Scheduler_Common(int p) : Priority(p), _deadline(0), _period(0), _capacity(0) {} // aperiodic
+    Real_Time_Scheduler_Common(int i, const Microsecond &d, const Microsecond &p, const Microsecond &c)
+        : Priority(i), _deadline(d), _period(p), _capacity(c) {}
 
 public:
     const Microsecond period() { return _period; }
-    void period(const Microsecond & p) { _period = p; }
+    void period(const Microsecond &p) { _period = p; }
 
 public:
     Microsecond _deadline;
@@ -169,7 +178,7 @@ public:
 };
 
 // Rate Monotonic
-class RM:public Real_Time_Scheduler_Common
+class RM : public Real_Time_Scheduler_Common
 {
 public:
     static const bool timed = false;
@@ -177,13 +186,13 @@ public:
     static const bool preemptive = true;
 
 public:
-    RM(int p = APERIODIC): Real_Time_Scheduler_Common(p) {}
-    RM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Real_Time_Scheduler_Common(p ? p : d, d, p, c) {}
+    RM(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
+    RM(const Microsecond &d, const Microsecond &p = SAME, const Microsecond &c = UNKNOWN, unsigned int cpu = ANY)
+        : Real_Time_Scheduler_Common(p ? p : d, d, p, c) {}
 };
 
 // Deadline Monotonic
-class DM: public Real_Time_Scheduler_Common
+class DM : public Real_Time_Scheduler_Common
 {
 public:
     static const bool timed = false;
@@ -191,13 +200,13 @@ public:
     static const bool preemptive = true;
 
 public:
-    DM(int p = APERIODIC): Real_Time_Scheduler_Common(p) {}
-    DM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Real_Time_Scheduler_Common(d, d, p, c) {}
+    DM(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
+    DM(const Microsecond &d, const Microsecond &p = SAME, const Microsecond &c = UNKNOWN, unsigned int cpu = ANY)
+        : Real_Time_Scheduler_Common(d, d, p, c) {}
 };
 
 // Earliest Deadline First
-class EDF: public Real_Time_Scheduler_Common
+class EDF : public Real_Time_Scheduler_Common
 {
 public:
     static const bool timed = true;
@@ -205,8 +214,8 @@ public:
     static const bool preemptive = true;
 
 public:
-    EDF(int p = APERIODIC): Real_Time_Scheduler_Common(p) {}
-    EDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY);
+    EDF(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
+    EDF(const Microsecond &d, const Microsecond &p = SAME, const Microsecond &c = UNKNOWN, unsigned int cpu = ANY);
 
     void update();
 };
@@ -222,7 +231,7 @@ public:
     LLF(int p = APERIODIC) : Real_Time_Scheduler_Common(p) {}
 
     LLF(const Microsecond &deadline, const Microsecond &period = SAME, const Microsecond &capacity = UNKNOWN, unsigned int cpu = ANY);
-    
+
     void reset_init_time();
 
     void start_calculation();

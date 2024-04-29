@@ -77,7 +77,6 @@ private:
     volatile long _value;
     bool _hasCeiling;
     bool _inheritance;
-    Thread **resource_holders;
     bool incrementFlag = true;
 
     List<Thread, List_Elements::Doubly_Linked<Thread>> resource_holder_list;

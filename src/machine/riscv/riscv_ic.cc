@@ -49,7 +49,6 @@ void IC::entry()
 void IC::dispatch(unsigned int start)
 {
   Interrupt_Id id = int_id();
-
   if ((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
     db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [sp=" << CPU::sp() << "]" << endl;
 

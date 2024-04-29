@@ -106,6 +106,7 @@ private:
     void load_parts();
     void adjust_perms();
     void call_next();
+
 private:
     char *bi;
     System_Info *si;
@@ -133,16 +134,16 @@ Setup::Setup()
 
     // Configure a flat memory model for the single task in the system
     if (Traits<Machine>::supervisor)
+    {
         setup_flat_paging();
 
-    // Relocate the machine to supervisor interrupt forwarder
-    setup_m2s();
+        // Relocate the machine to supervisor interrupt forwarder
+        setup_m2s();
 
-    // Enable paging
-    if (Traits<Machine>::supervisor)
+        // Enable paging
         enable_paging();
-
-    if (Traits<Machine>::supervisor == false)
+    }
+    else
     {
 
         asm volatile("li t0, 0");      // Load immediate 0 into temporary register t0
@@ -362,7 +363,7 @@ void Setup::say_hi()
     db<Setup>(INF) << "System_Info=" << *si << endl;
 
     kout << "This is EPOS!\n"
- 
+
          << endl;
     kout << "Setting up this machine as follows: " << endl;
     kout << "  Mode:         " << ((Traits<Build>::SMOD == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::SMOD == Traits<Build>::BUILTIN) ? "built-in"
@@ -729,29 +730,31 @@ void _entry() // machine mode
     CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE - sizeof(long)); // set the stack pointer, thus creating a stack for SETUP
 
     Machine::clear_bss();
-
-    CPU::mtvec(CPU::INT_DIRECT,
-               Memory_Map::INT_M2S); // setup a machine mode interrupt handler
-                                     // to forward timer interrupts (which
-                                     // cannot be delegated via mideleg)
-    CPU::mideleg(CPU::SSI | CPU::STI |
-                 CPU::SEI); // delegate supervisor interrupts to supervisor mode
-    CPU::medeleg(
-        0xf1ff); // delegate all exceptions to supervisor mode but ecalls
-    CPU::mie(CPU::MSI | CPU::MTI |
-             CPU::MEI);     // enable interrupt generation by at machine level
-                            // before going into supervisor mode
     CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer
                             // interrupt before we can setup_m2s()
-
     if (Traits<Machine>::supervisor)
     {
+        CPU::mtvec(CPU::INT_DIRECT,
+                   Memory_Map::INT_M2S);
+        // setup a machine mode interrupt handler
+        // to forward timer interrupts (which
+        // cannot be delegated via mideleg)
+        CPU::mideleg(CPU::SSI | CPU::STI |
+                     CPU::SEI); // delegate supervisor interrupts to supervisor mode
+        CPU::medeleg(
+            0xf1ff); // delegate all exceptions to supervisor mode but ecalls
+        CPU::mie(CPU::MSI | CPU::MTI |
+                 CPU::MEI);
+        // enable interrupt generation by at machine level
+        // before going into supervisor mode
+
         CPU::mstatus(CPU::MPP_S | CPU::MPIE |
                      CPU::MXR);
     } // prepare jump into supervisor mode at MRET with
       // interrupts enabled at machine level
     else
     {
+
         CPU::mstatus(CPU::MPP_M | CPU::MPIE |
                      CPU::MXR);
     };

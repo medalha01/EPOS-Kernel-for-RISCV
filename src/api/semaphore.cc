@@ -23,9 +23,6 @@ void Semaphore::p()
         << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
     begin_atomic();
 
-    if (_inheritance)
-        temp_priority = running_thread->criterion()._priority;
-
     if (fdec(_value) < 1)
     {
         _addResource(running_thread, &waiting_threads);
@@ -33,6 +30,9 @@ void Semaphore::p()
         {
             if (!_most_urgent_in_await)
                 _most_urgent_in_await = _getHighestPriorityThread(&waiting_threads, false);
+
+            if (_inheritance && _most_urgent_in_await)
+                temp_priority = _most_urgent_in_await->criterion()._priority;
             Thread::start_periodic_critical(_lock_holder, incrementFlag, temp_priority);
             incrementFlag = false;
         }
@@ -42,6 +42,7 @@ void Semaphore::p()
         if (_most_urgent_in_await == running_thread)
         {
             _most_urgent_in_await = nullptr;
+            //_most_urgent_in_await = _getHighestPriorityThread(&waiting_threads, false);
         }
     }
     _addResource(running_thread, &resource_holder_list);

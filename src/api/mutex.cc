@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-Mutex::Mutex(bool useCeiling) : _locked(false), _hasCeiling(useCeiling)
+Mutex::Mutex(bool useCeiling, bool useHeritance) : _locked(false), _hasCeiling(useCeiling), _hasHeritance(useHeritance)
 {
     db<Synchronizer>(TRC) << "Mutex() => " << this << endl;
 }
@@ -18,8 +18,9 @@ void Mutex::lock()
 {
     db<Synchronizer>(TRC) << "Mutex::lock(this=" << this << ")" << endl;
     Thread *t = Thread::running();
-
     int temp_priority = Thread::CEILING;
+    if (_hasHeritance)
+        temp_priority = t->criterion()._priority;
 
     begin_atomic();
     if (tsl(_locked))

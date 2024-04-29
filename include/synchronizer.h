@@ -6,6 +6,7 @@
 #include <architecture.h>
 #include <utility/handler.h>
 #include <process.h>
+#include <utility/list.h>
 
 __BEGIN_SYS
 
@@ -43,7 +44,7 @@ protected:
 class Mutex : protected Synchronizer_Common
 {
 public:
-    Mutex(bool = false);
+    Mutex(bool = false, bool inheritance = false);
     ~Mutex();
 
     void lock();
@@ -52,7 +53,10 @@ public:
 private:
     volatile bool _locked;
     bool _hasCeiling;
+    bool _hasHeritance;
     bool incrementFlag = true;
+    List<Thread, List_Elements::Doubly_Linked<Thread>> resource_holder_list;
+    List<Thread, List_Elements::Doubly_Linked<Thread>> waiting_threads;
 };
 
 class Semaphore : protected Synchronizer_Common
@@ -65,11 +69,17 @@ public:
     void v();
 
 private:
+    void _addResource(Thread *, List<Thread, List_Elements::Doubly_Linked<Thread>> *);
+    void _removeResource(Thread *, List<Thread, List_Elements::Doubly_Linked<Thread>> *);
+
+private:
     volatile long _value;
     bool _hasCeiling;
     bool _inheritance;
     Thread **resource_holders;
     bool incrementFlag = true;
+    List<Thread, List_Elements::Doubly_Linked<Thread>> resource_holder_list;
+    List<Thread, List_Elements::Doubly_Linked<Thread>> waiting_threads;
 
     Thread *
         _lock_holder;

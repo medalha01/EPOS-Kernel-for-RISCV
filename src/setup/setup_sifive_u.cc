@@ -31,6 +31,8 @@ __BEGIN_SYS
 
 extern OStream kout, kerr;
 
+//volatile bool ronaldinho = true;
+
 class SV32_MMU;
 class SV39_MMU;
 
@@ -71,13 +73,6 @@ private:
     typedef CPU::Reg Reg;
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Log_Addr Log_Addr;
-    //    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
-    typedef IF<Traits<Machine>::supervisor == false,
-               No_MMU, // Use No_MMU if supervisor is false
-               IF<Traits<CPU>::WORD_SIZE == 32,
-                  SV32_MMU, // Use SV32_MMU for 32-bit words
-                  SV39_MMU  // Use SV39_MMU for other cases, assuming 64-bit words
-                  >::Result>::Result MMU;
     typedef MMU::Page Page;
     typedef MMU::Page_Flags Flags;
     typedef MMU::Page_Table Page_Table;
@@ -129,8 +124,13 @@ Setup::Setup()
                    << ",sp=" << CPU::sp() << ")" << endl;
     db<Setup>(INF) << "Setup:si=" << *si << endl;
 
+	db<Thread>(WRN) << "\n\n\nos guri tão no say_hi\n\n\n\n\n";
     // Print basic facts about this EPOS instance
     say_hi();
+	db<Thread>(WRN) << "\n\n\nos guri ja passaro..............\n\n\n\n\n";
+	//int cpu_id = CPU::mhartid()
+	//db<Thread>(WRN) << "\n\n\nPRINT DOS GURI PAE CPU = " << (int)cpu_id << "\n\n\n\n\n";
+	//
 
     // Configure a flat memory model for the single task in the system
     if (Traits<Machine>::supervisor)
@@ -145,10 +145,7 @@ Setup::Setup()
     }
     else
     {
-
-        asm volatile("li t0, 0");      // Load immediate 0 into temporary register t0
-        asm volatile("csrw satp, t0"); // Write 0 to the satp register, disabling paging
-        asm volatile("sfence.vma");
+		CPU::satp(0);
     }
 
 	if (Traits<Timer>::profiled) {
@@ -376,6 +373,7 @@ void Setup::build_pmm()
     if (si->pmm.usr_mem_top <= si->lm.stp_code + si->lm.stp_code_size + si->lm.stp_data_size)
         db<Setup>(ERR) << "SETUP would have been overwritten!" << endl;
 }
+
 void Setup::say_hi()
 {
     db<Setup>(TRC) << "Setup::say_hi()" << endl;
@@ -385,46 +383,69 @@ void Setup::say_hi()
 
          << endl;
     kout << "Setting up this machine as follows: " << endl;
-    kout << "  Mode:         " << ((Traits<Build>::SMOD == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::SMOD == Traits<Build>::BUILTIN) ? "built-in"
-                                                                                                                                                 : "kernel")
+    kout << "  Mode:         "
+         << ((Traits<Build>::SMOD == Traits<Build>::LIBRARY)   ? "library"
+             : (Traits<Build>::SMOD == Traits<Build>::BUILTIN) ? "built-in"
+                                                               : "kernel")
          << endl;
-    kout << "  Processor:    " << Traits<Machine>::CPUS << " x RV" << Traits<CPU>::WORD_SIZE << " at " << Traits<CPU>::CLOCK / 1000000 << " MHz (BUS clock = " << Traits<Machine>::HFCLK / 1000000 << " MHz)" << endl;
+    kout << "  Processor:    " << Traits<Machine>::CPUS << " x RV"
+         << Traits<CPU>::WORD_SIZE << " at " << Traits<CPU>::CLOCK / 1000000
+         << " MHz (BUS clock = " << Traits<Machine>::HFCLK / 1000000 << " MHz)"
+         << endl;
     kout << "  Machine:      SiFive-U" << endl;
 #ifdef __library__
-    kout << "  Memory:       " << (RAM_TOP + 1 - RAM_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(RAM_BASE) << ":" << reinterpret_cast<void *>(RAM_TOP) << "]" << endl;
-    kout << "  User memory:  " << (FREE_TOP - FREE_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(FREE_BASE) << ":" << reinterpret_cast<void *>(FREE_TOP) << "]" << endl;
-    kout << "  I/O space:    " << (MIO_TOP + 1 - MIO_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(MIO_BASE) << ":" << reinterpret_cast<void *>(MIO_TOP) << "]" << endl;
+    kout << "  Memory:       " << (RAM_TOP + 1 - RAM_BASE) / 1024 << " KB ["
+         << reinterpret_cast<void *>(RAM_BASE) << ":"
+         << reinterpret_cast<void *>(RAM_TOP) << "]" << endl;
+    kout << "  User memory:  " << (FREE_TOP - FREE_BASE) / 1024 << " KB ["
+         << reinterpret_cast<void *>(FREE_BASE) << ":"
+         << reinterpret_cast<void *>(FREE_TOP) << "]" << endl;
+    kout << "  I/O space:    " << (MIO_TOP + 1 - MIO_BASE) / 1024 << " KB ["
+         << reinterpret_cast<void *>(MIO_BASE) << ":"
+         << reinterpret_cast<void *>(MIO_TOP) << "]" << endl;
 #else
-    kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024 << " KB [" << reinterpret_cast<void *>(si->bm.mem_base) << ":" << reinterpret_cast<void *>(si->bm.mem_top) << "]" << endl;
-    kout << "  User memory:  " << (si->pmm.usr_mem_top - si->pmm.usr_mem_base) / 1024 << " KB [" << reinterpret_cast<void *>(si->pmm.usr_mem_base) << ":" << reinterpret_cast<void *>(si->pmm.usr_mem_top) << "]" << endl;
-    kout << "  I/O space:    " << (si->bm.mio_top - si->bm.mio_base) / 1024 << " KB [" << reinterpret_cast<void *>(si->bm.mio_base) << ":" << reinterpret_cast<void *>(si->bm.mio_top) << "]" << endl;
+    kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024
+         << " KB [" << reinterpret_cast<void *>(si->bm.mem_base) << ":"
+         << reinterpret_cast<void *>(si->bm.mem_top) << "]" << endl;
+    kout << "  User memory:  "
+         << (si->pmm.usr_mem_top - si->pmm.usr_mem_base) / 1024 << " KB ["
+         << reinterpret_cast<void *>(si->pmm.usr_mem_base) << ":"
+         << reinterpret_cast<void *>(si->pmm.usr_mem_top) << "]" << endl;
+    kout << "  I/O space:    " << (si->bm.mio_top - si->bm.mio_base) / 1024
+         << " KB [" << reinterpret_cast<void *>(si->bm.mio_base) << ":"
+         << reinterpret_cast<void *>(si->bm.mio_top) << "]" << endl;
 #endif
     kout << "  Node Id:      ";
     if (si->bm.node_id != -1)
-        kout << si->bm.node_id << " (" << Traits<Build>::NETWORKING << ")" << endl;
+      kout << si->bm.node_id << " (" << Traits<Build>::NETWORKING << ")"
+           << endl;
     else
-        kout << "will get from the network!" << endl;
+      kout << "will get from the network!" << endl;
     kout << "  Position:     ";
     if (si->bm.space_x != -1)
-        kout << "(" << si->bm.space_x << "," << si->bm.space_y << "," << si->bm.space_z << ")" << endl;
+      kout << "(" << si->bm.space_x << "," << si->bm.space_y << ","
+           << si->bm.space_z << ")" << endl;
     else
-        kout << "will get from the network!" << endl;
+      kout << "will get from the network!" << endl;
     if (si->lm.has_stp)
-        kout << "  Setup:        " << si->lm.stp_code_size + si->lm.stp_data_size << " bytes" << endl;
+      kout << "  Setup:        " << si->lm.stp_code_size + si->lm.stp_data_size
+           << " bytes" << endl;
     if (si->lm.has_ini)
-        kout << "  Init:         " << si->lm.ini_code_size + si->lm.ini_data_size << " bytes" << endl;
+      kout << "  Init:         " << si->lm.ini_code_size + si->lm.ini_data_size
+           << " bytes" << endl;
     if (si->lm.has_sys)
-        kout << "  OS code:      " << si->lm.sys_code_size << " bytes"
-             << "\tdata: " << si->lm.sys_data_size << " bytes"
-             << "   stack: " << si->lm.sys_stack_size << " bytes" << endl;
+      kout << "  OS code:      " << si->lm.sys_code_size << " bytes"
+           << "\tdata: " << si->lm.sys_data_size << " bytes"
+           << "   stack: " << si->lm.sys_stack_size << " bytes" << endl;
     if (si->lm.has_app)
-        kout << "  APP code:     " << si->lm.app_code_size << " bytes"
-             << "\tdata: " << si->lm.app_data_size << " bytes" << endl;
+      kout << "  APP code:     " << si->lm.app_code_size << " bytes"
+           << "\tdata: " << si->lm.app_data_size << " bytes" << endl;
     if (si->lm.has_ext)
-        kout << "  Extras:       " << si->lm.app_extra_size << " bytes" << endl;
+      kout << "  Extras:       " << si->lm.app_extra_size << " bytes" << endl;
 
     kout << endl;
 }
+
 void Setup::setup_sys_pt()
 {
     db<Setup>(TRC) << "Setup::setup_sys_pt(pmm="
@@ -728,72 +749,81 @@ __END_SYS
 
 using namespace EPOS::S;
 
-void _entry() // machine mode
+void _entry() 
 {
-    // typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
-    // typedef IF<Traits<CPU>::WORD_SIZE == 32, No_MMU, No_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
-
-    typedef IF<Traits<Machine>::supervisor == false,
-               No_MMU, // Use No_MMU if supervisor is false
-               IF<Traits<CPU>::WORD_SIZE == 32,
-                  SV32_MMU, // Use SV32_MMU for 32-bit words
-                  SV39_MMU  // Use SV39_MMU for other cases, assuming 64-bit words
-                  >::Result>::Result MMU;
-
-    if (CPU::mhartid() == 0) // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
+    if (CPU::mhartid() == 0) { 
+		// SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
         CPU::halt();
+	}
 
-    CPU::mstatusc(CPU::MIE); // disable interrupts (they will be reenabled at Init_End)
+	//if (CPU::mhartid() == 1) {
+	//	db<Thread>(WRN) << "\n\nmhartid = " << (int)CPU::mhartid() << "\n\n\n\n";
+	//	db<Thread>(WRN) << "\n\nid = " << (int)CPU::id() << "\n\n";
+	//}
 
-    CPU::tp(CPU::mhartid() - 1);                                                  // tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
-    CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE - sizeof(long)); // set the stack pointer, thus creating a stack for SETUP
+	CPU::mstatusc(CPU::MIE); // disable interrupts (they will be reenabled at Init_End)
 
-    Machine::clear_bss();
-    CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer
-                            // interrupt before we can setup_m2s()
-    if (Traits<Machine>::supervisor)
-    {
-        CPU::mtvec(CPU::INT_DIRECT,
-                   Memory_Map::INT_M2S);
-        // setup a machine mode interrupt handler
-        // to forward timer interrupts (which
-        // cannot be delegated via mideleg)
-        CPU::mideleg(CPU::SSI | CPU::STI |
-                     CPU::SEI); // delegate supervisor interrupts to supervisor mode
-        CPU::medeleg(
-            0xf1ff); // delegate all exceptions to supervisor mode but ecalls
-        CPU::mie(CPU::MSI | CPU::MTI |
-                 CPU::MEI);
-        // enable interrupt generation by at machine level
-        // before going into supervisor mode
+	// tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
+	CPU::tp(CPU::mhartid() - 1);
 
-        CPU::mstatus(CPU::MPP_S | CPU::MPIE |
-                     CPU::MXR);
-    } // prepare jump into supervisor mode at MRET with
-      // interrupts enabled at machine level
-    else
-    {
+	// set the stack pointer, thus creating a stack for SETUP
+	//CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE - sizeof(long)); 	
+	// set the stack pointer, thus creating a stack for SETUP
+	//int boot_stack_offset = Memory_Map::BOOT_STACK*(CPU::mhartid() - 1);
+	//CPU::sp(boot_stack_offset + Traits<Machine>::STACK_SIZE * (CPU::mhartid() - 1) - sizeof(long)); 	
+	CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE * CPU::id() - sizeof(long)); 	
+	db<Thread>(WRN) << "\n\n\n\nhi\n\n\n\n";;
 
-        CPU::mstatus(CPU::MPP_M | CPU::MPIE |
-                     CPU::MXR);
-    };
-    CPU::mstatusc(
-        CPU::SIE);           // disable interrupts (they will be reenabled at Init_End)
-    CPU::sstatuss(CPU::SUM); // allows User Memory access in supervisor mode
-    if (Traits<Machine>::supervisor)
-    {
+	Machine::clear_bss();
+	CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer
+							// interrupt before we can setup_m2s()
+	if (Traits<Machine>::supervisor)
+	{
+		CPU::mtvec(CPU::INT_DIRECT,
+				Memory_Map::INT_M2S);
+		// setup a machine mode interrupt handler
+		// to forward timer interrupts (which
+		// cannot be delegated via mideleg)
+		CPU::mideleg(CPU::SSI | CPU::STI |
+				CPU::SEI); // delegate supervisor interrupts to supervisor mode
+		CPU::medeleg(
+				0xf1ff); // delegate all exceptions to supervisor mode but ecalls
+		CPU::mie(CPU::MSI | CPU::MTI |
+				CPU::MEI);
+		// enable interrupt generation by at machine level
+		// before going into supervisor mode
 
-        CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
-        //   = NAPOT [11], X [1], W [1], R [1])
-        CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1);
-        //               1); // comprising the whole memory space
-    };
-    CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
-    CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
+		CPU::mstatus(CPU::MPP_S | CPU::MPIE |
+				CPU::MXR);
+	} // prepare jump into supervisor mode at MRET with
+	  // interrupts enabled at machine level
+	else
+	{
+		CPU::mstatus(CPU::MPP_M | CPU::MPIE |
+				CPU::MXR); };
+	CPU::mstatusc(
+			CPU::SIE);           // disable interrupts (they will be reenabled at Init_End)
+	CPU::sstatuss(CPU::SUM); // allows User Memory access in supervisor mode
+	if (Traits<Machine>::supervisor)
+	{
+
+		CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A
+							   //   = NAPOT [11], X [1], W [1], R [1])
+		CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1);
+		//               1); // comprising the whole memory space
+	};
+
+	db<Thread>(WRN) << "antes do mret\n";
+	//db<Thread>(WRN) << "_setup = " << &_setup << endl;
+	kout << "_setup = " << CPU::Reg(&_setup) << endl;
+	CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
+	CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
 }
 
 void _setup() // supervisor mode
 {
+	kout << "entramo gurizada\n";
+
     kerr << endl;
     kout << endl;
 

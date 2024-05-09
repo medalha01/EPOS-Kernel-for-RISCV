@@ -39,4 +39,6 @@ extern "C" {
     void _print(const char * s) { Display::puts(s); }
     void _print_preamble() {}
     void _print_trailler(bool error) { if(error) _panic(); }
+
+	// TODO: ler some weak critical zones 
 }

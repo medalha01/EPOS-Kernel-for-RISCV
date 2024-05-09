@@ -287,8 +287,10 @@ public:
     }
     static void fr(Reg r) { ASM("mv a0, %0" : : "r"(r) :); }
 
-    static unsigned int id() { return supervisor ? tp() : 0; }
-    static unsigned int cores() { return 1; }
+	static unsigned int id() { return tp(); }
+	static unsigned int cores() { return 2; }
+	//static unsigned int id() { return supervisor ? tp() : 0; }
+	//static unsigned int cores() { return 1; }
 
     using CPU_Common::bus_clock;
     using CPU_Common::clock;
@@ -436,6 +438,7 @@ public:
         ASM("mv %0, x4" : "=r"(r) :);
         return r;
     }
+
     static void tp(Reg r) { ASM("mv x4, %0" : : "r"(r) :); }
 
     static Reg a0()

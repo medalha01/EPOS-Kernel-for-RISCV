@@ -1081,17 +1081,6 @@ public:
             _chosen = e;
     }
 
-    template <typename Func>
-    void iterate(Func handler)
-    {
-        Element *el = this->head();
-        while (el != nullptr)
-        {
-            handler(*el);
-            el = el->next();
-        }
-    }
-
     Element * remove(Element * e) {
         db<Lists>(TRC) << "Scheduling_List::remove(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *) -1)
@@ -1177,7 +1166,6 @@ public:
     typedef El Element;
     typedef typename Base::Iterator Iterator;
 
-
 public:
     Multihead_Scheduling_List() {
         for(unsigned int i = 0; i < H; i++)
@@ -1192,8 +1180,6 @@ public:
     using Base::end;
 
     Element * volatile & chosen() { return _chosen[R::current_head()]; }
-    
-
 
     void insert(Element * e) {
         db<Lists>(TRC) << "Scheduling_List::insert(e=" << e

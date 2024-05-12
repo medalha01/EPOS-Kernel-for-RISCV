@@ -1,0 +1,34 @@
+
+
+
+
+
+*** This is EPOS!
+
+Setting up this machine as follows: 
+  Mode:         library
+  Processor:    1 x RV64 at 1000 MHz (BUS clock = 33 MHz)
+  Machine:      SiFive-U
+  Memory:       131072 KB [0x0000000080000000:0x0000000087ffffff]
+  User memory:  131059 KB [0x0000000080000000:0x0000000087ffcfff]
+  I/O space:    524288 KB [0x0000000000000000:0x000000001fffffff]
+  Node Id:      will get from the network!
+  Position:     will get from the network!
+
+Periodic Thread Component Test
+
+This test consists in creating three periodic threads as follows:
+- Every 100ms, thread A executes "a" for 50ms;
+- Every 80ms, thread B executes "b" for 20ms;
+- Every 60ms, thread C executes "c" for 10ms;
+
+Callibrating the duration of the base execution loop: 7912 iterations per ms!
+
+Threads will now be created and I'll wait for them to finish...
+
+1000 A [A={i=-2143289178,d=1000,c=2151678000} B={i=IC::Exception(5) => {thread=0
+x0000000087ffa8e8,sp=0x0000000087ffa680,status=0xa00001880,cause=5,epc=0x0000000
+080001340,tval=0x0000000000000160} => data protection violation (read)
+
+PANIC: unexpected error!
+Rebooting the machine!

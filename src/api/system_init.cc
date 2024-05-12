@@ -8,10 +8,12 @@ __BEGIN_SYS
 
 void System::init()
 {
-    if(Traits<Alarm>::enabled)
-        Alarm::init();
-
-    if(Traits<Thread>::enabled)
+    if (CPU::is_bootstrap())
+    {
+        if (Traits<Alarm>::enabled)
+            Alarm::init();
+    }
+    if (Traits<Thread>::enabled)
         Thread::init();
 }
 

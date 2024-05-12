@@ -1,0 +1,129 @@
+
+
+
+
+
+
+<2>:  :<1>Setup(si=
+0x0000000080008000
+,sp=<1>: Setup(si=0x0000000087ffdf680x0000000080008000),sp= :<2>0x0000000087ffcf
+68
+)
+<1>: Setup::say_hi() :<1>
+
+*** This is EPOS!
+
+Setting up this machine as follows: 
+  Mode:         library
+  Processor:    2 x RV64 at 1000 MHz (BUS clock = 33 MHz)
+  Machine:      SiFive-U
+  Memory:       131072 KB [0x0000000080000000:0x0000000087ffffff]
+  User memory:  131055 KB [0x0000000080000000:0x0000000087ffbfff]
+  I/O space:    524288 KB [0x0000000000000000:0x000000001fffffff]
+  Node Id:      will get from the network!
+  Position:     will get from the network!
+
+<1>: <1>: Init_System()Machine::pre_init() :<1> :<1>
+
+<1>: Init_System() :<1>
+<1>: CPU::init() :<1>
+<1>: MMU::init() :<1>
+<1>: MMU::free(addr=0x00000000804003f8,n=130006024) :<1>
+<1>: MMU::alloc(bytes=65536) => 0x0000000087fec000 :<1>
+<1>: Heap(addr=0x0000000087fec000,bytes=65536) => 0x00000000804000c0 :<1>
+<1>: Machine::init() :<1>
+<1>: IC::init() :<1>
+<1>: Timer::init() :<1>
+<1>: <1>: CPU::init()Alarm::init() :<1> :<1>
+
+<1>: <1>: Timer::init()Thread::init() :<1> :<1>
+
+<2>: Thread::init() :<2>
+<1>: Task(entry=0x0000000080000c00) => 0x0000000087ffbfa8 :<1>
+<1>: FAZ O L CAPITAO :<1>
+<1>: 
+
+PICANHA1
+
+ :<1>
+<1>: 
+
+PICANHA2
+
+ :<1>
+<1>: Thread(entry=0x0000000080000c00,state=0,priority=-1,stack={b=0x0000000087ff
+ae90,s=4096},context={b=0x0000000087ffbda0,{sp=0x0000000087ffcbd8,pc=0x80000c00,
+st=0x1880,lr=0x80001a98,x5=0,x6=0,x7=0,x8=0,x9=0,x10=0,x11=0,x12=0,x13=0,x14=0,x
+15=0,x16=0,x17=0,x18=0,x19=0,x20=0,x21=0,x22=0,x23=0,x24=0,x25=0,x26=0,x27=0,x28
+=0,x29=0,x30=0,x31=0}}) => 0x0000000087ffbe98 :<1>
+<1>: Task::enroll(t=0, o=0x0000000087ffbe98) :<1>
+<1>: 
+
+PICANHA3
+
+ :<1>
+<1>: FAZ O L CAPITAO :<1>
+<1>: 
+
+PICANHA1
+
+ :<1>
+<1>: 
+
+PICANHA2
+
+ :<1>
+<1>: Thread(entry=0x00000000800034b6,state=1,priority=2147483647,stack={b=0x0000
+000087ff9d50,s=4096},context={b=0x0000000087ffac60,{sp=0x0000000087ffcbd8,pc=0x8
+00034b6,st=0x1880,lr=0x80001a98,x5=0,x6=0,x7=0,x8=0,x9=0,x10=0,x11=0,x12=0,x13=0
+,x14=0,x15=0,x16=0,x17=0,x18=0,x19=0,x20=0,x21=0,x22=0,x23=0,x24=0,x25=0,x26=0,x
+27=0,x28=0,x29=0,x30=0,x31=0}}) => 0x0000000087ffad58 :<1>
+<1>: 
+
+PICANHA3
+
+ :<1>
+<2>: <2>: GRITA TEU NOME SATANAS
+GRITA TEU NOME SATANAS
+12
+
+ :<2> :<2>
+
+<2>: <2>: FAZ O L CAPITAOFAZ O L CAPITAO :<2> :<2>
+
+<2>: <2>: 
+
+PICANHA1
+
+
+
+PICANHA1
+
+ :<2> :<2>
+
+<2>: <2>: 
+
+PICANHA2
+
+
+
+PICANHA2
+
+ :<2> :<2>
+
+<2>: <2>: Thread(entry=Thread(entry=0x00000000800034b60x00000000800034b6,state=,
+state=11,priority=,priority=21474836472147483647,stack={b=,stack={b=0x0000000087
+ff8b280x0000000087ff7b20,s=,s=40964096},context={b=},context={b=0x0000000087ff9a
+380x0000000087ff8a30,,{sp={sp=0x0000000087ffcbd80x0000000087ffdbd8,pc=,pc=0x8000
+34b60x800034b6,st=,st=0x18800x1880,lr=,lr=0x80001a980x80001a98,x5=,x5=00,x6=,x6=
+00,x7=,x7=00,x8=,x8=00,x9=,x9=00,x10=,x10=00,x11=,x11=00,x12=,x12=00,x13=,x13=00
+,x14=,x14=00,x15=,x15=00,x16=,x16=00,x17=,x17=00,x18=,x18=00,x19=,x19=00,x20=,x2
+0=00,x21=,x21=00,x22=,x22=00,x23=,x23=00,x24=,x24=00,x25=,x25=00,x26=,x26=00,x27
+=,x27=00,x28=,x28=00,x29=,x29=00,x30=,x30=00,x31=,x31=00}}}) => }) => 0x00000000
+87ff9b300x0000000087ff9c40 :<1> :<1>
+
+<1>: 
+
+PICANHA3
+
+ :<1>

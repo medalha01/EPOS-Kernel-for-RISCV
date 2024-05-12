@@ -76,7 +76,6 @@ private:
 
 Setup::Setup()
 {
-
     si = reinterpret_cast<System_Info *>(&__boot_time_system_info);
 
     // SETUP doesn't handle global constructors, so we need to manually initialize any object with a non-empty default constructor
@@ -88,30 +87,26 @@ Setup::Setup()
     db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si) << ",sp=" << CPU::sp() << ")" << endl;
     db<Setup>(INF) << "Setup:si=" << *si << endl;
 
-    if (CPU::is_bootstrap())
-    {
-        // Print basic facts about this EPOS instance
-        say_hi();
+	// Print basic facts about this EPOS instance
+	//say_hi();
 
-        if (Traits<Machine>::supervisor)
-        {
-            // Configure a flat memory model for the single task in the system
-            setup_flat_paging();
+	if (Traits<Machine>::supervisor)
+	{
+		if (CPU::is_bootstrap()) {
+			// Configure a flat memory model for the single task in the system
+			setup_flat_paging();
 
-            // Relocate the machine to supervisor interrupt forwarder
-            setup_m2s();
-        }
-        isSetupReady = true;
-    }
-    else
-    {
-        // Wait for the Boot CPU to setup page tables
-        while (!isSetupReady)
-        {
-        }
-    }
-    if (Traits<Machine>::supervisor)
-        enable_paging();
+			// Relocate the machine to supervisor interrupt forwarder
+			setup_m2s();
+		} 
+
+		CPU::smp_barrier();
+
+		enable_paging();
+	}
+
+	CPU::smp_barrier();
+
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();
 }
@@ -133,38 +128,6 @@ void Setup::setup_flat_paging()
     // Free chunks (passed to MMU::init())
     si->pmm.free1_base = MMU::align_page(FREE_BASE);
     si->pmm.free1_top = MMU::align_page(FREE_TOP);
-}
-
-void Setup::say_hi()
-{
-    db<Setup>(TRC) << "Setup::say_hi()" << endl;
-    db<Setup>(INF) << "System_Info=" << *si << endl;
-
-    kout << "\n*** This is EPOS!\n"
-         << endl;
-    kout << "Setting up this machine as follows: " << endl;
-    kout << "  Mode:         " << ((Traits<Build>::SMOD == Traits<Build>::LIBRARY) ? "library" : (Traits<Build>::SMOD == Traits<Build>::BUILTIN) ? "built-in"
-                                                                                                                                                 : "kernel")
-         << endl;
-    kout << "  Processor:    " << Traits<Machine>::CPUS << " x RV" << Traits<CPU>::WORD_SIZE << " at " << Traits<CPU>::CLOCK / 1000000 << " MHz (BUS clock = " << Traits<Machine>::HFCLK / 1000000 << " MHz)" << endl;
-    kout << "  Machine:      SiFive-U" << endl;
-    kout << "  Memory:       " << (RAM_TOP + 1 - RAM_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(RAM_BASE) << ":" << reinterpret_cast<void *>(RAM_TOP) << "]" << endl;
-    kout << "  User memory:  " << (FREE_TOP - FREE_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(FREE_BASE) << ":" << reinterpret_cast<void *>(FREE_TOP) << "]" << endl;
-    kout << "  I/O space:    " << (MIO_TOP + 1 - MIO_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(MIO_BASE) << ":" << reinterpret_cast<void *>(MIO_TOP) << "]" << endl;
-    kout << "  Node Id:      ";
-    if (si->bm.node_id != -1)
-        kout << si->bm.node_id << endl;
-    else
-        kout << "will get from the network!" << endl;
-    kout << "  Position:     ";
-    if (si->bm.space_x != -1)
-        kout << "(" << si->bm.space_x << "," << si->bm.space_y << "," << si->bm.space_z << ")" << endl;
-    else
-        kout << "will get from the network!" << endl;
-    if (si->bm.extras_offset != -1UL)
-        kout << "  Extras:       " << si->lm.app_extra_size << " bytes" << endl;
-
-    kout << endl;
 }
 
 void Setup::setup_m2s()
@@ -211,24 +174,24 @@ __END_SYS
 
 using namespace EPOS::S;
 
-void _entry()
-// machine mode
+void _entry() // machine mode
 {
     typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
 
-    if (CPU::mhartid() == 0) // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
+    if (CPU::mhartid() == 0) {// SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
         CPU::halt();
+	}
 
     CPU::mstatusc(CPU::MIE); // disable interrupts (they will be reenabled at Init_End)
 
-    CPU::tp(CPU::mhartid());                                                                  // tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
-    CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE * CPU::id() - sizeof(long)); // set the stack pointer, thus creating a stack for SETUP)
+    CPU::tp(CPU::mhartid() - 1);                                                                  // tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
+    CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE * (CPU::id() + 1) - sizeof(long)); // set the stack pointer, thus creating a stack for SETUP)
 
     if (CPU::is_bootstrap())
     {
-
         Machine::clear_bss();
     }
+
     CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
 
     if (Traits<Machine>::supervisor)
@@ -245,10 +208,10 @@ void _entry()
     }
     else
     {
-
         CPU::mie(0); // disable interrupts at CLINT (each device will enable the necessary ones)
         CPU::mstatus(CPU::MPP_M);
     }
+
     CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
     CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
 }

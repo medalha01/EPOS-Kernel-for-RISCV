@@ -289,7 +289,7 @@ public:
 
     static unsigned int cores() { return Traits<Machine>::CPUS; }
 
-    static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, CPU::id()); }
+    static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
 
     using CPU_Common::bus_clock;
     using CPU_Common::clock;

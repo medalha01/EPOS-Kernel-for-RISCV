@@ -402,19 +402,6 @@ void Thread::reschedule()
     dispatch(prev, next);
 }
 
-void Thread::reschedule()
-{
-    if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
-        db<Thread>(TRC) << "Thread::reschedule()" << endl;
-
-    assert(locked()); // locking handled by caller
-
-    Thread *prev = running();
-    Thread *next = _scheduler.choose();
-
-    dispatch(prev, next);
-}
-
 void Thread::time_slicer(IC::Interrupt_Id i)
 {
     lock();
@@ -474,10 +461,10 @@ int Thread::idle()
         if (_scheduler.schedulables() > 0) // a thread might have been woken up by another CPU
             yield();
     }
-    CPU::int_disable();
 
     if (CPU::is_bootstrap())
     {
+        CPU::int_disable();
 
         kout << "\n\n*** The last thread under control of EPOS has finished." << endl;
         kout << "*** EPOS is shutting down!" << endl;

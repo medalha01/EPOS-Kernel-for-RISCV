@@ -275,6 +275,30 @@ public:
     void handle(Event event);
 };
 
+// Global Least Laxity First
+class GLLF: public LLF
+{ 
+public:
+    static const unsigned int HEADS = Traits<Machine>::CPUS;
+	
+public: 
+    GLLF(int p = APERIODIC): LLF(p) {}
+    GLLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN) 
+		: LLF(p, d, c) { }; // TODO: verificar se isso está certo (acho q n)
+
+    unsigned int queue() const { return current_head(); }
+    void queue(unsigned int q) {}
+    static unsigned int current_head() { return CPU::id(); }
+};
+
 __END_SYS
+
+__BEGIN_UTIL
+
+template<typename T>
+class Scheduling_Queue<T, GLLF>:
+public Multihead_Scheduling_List<T> {};
+
+__END_UTIL
 
 #endif

@@ -284,8 +284,8 @@ public:
     static void fr(Reg r) { ASM("mv a0, %0" : : "r"(r) :); }
 
     //    static unsigned int id() { return supervisor ? tp() : mhartid(); }
-    static unsigned int id() { return supervisor ? tp() : tp(); }
-    static bool is_bootstrap() { return (CPU::id() == 1); }
+	static unsigned int id() { return tp(); }
+    static bool is_bootstrap() { return (CPU::id() == 0); }
 
     static unsigned int cores() { return Traits<Machine>::CPUS; }
 

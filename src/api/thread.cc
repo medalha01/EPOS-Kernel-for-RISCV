@@ -470,6 +470,7 @@ int Thread::idle()
         if (Traits<Thread>::trace_idle)
             db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
 
+        db<Thread>(WRN) << "Halting the machine ..." << endl;
         CPU::halt();
 
         if (_scheduler.schedulables() > 0) // a thread might have been woken up by another CPU

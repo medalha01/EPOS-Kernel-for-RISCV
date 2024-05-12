@@ -53,10 +53,16 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
-        reschedule(_link.rank().queue_head_id());
+        // reschedule(_link.rank().queue_head_id());
+        reschedule(CPU::id());
     }
 
     unlock();
+}
+
+Thread *volatile Thread::self()
+{
+    return running();
 }
 
 Thread::~Thread()

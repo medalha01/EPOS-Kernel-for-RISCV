@@ -43,58 +43,61 @@
 __BEGIN_UTIL
 
 // Wrapper for non-atomic queues
-template<typename T, bool atomic>
-class Queue_Wrapper: private T
+template <typename T, bool atomic>
+class Queue_Wrapper : private T
 {
 public:
-    using typename T::Object_Type;
-    using typename T::Element;
-    using typename T::Iterator;
     using T::begin;
     using T::end;
+    using typename T::Element;
+    using typename T::Iterator;
+    using typename T::Object_Type;
 
 public:
     bool empty() { return T::empty(); }
     unsigned int size() { return T::size(); }
 
-    Element * head() { return T::head(); }
-    Element * tail() { return T::tail(); }
+    Element *head() { return T::head(); }
+    Element *tail() { return T::tail(); }
 
-    void insert(Element * e) { T::insert(e); }
+    void insert(Element *e) { T::insert(e); }
 
-    Element * remove() { return T::remove(); }
-    Element * remove(Element * e) { return T::remove(e); }
-    Element * remove(const Object_Type * obj) { return T::remove(obj); }
+    Element *remove() { return T::remove(); }
+    Element *remove(Element *e) { return T::remove(e); }
+    Element *remove(const Object_Type *obj) { return T::remove(obj); }
 
-    Element * search(const Object_Type * obj) {	return T::search(obj); }
+    Element *search(const Object_Type *obj) { return T::search(obj); }
 
-    Element * volatile & chosen() { return T::chosen(); }
+    Element *volatile &chosen() { return T::chosen(); }
 
-    Element * choose() { return T::choose(); }
-    Element * choose_another() { return T::choose_another(); }
-    Element * choose(Element * e) { return T::choose(e); }
-    Element * choose(const Object_Type * obj) {	return T::choose(obj); }
+    Element *choose() { return T::choose(); }
+    Element *choose_another() { return T::choose_another(); }
+    Element *choose(Element *e) { return T::choose(e); }
+    Element *choose(const Object_Type *obj) { return T::choose(obj); }
 };
 
-
 // Queue
-template<typename T,
-          typename El = List_Elements::Doubly_Linked<T> >
-class Queue: public Queue_Wrapper<List<T, El>, false> {};
-
+template <typename T,
+          typename El = List_Elements::Doubly_Linked<T>>
+class Queue : public Queue_Wrapper<List<T, El>, false>
+{
+};
 
 // Ordered Queue
-template<typename T,
+template <typename T,
           typename R = List_Element_Rank,
-          typename El = List_Elements::Doubly_Linked_Ordered<T, R> >
-class Ordered_Queue: public Queue_Wrapper<Ordered_List<T, R, El>, false> {};
-
+          typename El = List_Elements::Doubly_Linked_Ordered<T, R>>
+class Ordered_Queue : public Queue_Wrapper<Ordered_List<T, R, El>, false>
+{
+};
 
 // Relatively-Ordered Queue
-template<typename T,
+template <typename T,
           typename R = List_Element_Rank,
-          typename El = List_Elements::Doubly_Linked_Ordered<T, R> >
-class Relative_Queue: public Queue_Wrapper<Relative_List<T, R, El>, false> {};
+          typename El = List_Elements::Doubly_Linked_Ordered<T, R>>
+class Relative_Queue : public Queue_Wrapper<Relative_List<T, R, El>, false>
+{
+};
 
 __END_UTIL
 

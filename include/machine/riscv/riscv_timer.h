@@ -60,14 +60,14 @@ public:
         _channels[_channel] = 0;
     }
 
-    Tick read() { return _current[CPU::id() - 1]; }
+    Tick read() { return _current[CPU::id()]; }
 
     int restart()
     {
-        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current[CPU::id() - 1] << "}" << endl;
+        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current[CPU::id()] << "}" << endl;
 
-        int percentage = _current[CPU::id() - 1] * 100 / _initial;
-        _current[CPU::id() - 1] = _initial;
+        int percentage = _current[CPU::id()] * 100 / _initial;
+        _current[CPU::id()] = _initial;
 
         return percentage;
     }

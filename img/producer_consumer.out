@@ -1,0 +1,39 @@
+
+
+
+
+
+*** This is EPOS!
+
+Setting up this machine as follows: 
+  Mode:         library
+  Processor:    1 x RV64 at 1000 MHz (BUS clock = 33 MHz)
+  Machine:      SiFive-U
+  Memory:       131072 KB [0x0000000080000000:0x0000000087ffffff]
+  User memory:  131059 KB [0x0000000080000000:0x0000000087ffcfff]
+  I/O space:    524288 KB [0x0000000000000000:0x000000001fffffff]
+  Node Id:      will get from the network!
+  Position:     will get from the network!
+
+Producer x Consumer
+P->a P->b P->c P->d P->e P->f P->g P->h P->i P->j P->k P->l P->m P->n P->o P->p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+P->a C<-a P->b C<-b P->c C<-c P->d C<-d P->e C<-e P->f C<-f P->g C<-g P->h C<-h 
+P->i C<-i P->j C<-j P->k C<-k P->l C<-l P->m C<-m P->n C<-n P->o C<-o P->p C<-p 
+C<-a C<-b C<-c C<-d C<-e C<-f C<-g C<-h C<-i C<-j C<-k C<-l C<-m C<-n C<-o C<-p 
+The end!
+
+
+*** The last thread under control of EPOS has finished.
+*** EPOS is shutting down!

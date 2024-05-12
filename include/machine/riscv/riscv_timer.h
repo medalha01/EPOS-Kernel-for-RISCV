@@ -12,7 +12,7 @@
 __BEGIN_SYS
 
 // Tick timer used by the system
-class Timer: private Timer_Common, private CLINT
+class Timer : private Timer_Common, private CLINT
 {
     friend Machine;
     friend IC;
@@ -25,11 +25,12 @@ protected:
     typedef IC_Common::Interrupt_Id Interrupt_Id;
 
 public:
-    using Timer_Common::Tick;
     using Timer_Common::Handler;
+    using Timer_Common::Tick;
 
     // Channels
-    enum {
+    enum
+    {
         SCHEDULER,
         ALARM
     };
@@ -37,32 +38,36 @@ public:
     static const Hertz CLOCK = Traits<Timer>::CLOCK;
 
 protected:
-    Timer(unsigned int channel, const Hertz & frequency, const Handler & handler, bool retrigger = true)
-    : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
-        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
+    Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true)
+        : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler)
+    {
+        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void *>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
-        if(_initial && (channel < CHANNELS) && !_channels[channel])
+        if (_initial && (channel < CHANNELS) && !_channels[channel])
             _channels[channel] = this;
         else
-            db<Timer>(WRN) << "Timer not installed!"<< endl;
+            db<Timer>(WRN) << "Timer not installed!" << endl;
 
-        _current = _initial;
+        for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
+            _current[i] = _initial;
     }
 
 public:
-    ~Timer() {
-        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+    ~Timer()
+    {
+        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
 
         _channels[_channel] = 0;
     }
 
-    Tick read() { return _current; }
+    Tick read() { return _current[CPU::id()]; }
 
-    int restart() {
-        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current << "}" << endl;
+    int restart()
+    {
+        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current[CPU::id()] << "}" << endl;
 
-        int percentage = _current * 100 / _initial;
-        _current = _initial;
+        int percentage = _current[CPU::id()] * 100 / _initial;
+        _current[CPU::id()] = _initial;
 
         return percentage;
     }
@@ -72,12 +77,16 @@ public:
     static void disable() {}
 
     Hertz frequency() const { return (FREQUENCY / _initial); }
-    void frequency(Hertz f) { _initial = FREQUENCY / f; reset(); }
+    void frequency(Hertz f)
+    {
+        _initial = FREQUENCY / f;
+        reset();
+    }
 
-    void handler(const Handler & handler) { _handler = handler; }
+    void handler(Handler handler) { _handler = handler; }
 
 private:
-    static void config(const Hertz & frequency) { mtimecmp(mtime() + (CLOCK / frequency)); }
+    static void config(Hertz frequency) { mtimecmp(mtime() + (CLOCK / frequency)); }
 
     static void int_handler(Interrupt_Id i);
 
@@ -87,24 +96,24 @@ protected:
     unsigned int _channel;
     Tick _initial;
     bool _retrigger;
-    volatile Tick _current;
+    volatile Tick _current[Traits<Machine>::CPUS];
     Handler _handler;
 
-    static Timer * _channels[CHANNELS];
+    static Timer *_channels[CHANNELS];
 };
 
 // Timer used by Thread::Scheduler
-class Scheduler_Timer: public Timer
+class Scheduler_Timer : public Timer
 {
 public:
-    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(SCHEDULER, 1000000 / quantum, handler) {}
+    Scheduler_Timer(Microsecond quantum, Handler handler) : Timer(SCHEDULER, 1000000 / quantum, handler) {}
 };
 
 // Timer used by Alarm
-class Alarm_Timer: public Timer
+class Alarm_Timer : public Timer
 {
 public:
-    Alarm_Timer(const Handler & handler): Timer(ALARM, FREQUENCY, handler) {}
+    Alarm_Timer(Handler handler) : Timer(ALARM, FREQUENCY, handler) {}
 };
 
 __END_SYS

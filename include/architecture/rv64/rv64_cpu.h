@@ -5,10 +5,6 @@
 
 #include <architecture/cpu.h>
 
-extern "C"
-{
-   static void print_ctx(bool push, bool exit);
-}
 __BEGIN_SYS
 
 class CPU : protected CPU_Common
@@ -157,7 +153,7 @@ public:
             }
         }
 
-        void save() volatile __attribute__((naked));
+        void save() const volatile __attribute__((naked));
         void load() const volatile __attribute__((naked));
 
         friend OStream &operator<<(OStream &os, const Context &c)
@@ -287,10 +283,13 @@ public:
     }
     static void fr(Reg r) { ASM("mv a0, %0" : : "r"(r) :); }
 
-	static unsigned int id() { return tp(); }
-	static unsigned int cores() { return 2; }
-	//static unsigned int id() { return supervisor ? tp() : 0; }
-	//static unsigned int cores() { return 1; }
+    //    static unsigned int id() { return supervisor ? tp() : mhartid(); }
+    static unsigned int id() { return supervisor ? tp() : tp(); }
+    static bool is_bootstrap() { return (CPU::id() == 1); }
+
+    static unsigned int cores() { return Traits<Machine>::CPUS; }
+
+    static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, CPU::id()); }
 
     using CPU_Common::bus_clock;
     using CPU_Common::clock;
@@ -314,6 +313,42 @@ public:
     {
         register T old;
         register T one = 1;
+
+        if (sizeof(T) == sizeof(Reg64))
+            ASM("amoswap.d %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "memory");
+        else
+            ASM("amoswap.w %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "memory");
+
+        return old;
+    }
+
+    template <typename T>
+    static T finc(volatile T &value)
+    {
+        T old;
+        if (sizeof(T) == sizeof(Reg64))
+            ASM("amoadd.d %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(1) : "memory");
+        else
+            ASM("amoadd.w %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(1) : "memory");
+        return old - 1;
+    }
+
+    template <typename T>
+    static T fdec(volatile T &value)
+    {
+        T old;
+        if (sizeof(T) == sizeof(Reg64))
+            ASM("amoadd.d %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(-1) : "memory");
+        else
+            ASM("amoadd.w %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(-1) : "memory");
+        return old + 1;
+    }
+
+    /*
+        static T tsl(volatile T &lock)
+    {
+        register T old;
+        register T one = 1;
         if (sizeof(T) == sizeof(Reg64))
             ASM("1: lr.d    %0, (%1)        \n"
                 "   sc.d    t3, %2, (%1)    \n"
@@ -325,22 +360,22 @@ public:
         return old;
     }
 
-    template <typename T>
-    static T finc(volatile T &value)
-    {
-        register T old;
-        if (sizeof(T) == sizeof(Reg64))
-            ASM("1: lr.d    %0, (%1)        \n"
-                "   addi    %0, %0, 1       \n"
-                "   sc.d    t3, %0, (%1)    \n"
-                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
-        else
-            ASM("1: lr.w    %0, (%1)        \n"
-                "   addi    %0, %0, 1       \n"
-                "   sc.w    t3, %0, (%1)    \n"
-                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
-        return old - 1;
-    }
+        template <typename T>
+        static T finc(volatile T &value)
+        {
+            register T old;
+            if (sizeof(T) == sizeof(Reg64))
+                ASM("1: lr.d    %0, (%1)        \n"
+                    "   addi    %0, %0, 1       \n"
+                    "   sc.d    t3, %0, (%1)    \n"
+                    "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
+            else
+                ASM("1: lr.w    %0, (%1)        \n"
+                    "   addi    %0, %0, 1       \n"
+                    "   sc.w    t3, %0, (%1)    \n"
+                    "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
+            return old - 1;
+        }
 
     template <typename T>
     static T fdec(volatile T &value)
@@ -357,7 +392,7 @@ public:
                 "   sc.w    t3, %0, (%1)    \n"
                 "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
         return old + 1;
-    }
+    }*/
 
     template <typename T>
     static T cas(volatile T &value, T compare, T replacement)
@@ -438,7 +473,6 @@ public:
         ASM("mv %0, x4" : "=r"(r) :);
         return r;
     }
-
     static void tp(Reg r) { ASM("mv x4, %0" : : "r"(r) :); }
 
     static Reg a0()
@@ -678,10 +712,6 @@ private:
 
 inline void CPU::Context::push(bool interrupt)
 {
-        if (Traits<CPU>::hysterically_debugged)
-    print_ctx(true, false);
-    //db<IC>(TRC) << "Context Push Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
-
     ASM("       addi     sp, sp, %0             \n" : : "i"(-sizeof(Context))); // adjust SP for the pushes below
     if (interrupt)
     {
@@ -699,11 +729,6 @@ inline void CPU::Context::push(bool interrupt)
         ASM("       mv       x3,    x1              \n"); // push RA as PC on context switches
     }
     ASM("       sd       x3,    0(sp)           \n"); // push PC
-
-    // if(!interrupt && supervisor) {
-    //     ASM("       li       x3,      %0            \n"
-    //         "       csrs     sstatus, x3            \n": : "i"(SPP_S));   // set SPP_S inside the kernel; the push(true) on IC::entry() has already saved the correct value to eventually return to the application
-    // }
     if (supervisor)
     {
         ASM("       csrr     x3, sstatus            \n");
@@ -745,25 +770,11 @@ inline void CPU::Context::push(bool interrupt)
     {
         ASM("       mv       x3, sp                 \n"); // leave TMP pointing the context to easy subsequent access to the saved context
     }
-    if (Traits<CPU>::hysterically_debugged)
-    print_ctx(true, true);
-    //db<IC>(TRC) << "Context Push Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline void CPU::Context::pop(bool interrupt)
 {
-    if (Traits<CPU>::hysterically_debugged)
-    print_ctx(false, false);
-    //db<IC>(TRC) << "Context POP Start [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
-    if (interrupt)
-    {
-        int_disable(); // atomize Context::pop() by disabling interrupts (SPIE will restore the flag on iret())
-    }
     ASM("       ld       x3,    0(sp)           \n"); // pop PC into TMP
-    if (interrupt)
-    {
-        ASM("       add      x3, x3, a0             \n"); // A0 is set by exception handlers to adjust [M|S]EPC to point to the next instruction if needed
-    }
     if (supervisor)
     {
         ASM("       csrw     sepc, x3               \n"); // SEPC = PC
@@ -772,14 +783,11 @@ inline void CPU::Context::pop(bool interrupt)
     {
         ASM("       csrw     mepc, x3               \n"); // MEPC = PC
     }
-    ASM("       ld       x3,    8(sp)           \n"); // pop ST into TMP
-    if (!interrupt)
-    {
-        ASM("       li      x10, %0                 \n"                                       // use X10 as a second TMP, since it will be restored later
-            "       or       x3, x3, x10            \n" : : "i"(supervisor ? SPP_S : MPP_M)); // [M|S]STATUS.[S|M]PP is automatically cleared on the [M|S]RET in the ISR, so we need to recover it here
-    }
-    ASM("       ld       x1,   16(sp)           \n" // pop RA
-        "       ld       x5,   24(sp)           \n" // pop X5-X31
+    ASM("       ld       x3,    8(sp)           \n"                                       // pop ST into TMP
+        "       li      x10, %0                 \n"                                       // use X10 as a second TMP, since it will be restored later
+        "       or       x3, x3, x10            \n" : : "i"(supervisor ? SPP_S : MPP_M)); // [M|S]STATUS.[S|M]PP is automatically cleared on the [M|S]RET in the ISR, so we need to recover it here
+    ASM("       ld       x1,   16(sp)           \n"                                       // pop RA
+        "       ld       x5,   24(sp)           \n"                                       // pop X5-X31
         "       ld       x6,   32(sp)           \n"
         "       ld       x7,   40(sp)           \n"
         "       ld       x8,   48(sp)           \n"
@@ -815,9 +823,6 @@ inline void CPU::Context::pop(bool interrupt)
     {
         ASM("       csrw    mstatus, x3             \n"); // MSTATUS = ST
     }
-    if (Traits<CPU>::hysterically_debugged)
-    print_ctx(false, true);
-    //db<IC>(TRC) << "Context POP Finish [SP=" << hex << CPU::sp() << ", EPC=" << hex << CPU::epc() << "]" << dec;
 }
 
 inline CPU::Reg64 htole64(CPU::Reg64 v) { return CPU::htole64(v); }
@@ -841,9 +846,4 @@ inline CPU::Reg16 ntohs(CPU::Reg16 v) { return CPU::ntohs(v); }
 
 __END_SYS
 
-static void print_ctx(bool push, bool exit){
-    __USING_SYS
-    db<IC>(TRC) << "CPU" << (push ? "push" : "pop") << ":" << (exit ? "exit" : "entry")  << "SP:" << hex << CPU::sp() << "EPC:" << hex << CPU::epc() << dec; 
-
-}
 #endif

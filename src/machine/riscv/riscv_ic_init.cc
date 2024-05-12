@@ -12,15 +12,16 @@ void IC::init()
     assert(CPU::int_disabled()); // will be reenabled at Thread::init() by Context::load()
 
     disable(); // will be enabled on demand as handlers are registered
+    if (CPU::is_bootstrap())
+    {
+        // Set all exception handlers to exception()
+        for (Interrupt_Id i = 0; i < EXCS; i++)
+            _int_vector[i] = &exception;
 
-    // Set all exception handlers to exception()
-    for(Interrupt_Id i = 0; i < EXCS; i++)
-        _int_vector[i] = &exception;
-
-    // Set all interrupt handlers to int_not()
-    for(Interrupt_Id i = EXCS; i < INTS; i++)
-        _int_vector[i] = &int_not;
-
+        // Set all interrupt handlers to int_not()
+        for (Interrupt_Id i = EXCS; i < INTS; i++)
+            _int_vector[i] = &int_not;
+    }
     IC::enable(INT_PLIC);
     PLIC::threshold(0); // set the threshold to 0 so all enabled external interrupts will be dispatched
 }

@@ -87,7 +87,7 @@ public:
 
     static void puts(const char *s)
     {
-        for (int i = 0; i < 10000000; i++)
+        for (int i = 0; i < 5000000; i++)
         {
             __asm__ __volatile__("" : : : "memory");
         }

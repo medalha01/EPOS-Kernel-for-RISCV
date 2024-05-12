@@ -129,6 +129,7 @@ protected:
 
     static void reschedule();
     static void reschedule(unsigned int cpu);
+    static void int_rescheduler(IC::Interrupt_Id i);
     static void time_slicer(IC::Interrupt_Id interrupt);
 
     static void dispatch(Thread *prev, Thread *next, bool charge = true);
@@ -235,6 +236,7 @@ template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
     : _task(Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
+
     db<Thread>(TRC) << "FAZ O L CAPITAO" << endl;
     constructor_prologue(conf.stack_size);
     db<Thread>(TRC) << "\n\nPICANHA1\n\n"

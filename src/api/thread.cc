@@ -33,18 +33,28 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
                     << "},context={b=" << _context
                     << "," << *_context << "}) => " << this << endl;
 
-    assert((_state != WAITING) && (_state != FINISHING)); // invalid states
+    db<Thread>(TRC) << "FAZ O J IRMAO" << endl;
 
+    assert((_state != WAITING) && (_state != FINISHING)); // invalid states
+    db<Thread>(TRC) << "FAZ O A IRMAO" << endl;
     if (_link.rank() != IDLE)
         _task->enroll(this);
+
+    db<Thread>(TRC) << "FAZ O B IRMAO" << endl;
 
     if ((_state != READY) && (_state != RUNNING))
         _scheduler.suspend(this);
 
+    db<Thread>(TRC) << "FAZ O C IRMAO" << endl;
+
     criterion().handle(Criterion::CREATE);
 
+    db<Thread>(TRC) << "FAZ O D IRMAO" << endl;
+
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
-        reschedule();
+    {
+        reschedule(_link.rank().queue_head_id());
+    }
 
     unlock();
 }
@@ -375,18 +385,22 @@ void Thread::reschedule(unsigned int cpu)
 
     assert(locked()); // locking handled by caller
 
-    if (CPU::id() == cpu)
+    if (!Traits<Machine>::multi || CPU::id() == cpu)
     {
         reschedule();
     }
     else
     {
+        db<Thread>(TRC) << "Thread::reschedule(cpu=" << cpu << ")" << endl;
         IC::ipi(cpu, IC::INT_RESCHEDULER);
     }
-    Thread *prev = running();
-    Thread *next = _scheduler.choose();
+}
 
-    dispatch(prev, next);
+void Thread::int_rescheduler(IC::Interrupt_Id i)
+{
+    lock();
+    reschedule();
+    unlock();
 }
 
 void Thread::reschedule()

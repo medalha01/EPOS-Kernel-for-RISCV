@@ -17,7 +17,15 @@ void Thread::init()
 {
     db<Init, Thread>(TRC) << "Thread::init()" << endl;
 
-    CPU::smp_barrier();
+    if (Traits<Machine>::multi)
+    {
+        if (CPU::is_bootstrap())
+        {
+            IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
+        }
+        CPU::smp_barrier();
+        IC::enable(IC::INT_RESCHEDULER);
+    }
 
     // If EPOS is a library, then adjust the application entry point to __epos_app_entry, which will directly call main().
     // In this case, _init will have already been called, before Init_Application to construct MAIN's global objects.

@@ -8,8 +8,6 @@
 
 __BEGIN_SYS
 
-volatile bool isSystemReady = false;
-
 class Init_System
 {
 private:
@@ -45,17 +43,19 @@ public:
 
             db<Init>(INF) << "Initializing the machine: " << endl;
             Machine::init();
-            isSystemReady = true;
+            CPU::smp_barrier();
         }
         else
         {
-            while (!isSystemReady)
-                ;
+            CPU::smp_barrier();
+
             db<Init>(INF) << "Initializing the CPU: " << endl;
             CPU::init();
 
             db<Init>(INF) << "Initializing the machine: " << endl;
             Timer::init();
+
+            // Machine::init()
         }
         db<Init>(INF) << "Initializing system abstractions: " << endl;
         System::init();

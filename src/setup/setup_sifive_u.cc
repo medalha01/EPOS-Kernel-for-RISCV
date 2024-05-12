@@ -87,25 +87,26 @@ Setup::Setup()
     db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si) << ",sp=" << CPU::sp() << ")" << endl;
     db<Setup>(INF) << "Setup:si=" << *si << endl;
 
-	// Print basic facts about this EPOS instance
-	//say_hi();
+    // Print basic facts about this EPOS instance
+    // say_hi();
 
-	if (Traits<Machine>::supervisor)
-	{
-		if (CPU::is_bootstrap()) {
-			// Configure a flat memory model for the single task in the system
-			setup_flat_paging();
+    if (Traits<Machine>::supervisor)
+    {
+        if (CPU::is_bootstrap())
+        {
+            // Configure a flat memory model for the single task in the system
+            setup_flat_paging();
 
-			// Relocate the machine to supervisor interrupt forwarder
-			setup_m2s();
-		} 
+            // Relocate the machine to supervisor interrupt forwarder
+            setup_m2s();
+        }
 
-		CPU::smp_barrier();
+        CPU::smp_barrier();
 
-		enable_paging();
-	}
+        enable_paging();
+    }
 
-	CPU::smp_barrier();
+    CPU::smp_barrier();
 
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();
@@ -178,13 +179,14 @@ void _entry() // machine mode
 {
     typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
 
-    if (CPU::mhartid() == 0) {// SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
+    if (CPU::mhartid() == 0)
+    { // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
         CPU::halt();
-	}
+    }
 
     CPU::mstatusc(CPU::MIE); // disable interrupts (they will be reenabled at Init_End)
 
-    CPU::tp(CPU::mhartid() - 1);                                                                  // tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
+    CPU::tp(CPU::mhartid() - 1);                                                                    // tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
     CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE * (CPU::id() + 1) - sizeof(long)); // set the stack pointer, thus creating a stack for SETUP)
 
     if (CPU::is_bootstrap())

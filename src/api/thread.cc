@@ -4,6 +4,8 @@
 #include <system.h>
 #include <process.h>
 
+extern "C" { volatile unsigned long _running() __attribute__ ((alias ("_ZN4EPOS1S6Thread4selfEv"))); }
+
 __BEGIN_SYS
 
 extern OStream kout;
@@ -12,6 +14,8 @@ volatile unsigned int Thread::_thread_count;
 Scheduler_Timer *Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
+
+Thread *volatile Thread::self() { return running(); }
 
 void Thread::constructor_prologue(unsigned int stack_size)
 {
@@ -33,36 +37,22 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
                     << "},context={b=" << _context
                     << "," << *_context << "}) => " << this << endl;
 
-    db<Thread>(TRC) << "FAZ O J IRMAO" << endl;
-
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
-    db<Thread>(TRC) << "FAZ O A IRMAO" << endl;
+
     if (_link.rank() != IDLE)
         _task->enroll(this);
-
-    db<Thread>(TRC) << "FAZ O B IRMAO" << endl;
 
     if ((_state != READY) && (_state != RUNNING))
         _scheduler.suspend(this);
 
-    db<Thread>(TRC) << "FAZ O C IRMAO" << endl;
-
     criterion().handle(Criterion::CREATE);
-
-    db<Thread>(TRC) << "FAZ O D IRMAO" << endl;
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
-        // reschedule(_link.rank().queue_head_id());
-        reschedule(CPU::id());
+        reschedule(_link.rank().queue());
     }
 
     unlock();
-}
-
-Thread *volatile Thread::self()
-{
-    return running();
 }
 
 Thread::~Thread()
@@ -103,10 +93,11 @@ Thread::~Thread()
         break;
     }
 
-    _task->dismiss(this);
+	_task->dismiss(this);
 
-    if (_joining)
+    if (_joining) {
         _joining->resume();
+	}
 
     unlock();
 
@@ -119,17 +110,28 @@ void Thread::priority(Criterion c)
 
     db<Thread>(TRC) << "Thread::priority(this=" << this << ",prio=" << c << ")" << endl;
 
+    unsigned long old_cpu = _link.rank().queue();
+    unsigned long new_cpu = c.queue();
+
     if (_state != RUNNING)
     { // reorder the scheduling queue
-        _scheduler.suspend(this);
+        _scheduler.remove(this);
         _link.rank(c);
-        _scheduler.resume(this);
+        _scheduler.insert(this);
     }
     else
         _link.rank(c);
 
-    if (preemptive)
-        reschedule();
+    if(preemptive) {
+    	if(Traits<Machine>::multi) {
+    	    if(old_cpu != CPU::id())
+    	        reschedule(old_cpu);
+    	    if(new_cpu != CPU::id())
+    	        reschedule(new_cpu);
+    	} else {
+    	    reschedule();
+		}
+    }
 
     unlock();
 }
@@ -211,7 +213,7 @@ void Thread::resume()
         _scheduler.resume(this);
 
         if (preemptive)
-            reschedule();
+            reschedule(_link.rank().queue());
     }
     else
         db<Thread>(WRN) << "Resume called for unsuspended object!" << endl;
@@ -292,7 +294,7 @@ void Thread::wakeup(Queue *q)
         _scheduler.resume(t);
 
         if (preemptive)
-            reschedule();
+            reschedule(t->_link.rank().queue());
     }
 }
 
@@ -304,16 +306,28 @@ void Thread::wakeup_all(Queue *q)
 
     if (!q->empty())
     {
+        assert(Criterion::QUEUES <= sizeof(unsigned long) * 8);
+        unsigned long cpus = 0;
+
         while (!q->empty())
         {
             Thread *t = q->remove()->object();
             t->_state = READY;
             t->_waiting = 0;
             _scheduler.resume(t);
+            cpus |= 1 << t->_link.rank().queue();
         }
 
-        if (preemptive)
-            reschedule();
+        if(preemptive) 
+		{
+            for(unsigned long i = 0; i < Criterion::QUEUES; i++) 
+			{
+                if(cpus & (1 << i)) 
+				{
+                    reschedule(i);
+				}
+			}
+        }
     }
 }
 
@@ -335,7 +349,7 @@ void Thread::prioritize(Queue *q)
             Criterion c = (priority_inversion_protocol == Traits<Build>::CEILING) ? CEILING : r->criterion();
             if (r->_state == READY)
             {
-                _scheduler.suspend(r);
+                _scheduler.suspend(r); // TODO: talvez tenha que dar remove e insert aqui que nem anteriormente
                 r->_link.rank(c);
                 _scheduler.resume(r);
             }
@@ -458,12 +472,22 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         }
         db<Thread>(INF) << "Thread::dispatch:next={" << next << ",ctx=" << *next->_context << "}" << endl;
 
+		if (Traits<Machine>::multi) 
+		{
+			_lock.release();
+		}
+
         // The non-volatile pointer to volatile pointer to a non-volatile context is correct
         // and necessary because of context switches, but here, we are locked() and
         // passing the volatile to switch_constext forces it to push prev onto the stack,
         // disrupting the context (it doesn't make a difference for Intel, which already saves
         // parameters on the stack anyway).
         CPU::switch_context(const_cast<Context **>(&prev->_context), next->_context);
+
+		if (Traits<Machine>::multi) 
+		{
+			_lock.acquire();
+		}
     }
 }
 
@@ -473,24 +497,30 @@ int Thread::idle()
 
     while (_thread_count > CPU::cores())
     { // someone else besides idle
-        if (Traits<Thread>::trace_idle)
-            db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
+        if (Traits<Thread>::trace_idle) 
+		{
+            db<Thread>(TRC) << "Thread::idle(cpu=" << CPU::id() << ",this=" << running() << ")" << endl; 
+		}
 
         db<Thread>(WRN) << "Halting the machine ..." << endl;
+		CPU::int_enable();
         CPU::halt();
 
         if (_scheduler.schedulables() > 0) // a thread might have been woken up by another CPU
             yield();
     }
 
+	CPU::int_disable();
+
     if (CPU::is_bootstrap())
     {
-        CPU::int_disable();
-
         kout << "\n\n*** The last thread under control of EPOS has finished." << endl;
         kout << "*** EPOS is shutting down!" << endl;
         Machine::reboot();
     }
+
+	for (;;) ;
+
     return 0;
 }
 

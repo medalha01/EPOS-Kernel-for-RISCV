@@ -1,3 +1,8 @@
-*.out
+**/*.out
+**/*.o
+**/*.img
+
+makefile
+makedefs
 
 

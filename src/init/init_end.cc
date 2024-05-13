@@ -17,6 +17,8 @@ public:
     {
         db<Init>(TRC) << "Init_End()" << endl;
 
+		CPU::smp_barrier();
+
         if (!Traits<System>::multithread)
         {
             CPU::int_enable();
@@ -25,8 +27,10 @@ public:
 
         if (CPU::is_bootstrap())
         {
-            if (Memory_Map::BOOT_STACK != Memory_Map::NOT_USED)
+            if (Memory_Map::BOOT_STACK != Memory_Map::NOT_USED) 
+			{
                 MMU::free(Memory_Map::BOOT_STACK, MMU::pages(Traits<Machine>::STACK_SIZE));
+			}
         }
 
         CPU::smp_barrier();
@@ -40,12 +44,12 @@ public:
 
         db<Init, Thread>(INF) << "Dispatching the first thread: " << first << endl;
 
+		CPU::smp_barrier();
+
         // Interrupts have been disabled at Thread::init() and will be reenabled by CPU::Context::load()
         // but we first reset the timer to avoid getting a time interrupt during load()
         if (Traits<Timer>::enabled)
         {
-            CPU::smp_barrier();
-
             Timer::reset();
         }
 

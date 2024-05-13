@@ -4,7 +4,10 @@
 #include <system.h>
 #include <process.h>
 
-extern "C" { volatile unsigned long _running() __attribute__ ((alias ("_ZN4EPOS1S6Thread4selfEv"))); }
+extern "C"
+{
+    volatile unsigned long _running() __attribute__((alias("_ZN4EPOS1S6Thread4selfEv")));
+}
 
 __BEGIN_SYS
 
@@ -29,13 +32,13 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    //db<Thread>(TRC) << "Thread(entry=" << entry
-    //                << ",state=" << _state
-    //                << ",priority=" << _link.rank()
-    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
-    //                << ",s=" << stack_size
-    //                << "},context={b=" << _context
-    //                << "," << *_context << "}) => " << this << endl;
+    // db<Thread>(TRC) << "Thread(entry=" << entry
+    //                 << ",state=" << _state
+    //                 << ",priority=" << _link.rank()
+    //                 << ",stack={b=" << reinterpret_cast<void *>(_stack)
+    //                 << ",s=" << stack_size
+    //                 << "},context={b=" << _context
+    //                 << "," << *_context << "}) => " << this << endl;
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
@@ -49,6 +52,7 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
+        assert(locked());
         reschedule(_link.rank().queue());
     }
 
@@ -93,11 +97,12 @@ Thread::~Thread()
         break;
     }
 
-	_task->dismiss(this);
+    _task->dismiss(this);
 
-    if (_joining) {
+    if (_joining)
+    {
         _joining->resume();
-	}
+    }
 
     unlock();
 
@@ -122,15 +127,23 @@ void Thread::priority(Criterion c)
     else
         _link.rank(c);
 
-    if(preemptive) {
-    	if(Traits<Machine>::multi) {
-    	    if(old_cpu != CPU::id())
-    	        reschedule(old_cpu);
-    	    if(new_cpu != CPU::id())
-    	        reschedule(new_cpu);
-    	} else {
-    	    reschedule();
-		}
+    if (preemptive)
+    {
+        if (Traits<Machine>::multi)
+        {
+            assert(locked());
+
+            if (old_cpu != CPU::id())
+                reschedule(old_cpu);
+            if (new_cpu != CPU::id())
+                reschedule(new_cpu);
+        }
+        else
+        {
+            assert(locked());
+
+            reschedule();
+        }
     }
 
     unlock();
@@ -318,15 +331,15 @@ void Thread::wakeup_all(Queue *q)
             cpus |= 1 << t->_link.rank().queue();
         }
 
-        if(preemptive) 
-		{
-            for(unsigned long i = 0; i < Criterion::QUEUES; i++) 
-			{
-                if(cpus & (1 << i)) 
-				{
+        if (preemptive)
+        {
+            for (unsigned long i = 0; i < Criterion::QUEUES; i++)
+            {
+                if (cpus & (1 << i))
+                {
                     reschedule(i);
-				}
-			}
+                }
+            }
         }
     }
 }
@@ -472,10 +485,10 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         }
         db<Thread>(INF) << "Thread::dispatch:next={" << next << ",ctx=" << *next->_context << "}" << endl;
 
-		if (Traits<Machine>::multi) 
-		{
-			_lock.release();
-		}
+        if (Traits<Machine>::multi)
+        {
+            _lock.release();
+        }
 
         // The non-volatile pointer to volatile pointer to a non-volatile context is correct
         // and necessary because of context switches, but here, we are locked() and
@@ -484,10 +497,10 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         // parameters on the stack anyway).
         CPU::switch_context(const_cast<Context **>(&prev->_context), next->_context);
 
-		if (Traits<Machine>::multi) 
-		{
-			_lock.acquire();
-		}
+        if (Traits<Machine>::multi)
+        {
+            _lock.acquire();
+        }
     }
 }
 
@@ -497,20 +510,20 @@ int Thread::idle()
 
     while (_thread_count > CPU::cores())
     { // someone else besides idle
-        if (Traits<Thread>::trace_idle) 
-		{
-            db<Thread>(TRC) << "Thread::idle(cpu=" << CPU::id() << ",this=" << running() << ")" << endl; 
-		}
+        if (Traits<Thread>::trace_idle)
+        {
+            db<Thread>(TRC) << "Thread::idle(cpu=" << CPU::id() << ",this=" << running() << ")" << endl;
+        }
 
         db<Thread>(WRN) << "Halting the machine ..." << endl;
-		CPU::int_enable();
+        CPU::int_enable();
         CPU::halt();
 
         if (_scheduler.schedulables() > 0) // a thread might have been woken up by another CPU
             yield();
     }
 
-	CPU::int_disable();
+    CPU::int_disable();
 
     if (CPU::is_bootstrap())
     {
@@ -519,7 +532,8 @@ int Thread::idle()
         Machine::reboot();
     }
 
-	for (;;) ;
+    for (;;)
+        ;
 
     return 0;
 }

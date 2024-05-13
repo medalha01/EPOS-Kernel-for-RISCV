@@ -104,15 +104,16 @@ protected:
 
     static Thread *volatile running() { return _scheduler.chosen(); }
 
-    static void lock() { CPU::int_disable(); }
-    static void lock(Spin *lock)
+    /*static void lock() { CPU::int_disable(); }
+    static void unlock() { CPU::int_enable(); }*/
+    static void lock(Spin *lock = &_lock)
     {
         CPU::int_disable();
         if (Traits<Machine>::multi)
             lock->acquire();
     }
-    static void unlock() { CPU::int_enable(); }
-    static void unlock(Spin *lock)
+    //
+    static void unlock(Spin *lock = &_lock)
     {
         if (Traits<Machine>::multi)
             lock->release();
@@ -236,8 +237,8 @@ template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
     : _task(Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
-
-    db<Thread>(TRC) << "FAZ O L CAPITAO" << endl;
+    db<Thread>(TRC)
+        << "FAZ O L CAPITAO" << endl;
     constructor_prologue(conf.stack_size);
     db<Thread>(TRC) << "\n\nPICANHA1\n\n"
                     << endl;

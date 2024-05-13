@@ -25,6 +25,9 @@ public:
             return;
         }
 
+        db<Init>(TRC) << "AUUUU()" << endl;
+
+
         if (CPU::is_bootstrap())
         {
             if (Memory_Map::BOOT_STACK != Memory_Map::NOT_USED) 
@@ -33,6 +36,7 @@ public:
 			}
         }
 
+        db<Init>(TRC) << "AII()" << endl;
         CPU::smp_barrier();
 
         db<Init>(INF) << "INIT ends here!" << endl;

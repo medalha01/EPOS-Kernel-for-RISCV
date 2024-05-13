@@ -17,15 +17,18 @@ void Thread::init()
 {
     db<Init, Thread>(TRC) << "Thread::init()" << endl;
 
-    if (Traits<Machine>::multi)
-    {
-        if (CPU::is_bootstrap())
-        {
-            IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
-        }
-        CPU::smp_barrier();
-        IC::enable(IC::INT_RESCHEDULER);
-    }
+	if (Traits<Machine>::multi && CPU::is_bootstrap())
+	{
+		IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
+	}
+
+	CPU::smp_barrier();
+	
+	if (Traits<Machine>::multi) { 
+		IC::enable(IC::INT_RESCHEDULER); 
+	}
+
+    Criterion::init();
 
     // If EPOS is a library, then adjust the application entry point to __epos_app_entry, which will directly call main().
     // In this case, _init will have already been called, before Init_Application to construct MAIN's global objects.
@@ -40,22 +43,11 @@ void Thread::init()
         // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
         new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
     }
-    CPU::smp_barrier();
-
-    db<Thread>(TRC) << "GRITA TEU NOME SATANAS\n"
-                    << CPU::id() << "\n"
-                    << endl;
-
+	
     // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
     new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
 
     CPU::smp_barrier();
-
-    db<Thread>(TRC) << "GRITA TEU NOME FAZUL\n"
-                    << CPU::id() << "\n"
-                    << endl;
-
-    Criterion::init();
 
     // The installation of the scheduler timer handler does not need to be done after the
     // creation of threads, since the constructor won't call reschedule() which won't call
@@ -67,10 +59,6 @@ void Thread::init()
         _timer = new (SYSTEM) Scheduler_Timer(QUANTUM, time_slicer);
 
     // No more interrupts until we reach init_end
-
-    db<Thread>(TRC) << "GRITA TEU NOME JOVENAS\n"
-                    << CPU::id() << "\n"
-                    << endl;
     CPU::int_disable();
     CPU::smp_barrier();
 }

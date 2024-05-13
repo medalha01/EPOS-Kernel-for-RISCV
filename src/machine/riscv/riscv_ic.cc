@@ -35,14 +35,21 @@ void IC::dispatch()
 {
     Interrupt_Id id = int_id();
 
-    if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
-        db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [sp=" << CPU::sp() << "]" << endl;
+    //if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
+    //    db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [sp=" << CPU::sp() << "]" << endl;
 
-    if(id == INT_SYS_TIMER) {
-        if(supervisor)
-            CPU::ecall();   // we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
-        else
-            Timer::reset(); // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer seems to be the only way to clear it
+    if(id == INT_SYS_TIMER) 
+	{
+     	if(supervisor) 
+		{
+			// we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
+            CPU::ecall();   
+		}
+        else 
+		{
+			// MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer seems to be the only way to clear it
+            Timer::reset(); 
+		}
     }
 
     _int_vector[id](id);
@@ -117,7 +124,10 @@ void IC::exception(Interrupt_Id id)
 __END_SYS
 
 static void print_context(bool push) {
-    __USING_SYS
-    db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx=" << *static_cast<CPU::Context *>(CPU::sp() + 3 * sizeof(CPU::Reg) + (push ? sizeof(CPU::Context) : 0)) << endl; // 3 words for function's stack frame
+  __USING_SYS
+  db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx="
+                      << *static_cast<CPU::Context *>(
+                             CPU::sp() + 3 * sizeof(CPU::Reg) +
+                             (push ? sizeof(CPU::Context) : 0))
+                      << endl; // 3 words for function's stack frame
 }
-

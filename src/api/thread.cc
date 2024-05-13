@@ -307,7 +307,9 @@ void Thread::wakeup(Queue *q)
         _scheduler.resume(t);
 
         if (preemptive)
+		{ 
             reschedule(t->_link.rank().queue());
+		}
     }
 }
 
@@ -348,8 +350,10 @@ void Thread::prioritize(Queue *q)
 {
     assert(locked()); // locking handled by caller
 
-    if (priority_inversion_protocol == Traits<Build>::NONE)
+    if (priority_inversion_protocol == Traits<Build>::NONE) 
+	{
         return;
+	}
 
     db<Thread>(TRC) << "Thread::prioritize(q=" << q << ") [running=" << running() << "]" << endl;
 
@@ -373,7 +377,9 @@ void Thread::prioritize(Queue *q)
                 r->_waiting->insert(&r->_link);
             }
             else
+			{
                 r->_link.rank(c);
+			}
         }
     }
 }
@@ -406,7 +412,9 @@ void Thread::deprioritize(Queue *q)
                 r->_waiting->insert(&r->_link);
             }
             else
+			{
                 r->_link.rank(c);
+			}
         }
     }
 }

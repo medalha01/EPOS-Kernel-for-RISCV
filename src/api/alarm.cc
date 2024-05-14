@@ -26,8 +26,6 @@ Alarm::Alarm(Microsecond time, Handler * handler, unsigned int times)
         unlock();
         (*handler)();
     }
-
-    Task::self()->enroll(this);
 }
 
 Alarm::~Alarm()
@@ -37,8 +35,6 @@ Alarm::~Alarm()
     db<Alarm>(TRC) << "~Alarm(this=" << this << ")" << endl;
 
     _request.remove(this);
-
-    Task::self()->dismiss(this);
 
     unlock();
 }
@@ -122,9 +118,11 @@ void Alarm::handler(IC::Interrupt_Id i)
 
     unlock();
 
-    if(alarm) {
-        db<Alarm>(TRC) << "Alarm::handler(this=" << alarm << ",e=" << _elapsed << ",h=" << reinterpret_cast<void*>(alarm->handler) << ")" << endl;
-        (*alarm->_handler)();
+    if (alarm) {
+      db<Alarm>(TRC) << "Alarm::handler(this=" << alarm << ",e=" << _elapsed
+                     << ",h=" << reinterpret_cast<void *>(alarm->handler) << ")"
+                     << endl;
+      (*alarm->_handler)();
     }
 }
 

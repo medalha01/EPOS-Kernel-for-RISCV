@@ -7,16 +7,12 @@ __BEGIN_SYS
 Semaphore::Semaphore(long v) : _value(v)
 {
     db<Synchronizer>(TRC) << "Semaphore(value=" << _value << ") => " << this << endl;
-    
-    Task::self()->enroll(this);
 }
 
 
 Semaphore::~Semaphore()
 {
     db<Synchronizer>(TRC) << "~Semaphore(this=" << this << ")" << endl;
-
-    Task::self()->dismiss(this);
 }
 
 

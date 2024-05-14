@@ -7,16 +7,12 @@ __BEGIN_SYS
 Mutex::Mutex(): _locked(false)
 {
     db<Synchronizer>(TRC) << "Mutex() => " << this << endl;
-
-    Task::self()->enroll(this);
 }
 
 
 Mutex::~Mutex()
 {
     db<Synchronizer>(TRC) << "~Mutex(this=" << this << ")" << endl;
-
-    Task::self()->dismiss(this);
 }
 
 

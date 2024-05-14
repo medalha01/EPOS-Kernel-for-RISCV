@@ -60,6 +60,8 @@ public:
         db<Init>(INF) << "Initializing system abstractions: " << endl;
         System::init();
 
+		db<Thread>(WRN) << "SYSTEMINITSYSTEMINITSYSTEMINITSYSTEMINITSYSTEMINITSYSTEMINIT" << endl;
+
         // Randomize the Random Numbers Generator's seed
         if (Traits<Random>::enabled)
         {
@@ -70,7 +72,10 @@ public:
             if (!Traits<TSC>::enabled)
                 db<Init>(INF) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
         }
-        CPU::smp_barrier(); // waits until the bootstrap CPU signalizes "machine ready"
+
+		// TODO: fix this
+		// waits until the bootstrap CPU signalizes "machine ready"
+        CPU::smp_barrier(); 
 
         // Initialization continues at init_end
     }

@@ -24,12 +24,6 @@ Thread * volatile Thread::self()
 	//return _not_booting ? running() : reinterpret_cast<Thread * volatile>(CPU::id() + 1); 
 }
 
-//Thread *volatile Thread::self() 
-//{ 
-//	db<Thread>(WRN) << "selfselfselfselfselfselfselfselfself" << endl;
-//	return running(); 
-//}
-
 void Thread::constructor_prologue(unsigned int stack_size)
 {
 	db<Thread>(WRN) << "CONS init" << endl;
@@ -119,8 +113,6 @@ Thread::~Thread()
     case FINISHING: // Already called exit()
         break;
     }
-
-    _task->dismiss(this);
 
     if (_joining)
     {

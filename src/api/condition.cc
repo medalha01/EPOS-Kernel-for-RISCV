@@ -10,16 +10,12 @@ __BEGIN_SYS
 Condition::Condition()
 {
     db<Synchronizer>(TRC) << "Condition() => " << this << endl;
-
-    Task::self()->enroll(this);
 }
 
 
 Condition::~Condition()
 {
     db<Synchronizer>(TRC) << "~Condition(this=" << this << ")" << endl;
-
-    Task::self()->dismiss(this);
 }
 
 

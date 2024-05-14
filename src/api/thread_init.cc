@@ -53,7 +53,7 @@ void Thread::init()
 
 		db<Thread>(WRN) << "INIT_MAIN BOOOTSTRAP, core = " << CPU::id() << endl;
 		new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN), main);
-        //new (SYSTEM) Task(main);
+
 		db<Thread>(WRN) << "DPS DA MAIN BOOTSTRAP, core = " << CPU::id() << endl;
 
         // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)

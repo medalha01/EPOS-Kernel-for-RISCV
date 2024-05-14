@@ -48,50 +48,49 @@ public:
         }
 
         if (!Traits<CPU>::unaligned_memory_access)
-		{
+        {
             while ((bytes % sizeof(void *)))
-			{
+            {
                 ++bytes;
-			}
-		}
+            }
+        }
 
-        if (typed) 
-		{
+        if (typed)
+        {
             bytes += sizeof(void *); // add room for heap pointer
-		}
-        bytes += sizeof(long);       // add room for size
+        }
+        bytes += sizeof(long); // add room for size
         if (bytes < sizeof(Element))
-		{
+        {
             bytes = sizeof(Element);
-		}
+        }
 
         Element *e = search_decrementing(bytes);
         if (!e)
         {
 
-
             out_of_memory(bytes);
-            //leave_heap();
+            // leave_heap();
             return 0;
         }
 
         long *addr = reinterpret_cast<long *>(e->object() + e->size());
 
-        if (typed) 
-		{
-			*addr++ = reinterpret_cast<long>(this);
-		}
+        if (typed)
+        {
+            *addr++ = reinterpret_cast<long>(this);
+        }
         *addr++ = bytes;
 
         db<Heaps>(TRC) << ") => " << reinterpret_cast<void *>(addr) << endl;
 
-        //leave_heap();
+        // leave_heap();
         return addr;
     }
 
     void free(void *ptr, unsigned long bytes)
     {
-        //enter_heap();
+        // enter_heap();
 
         db<Heaps>(TRC) << "Heap::free(this=" << this << ",ptr=" << ptr << ",bytes=" << bytes << ")" << endl;
 
@@ -102,7 +101,7 @@ public:
             insert_merging(e, &m1, &m2);
         }
 
-        //leave_heap();
+        // leave_heap();
     }
 
     static void typed_free(void *ptr)
@@ -128,62 +127,78 @@ private:
 };
 
 // Wrapper for non-atomic heap
-template<typename T, bool atomic>
-class Heap_Wrapper: public T
+template <typename T, bool atomic>
+class Heap_Wrapper : public T
 {
 public:
     Heap_Wrapper() {}
-    Heap_Wrapper(void * addr, unsigned int bytes): T(addr, bytes) {}
+    Heap_Wrapper(void *addr, unsigned int bytes) : T(addr, bytes) {}
 };
 
-template<typename T>
-class Heap_Wrapper<T, true>: public T
+template <typename T>
+class Heap_Wrapper<T, true> : public T
 {
 public:
     Heap_Wrapper() {}
-    Heap_Wrapper(void * addr, unsigned int bytes): T(addr, bytes) {}
+    Heap_Wrapper(void *addr, unsigned int bytes) : T(addr, bytes) {}
 
-    bool empty() {
-		db<Thread>(WRN) << "locking on empty()\n" << endl;
+    bool empty()
+    {
+        db<Thread>(WRN) << "locking on empty()\n"
+                        << endl;
         enter();
         bool tmp = T::empty();
         leave();
-		db<Thread>(WRN) << "leaving lock on empty()\n" << endl;
+        db<Thread>(WRN) << "leaving lock on empty()\n"
+                        << endl;
         return tmp;
     }
 
-    unsigned long size() {
-		db<Thread>(WRN) << "locking on size()\n" << endl;
+    unsigned long size()
+    {
+        db<Thread>(WRN) << "locking on size()\n"
+                        << endl;
         enter();
         unsigned long tmp = T::size();
         leave();
-		db<Thread>(WRN) << "leaving lock on size()\n" << endl;
+        db<Thread>(WRN) << "leaving lock on size()\n"
+                        << endl;
         return tmp;
     }
 
-    void * alloc(unsigned long bytes) {
-		db<Thread>(WRN) << "locking on alloc()\n" << endl;
+    void *alloc(unsigned long bytes)
+    {
+        db<Thread>(WRN) << "locking on alloc()\n"
+                        << endl;
+
         enter();
-        void * tmp = T::alloc(bytes);
+        void *tmp = T::alloc(bytes);
         leave();
-		db<Thread>(WRN) << "leaving lock on alloc()\n" << endl;
+        db<Thread>(WRN) << "leaving lock on alloc()\n"
+                        << endl;
         return tmp;
     }
 
-    void free(void * ptr) {
-		db<Thread>(WRN) << "locking on free(ptr)\n" << endl;
+    void free(void *ptr)
+    {
+        db<Thread>(WRN) << "locking on free(ptr)\n"
+                        << endl;
         enter();
         T::free(ptr);
         leave();
-		db<Thread>(WRN) << "leaving lock on free(ptr)\n" << endl;
+        db<Thread>(WRN) << "leaving lock on free(ptr)\n"
+                        << endl;
     }
 
-    void free(void * ptr, unsigned long bytes) {
-		db<Thread>(WRN) << "locking on free(ptr, bytes)\n" << endl;
+    void free(void *ptr, unsigned long bytes)
+    {
+        db<Thread>(WRN) << "locking on free(ptr, bytes)\n"
+                        << endl;
         enter();
         T::free(ptr, bytes);
         leave();
-		db<Thread>(WRN) << "leaving lock on free(ptr, bytes)\n" << endl;
+        db<Thread>(WRN) << "leaving lock on free(ptr, bytes)\n"
+                        << endl;
     }
 
 private:
@@ -192,14 +207,14 @@ private:
 };
 
 // Heap
-class Heap: public Heap_Wrapper<Simple_Heap, Traits<Machine>::multi>
+class Heap : public Heap_Wrapper<Simple_Heap, Traits<Machine>::multi>
 {
 private:
     typedef Heap_Wrapper<Simple_Heap, Traits<Machine>::multi> Base;
 
 public:
     Heap() {}
-    Heap(void * addr, unsigned long bytes): Base(addr, bytes) {}
+    Heap(void *addr, unsigned long bytes) : Base(addr, bytes) {}
 };
 
 __END_UTIL

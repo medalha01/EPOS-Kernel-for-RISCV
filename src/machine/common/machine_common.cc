@@ -10,11 +10,14 @@ extern "C" void _bss_clear() __attribute__ ((alias("_ZN4EPOS1S14Machine_Common9c
 
 __BEGIN_SYS
 
-void Machine::panic()
+void Machine::panic(const char* file, int line)
 {
     CPU::int_disable();
 
     _print("\n\nPANIC: unexpected error!\nRebooting the machine!\n");
+	_print("\n\nError ocrrurred in: ");
+	_print(file);
+	_print("\n\n\n");
 
     if(Traits<System>::reboot)
         reboot();

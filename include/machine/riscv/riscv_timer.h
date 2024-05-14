@@ -44,7 +44,7 @@ protected:
 		  _retrigger(retrigger),
 		  _handler(handler)
 	{
-		db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency << endl;
+		db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency  << " - --- -AAAAAAAAAA" << endl;
 		db<Thread>(WRN) << "@@@TIMER CONS@@@ FREQUENCY / frequency = " << FREQUENCY / frequency << endl;
 
 		db<Thread>(WRN) << "--Timer(f=" << frequency
@@ -73,41 +73,19 @@ protected:
 	}
 
 public:
-    ~Timer()
-    {
-        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+	~Timer() {
+		db<Timer>(TRC) << "~Timer(f=" << frequency()
+			<< ",h=" << reinterpret_cast<void *>(_handler)
+			<< ",ch=" << _channel << ") => {count=" << _initial
+			<< "}" << endl;
 
-        _channels[_channel] = 0;
-    }
+		_channels[_channel] = 0;
+	}
 
     Tick read() { return _current[CPU::id()]; }
 
 	int restart() {
 		// TODO: change to <Timer> again
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
 		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
 		db<Thread>(WRN) << "@@@TIMER _initial = " << _initial << endl;
 		db<Thread>(WRN) << "@@@TIMER FREQUENCY = " << FREQUENCY << endl;
@@ -146,9 +124,9 @@ public:
 private:
     static void config(Hertz frequency) 
 	{ 
-		db<Thread>(WRN) << "TIMER config antes do mtimecmp" << endl;
+		//db<Thread>(WRN) << "TIMER config antes do mtimecmp" << endl;
 		mtimecmp(mtime() + (CLOCK / frequency)); 
-		db<Thread>(WRN) << "TIMER config depois do mtimecmp" << endl;
+		//db<Thread>(WRN) << "TIMER config depois do mtimecmp" << endl;
 	}
 
     static void int_handler(Interrupt_Id i);

@@ -55,7 +55,7 @@ void Thread::init()
 		Main *main = reinterpret_cast<Main *>(__epos_app_entry);
 
 		db<Thread>(WRN) << "@@@THREAD_INIT@@@ INIT_MAIN BOOOTSTRAP, core = " << CPU::id() << endl;
-		new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN), main);
+		new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), main);
 
 		db<Thread>(WRN) << "@@@THREAD_INIT@@@ DPS DA MAIN BOOTSTRAP, core = " << CPU::id() << endl;
 
@@ -63,6 +63,7 @@ void Thread::init()
 	}
 	else
 	{
+		db<Thread>(WRN) << "caiu no else." << endl;
 		//Machine::delay(1000000);
 	}
 	db<Thread>(WRN) << "@@@THREAD_INIT@@@------------smp_barrier do thread_init, core = " << CPU::id() << endl;

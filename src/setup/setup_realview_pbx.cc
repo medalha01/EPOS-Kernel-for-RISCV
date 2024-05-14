@@ -50,7 +50,7 @@ private:
     void setup_flat_paging();
     void enable_paging();
     void call_next();
-    void panic() { Machine::panic(); }
+    void panic() { Machine::panic(__FILE__, __LINE__); }
 
     static SCU * scu() { return reinterpret_cast<SCU *>(Memory_Map::SCU_BASE); }
     static GIC_CPU * gic_cpu() { return reinterpret_cast<GIC_CPU *>(Memory_Map::GIC_CPU_BASE); }

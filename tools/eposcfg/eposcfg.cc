@@ -102,7 +102,6 @@ char components[COMPONENTS][STRING_SIZE] = {
     "Active",
     "Periodic_Thread",
     "RT_Thread",
-    "Task",
     "Scheduler",
     "Address_Space",
     "Segment",
@@ -407,7 +406,6 @@ void populate_strings()
     if(Traits<Active>::enabled)         enable_component("Active");
     if(Traits<Periodic_Thread>::enabled)enable_component("Periodic_Thread");
     if(Traits<RT_Thread>::enabled)      enable_component("RT_Thread");
-    if(Traits<Task>::enabled)           enable_component("Task");
     if(Traits<Scheduler<Thread>>::enabled)      enable_component("Scheduler");
     if(Traits<Address_Space>::enabled)  enable_component("Address_Space");
     if(Traits<Segment>::enabled)        enable_component("Segment");

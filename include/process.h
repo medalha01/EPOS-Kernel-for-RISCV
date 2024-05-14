@@ -12,6 +12,8 @@
 extern "C"
 {
     void __exit();
+    void _lock_heap();
+    void _unlock_heap();
 }
 
 __BEGIN_SYS
@@ -24,6 +26,9 @@ class Thread
     friend class Synchronizer_Common; // for lock() and sleep()
     friend class Alarm;               // for lock()
     friend class System;              // for init()
+    friend class IC;                  // for link() for priority ceiling
+    friend void ::_lock_heap();       // for lock()
+    friend void ::_unlock_heap();     // for unlock()
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
@@ -108,18 +113,21 @@ protected:
     {
         CPU::int_disable();
         if (Traits<Machine>::multi)
-		{
+        {
             lock->acquire();
-		}
+        }
     }
     //
     static void unlock(Spin *lock = &_lock)
     {
         if (Traits<Machine>::multi)
-		{
+        {
             lock->release();
-		}
-        CPU::int_enable();
+        }
+        if (_not_booting)
+        {
+            CPU::int_enable();
+        }
     }
     static volatile bool locked() { return (Traits<Machine>::multi) ? _lock.taken() : CPU::int_disabled(); }
 
@@ -139,13 +147,13 @@ protected:
 
     static void for_all_threads(Criterion::Event event)
     {
-        for (Queue::Iterator i = _scheduler.begin(); i != _scheduler.end(); ++i) 
-		{
-            if (i->object()->criterion() != IDLE) 
-			{
+        for (Queue::Iterator i = _scheduler.begin(); i != _scheduler.end(); ++i)
+        {
+            if (i->object()->criterion() != IDLE)
+            {
                 i->object()->criterion().handle(event);
-			}
-		}
+            }
+        }
     }
 
     static int idle();
@@ -162,6 +170,7 @@ protected:
     Thread *volatile _joining;
     Queue::Element _link;
 
+    static bool _not_booting;
     static volatile unsigned int _thread_count;
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
@@ -172,7 +181,8 @@ template <typename... Tn>
 inline Thread::Thread(int (*entry)(Tn...), Tn... an)
     : _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
-	db<Thread>(WRN) << "construtor da Thread\n" << endl;
+    db<Thread>(WRN) << "construtor da Thread\n"
+                    << endl;
     constructor_prologue(STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an...);
     constructor_epilogue(entry, STACK_SIZE);
@@ -182,7 +192,8 @@ template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
     : _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
-	db<Thread>(WRN) << "construtor da Thread\n" << endl;
+    db<Thread>(WRN) << "construtor da Thread\n"
+                    << endl;
     constructor_prologue(conf.stack_size);
     _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an...);
     constructor_epilogue(entry, conf.stack_size);

@@ -82,4 +82,8 @@ extern "C"
             Machine::panic(__FILE__, __LINE__);
 		}
     }
+
+    static Spin _heap_lock;
+    void _lock_heap() { Thread::lock(&_heap_lock); }
+    void _unlock_heap() { Thread::unlock(&_heap_lock); }
 }

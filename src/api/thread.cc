@@ -17,29 +17,30 @@ volatile unsigned int Thread::_thread_count;
 Scheduler_Timer *Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
+bool Thread::_not_booting;
 
-Thread * volatile Thread::self() 
-{ 
-	return reinterpret_cast<Thread * volatile>(CPU::id() + 1);
-	//return _not_booting ? running() : reinterpret_cast<Thread * volatile>(CPU::id() + 1); 
+Thread *volatile Thread::self()
+{
+    {
+        return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
+    }
 }
-
 void Thread::constructor_prologue(unsigned int stack_size)
 {
-	db<Thread>(WRN) << "CONS init" << endl;
+    db<Thread>(WRN) << "CONS init" << endl;
 
     lock();
-	
-	db<Thread>(WRN) << "CONS post lock" << endl;
+
+    db<Thread>(WRN) << "CONS post lock" << endl;
 
     _thread_count++;
     _scheduler.insert(this);
 
-	db<Thread>(WRN) << "CONS post scheduler insert" << endl;
+    db<Thread>(WRN) << "CONS post scheduler insert" << endl;
 
     _stack = new (SYSTEM) char[stack_size];
 
-	db<Thread>(WRN) << "constructor_prologue post-stack insert" << endl;
+    db<Thread>(WRN) << "constructor_prologue post-stack insert" << endl;
 }
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
@@ -52,28 +53,28 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
     //                 << "},context={b=" << _context
     //                 << "," << *_context << "}) => " << this << endl;
 
-	db<Thread>(WRN) << "constructor_epilogue start" << endl;
+    db<Thread>(WRN) << "constructor_epilogue start" << endl;
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     if ((_state != READY) && (_state != RUNNING))
-	{
-		db<Thread>(WRN) << "--segundo if do epilogue = " << CPU::id() << endl;
+    {
+        db<Thread>(WRN) << "--segundo if do epilogue = " << CPU::id() << endl;
         _scheduler.suspend(this);
-	}
+    }
 
     criterion().handle(Criterion::CREATE);
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
-		db<Thread>(WRN) << "---terceiro if do epilogue = " << CPU::id() << endl;
+        db<Thread>(WRN) << "---terceiro if do epilogue = " << CPU::id() << endl;
         assert(locked());
         reschedule(_link.rank().queue());
-		db<Thread>(WRN) << "---terceiro if, depois do reschedule" << endl;
+        db<Thread>(WRN) << "---terceiro if, depois do reschedule" << endl;
     }
 
     unlock();
-	db<Thread>(WRN) << "-------constructor_epilogue post-unlock" << endl;
+    db<Thread>(WRN) << "-------constructor_epilogue post-unlock" << endl;
 }
 
 Thread::~Thread()
@@ -322,9 +323,9 @@ void Thread::wakeup(Queue *q)
         _scheduler.resume(t);
 
         if (preemptive)
-		{ 
+        {
             reschedule(t->_link.rank().queue());
-		}
+        }
     }
 }
 
@@ -365,10 +366,10 @@ void Thread::prioritize(Queue *q)
 {
     assert(locked()); // locking handled by caller
 
-    if (priority_inversion_protocol == Traits<Build>::NONE) 
-	{
+    if (priority_inversion_protocol == Traits<Build>::NONE)
+    {
         return;
-	}
+    }
 
     db<Thread>(TRC) << "Thread::prioritize(q=" << q << ") [running=" << running() << "]" << endl;
 
@@ -392,9 +393,9 @@ void Thread::prioritize(Queue *q)
                 r->_waiting->insert(&r->_link);
             }
             else
-			{
+            {
                 r->_link.rank(c);
-			}
+            }
         }
     }
 }
@@ -427,16 +428,17 @@ void Thread::deprioritize(Queue *q)
                 r->_waiting->insert(&r->_link);
             }
             else
-			{
+            {
                 r->_link.rank(c);
-			}
+            }
         }
     }
 }
 
 void Thread::reschedule(unsigned int cpu)
 {
-	db<Thread>(WRN) << "dentro do reschedule\n\n" << endl;
+    db<Thread>(WRN) << "dentro do reschedule\n\n"
+                    << endl;
 
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
         db<Thread>(TRC) << "Thread::reschedule()" << cpu << endl;
@@ -445,13 +447,14 @@ void Thread::reschedule(unsigned int cpu)
 
     if (!Traits<Machine>::multi || CPU::id() == cpu)
     {
-		db<Thread>(WRN) << "indo pro reschedule sem cpu\n " << endl;
+        db<Thread>(WRN) << "indo pro reschedule sem cpu\n " << endl;
         reschedule();
     }
     else
     {
-        //db<Thread>(TRC) << "Thread::reschedule(cpu=" << cpu << ")" << endl;
-		db<Thread>(WRN) << "reschedule na outra cpu usando IPI\n\n" << endl;
+        // db<Thread>(TRC) << "Thread::reschedule(cpu=" << cpu << ")" << endl;
+        db<Thread>(WRN) << "reschedule na outra cpu usando IPI\n\n"
+                        << endl;
         IC::ipi(cpu, IC::INT_RESCHEDULER);
     }
 }
@@ -465,7 +468,7 @@ void Thread::int_rescheduler(IC::Interrupt_Id i)
 
 void Thread::reschedule()
 {
-	db<Thread>(WRN) << "no reschedule sem cpu" << endl;
+    db<Thread>(WRN) << "no reschedule sem cpu" << endl;
 
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
@@ -475,11 +478,11 @@ void Thread::reschedule()
     Thread *prev = running();
     Thread *next = _scheduler.choose();
 
-	db<Thread>(WRN) << "no reschedule sem cpu -- antes do dispatch" << endl;
+    db<Thread>(WRN) << "no reschedule sem cpu -- antes do dispatch" << endl;
 
     dispatch(prev, next);
 
-	db<Thread>(WRN) << "no reschedule sem cpu -- antes do dispatch" << endl;
+    db<Thread>(WRN) << "no reschedule sem cpu -- antes do dispatch" << endl;
 }
 
 void Thread::time_slicer(IC::Interrupt_Id i)
@@ -493,27 +496,30 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 {
     // "next" is not in the scheduler's queue anymore. It's already "chosen"
 
-	db<Thread>(WRN) << "----dispatch prev = " << prev->criterion()._priority
-		<< ", next = " << next->criterion()._priority << endl;
+    db<Thread>(WRN) << "----dispatch prev = " << prev->criterion()._priority
+                    << ", next = " << next->criterion()._priority << endl;
 
-    //if (charge && Criterion::timed) 
-	if (false)
-	{
-		db<Thread>(WRN) << "timer restart?????????" << endl;
+    // if (charge && Criterion::timed)
+    if (charge && Criterion::timed)
+    {
+        db<Thread>(WRN) << "timer restart?????????" << endl;
         _timer->restart();
-	}
+    }
 
-	db<Thread>(WRN) << "----dispatch depois do if criterion::timed\n" << endl;
+    db<Thread>(WRN) << "----dispatch depois do if criterion::timed\n"
+                    << endl;
 
     if (prev != next)
     {
         if (Criterion::dynamic)
         {
-			db<Thread>(WRN) << "----dispatch inicio do if criterion::dynamic\n" << endl;
+            db<Thread>(WRN) << "----dispatch inicio do if criterion::dynamic\n"
+                            << endl;
             prev->criterion().handle(Criterion::CHARGE | Criterion::LEAVE);
             for_all_threads(Criterion::UPDATE);
             next->criterion().handle(Criterion::AWARD | Criterion::ENTER);
-			db<Thread>(WRN) << "----dispatch inicio final do if criterion::dynamic\n" << endl;
+            db<Thread>(WRN) << "----dispatch inicio final do if criterion::dynamic\n"
+                            << endl;
         }
 
         if (prev->_state == RUNNING)
@@ -523,7 +529,8 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if (Traits<Thread>::debugged && Traits<Debug>::info)
         {
-			db<Thread>(WRN) << "----dispatch dentro do debugged/info\n\n" << endl;
+            db<Thread>(WRN) << "----dispatch dentro do debugged/info\n\n"
+                            << endl;
             CPU::Context tmp;
             tmp.save();
             db<Thread>(INF) << "Thread::dispatch:prev={" << prev << ",ctx=" << tmp << "}" << endl;
@@ -533,9 +540,11 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
         if (Traits<Machine>::multi)
         {
-			db<Thread>(WRN) << "----dispatch dentro do if multi\n\n" << endl;
+            db<Thread>(WRN) << "----dispatch dentro do if multi\n\n"
+                            << endl;
             _lock.release();
-			db<Thread>(WRN) << "----dispatch final do if multi\n\n" << endl;
+            db<Thread>(WRN) << "----dispatch final do if multi\n\n"
+                            << endl;
         }
 
         // The non-volatile pointer to volatile pointer to a non-volatile context is correct
@@ -544,17 +553,19 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         // disrupting the context (it doesn't make a difference for Intel, which already saves
         // parameters on the stack anyway).
         CPU::switch_context(const_cast<Context **>(&prev->_context), next->_context);
-		db<Thread>(WRN) << "----dispatch depois do switch_context" << endl;
+        db<Thread>(WRN) << "----dispatch depois do switch_context" << endl;
 
         if (Traits<Machine>::multi)
         {
-			db<Thread>(WRN) << "----dispatch ultimo if antes do acquire\n\n" << endl;
+            db<Thread>(WRN) << "----dispatch ultimo if antes do acquire\n\n"
+                            << endl;
             _lock.acquire();
-			db<Thread>(WRN) << "----dispatch ultimo if depois do acquire\n\n" << endl;
+            db<Thread>(WRN) << "----dispatch ultimo if depois do acquire\n\n"
+                            << endl;
         }
     }
 
-	db<Thread>(WRN) << "FDAJKFJDASLFJASLFJDALFJLSJ" << endl;
+    db<Thread>(WRN) << "FDAJKFJDASLFJASLFJDALFJLSJ" << endl;
 }
 
 int Thread::idle()

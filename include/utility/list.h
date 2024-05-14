@@ -901,8 +901,9 @@ protected:
                        << "}" << endl;
     }
 
+	unsigned long _size;
+
 private:
-    unsigned long _size;
     Element * _head;
     Element * _tail;
 };

@@ -170,6 +170,8 @@ public:
     template <int (*finc)(volatile int &)>
     static void smp_barrier(unsigned int cores, unsigned int id)
     {
+		db<Thread>(WRN) << "no barrier, id = " << id << endl;
+
         if (cores > 1)
         {
             static volatile int ready[2];

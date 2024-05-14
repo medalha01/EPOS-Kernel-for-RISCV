@@ -13,8 +13,11 @@ void System::init()
         if (Traits<Alarm>::enabled)
             Alarm::init();
     }
-    if (Traits<Thread>::enabled)
+    if (Traits<Thread>::enabled) 
+	{
+		db<Thread>(WRN) << "antes do thread::init\n " <<endl;
         Thread::init();
+	}
 }
 
 __END_SYS

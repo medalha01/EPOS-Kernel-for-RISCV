@@ -155,8 +155,9 @@ public:
 
     operator const volatile int() const volatile { return _priority; }
 
-protected:
-    volatile int _priority;
+	volatile int _priority;
+
+//protected:
 };
 
 // Round-Robin

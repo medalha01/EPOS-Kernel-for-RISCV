@@ -106,7 +106,9 @@ Setup::Setup()
         enable_paging();
     }
 
+	db<Thread>(WRN) << "---Setup() smp_barrier\n" << endl;
     CPU::smp_barrier();
+	db<Thread>(WRN) << "---Setup() deeeepois smp_barrier\n" << endl;
 
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();

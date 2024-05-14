@@ -44,13 +44,13 @@ protected:
 		  _retrigger(retrigger),
 		  _handler(handler)
 	{
-		db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency  << " - --- -AAAAAAAAAA" << endl;
-		db<Thread>(WRN) << "@@@TIMER CONS@@@ FREQUENCY / frequency = " << FREQUENCY / frequency << endl;
+		//db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency  << " - --- -AAAAAAAAAA" << endl;
+		//db<Thread>(WRN) << "@@@TIMER CONS@@@ FREQUENCY / frequency = " << FREQUENCY / frequency << endl;
 
-		db<Thread>(WRN) << "--Timer(f=" << frequency
-			<< ",h=" << reinterpret_cast<void *>(handler)
-			<< ",ch=" << channel << ") => {count=" << _initial << "}"
-			<< endl;
+		//db<Thread>(WRN) << "--Timer(f=" << frequency
+		//	<< ",h=" << reinterpret_cast<void *>(handler)
+		//	<< ",ch=" << channel << ") => {count=" << _initial << "}"
+		//	<< endl;
 
 		if (_initial && (channel < CHANNELS) && !_channels[channel])
 		{
@@ -86,24 +86,24 @@ public:
 
 	int restart() {
 		// TODO: change to <Timer> again
-		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		db<Thread>(WRN) << "@@@TIMER _initial = " << _initial << endl;
-		db<Thread>(WRN) << "@@@TIMER FREQUENCY = " << FREQUENCY << endl;
+		//
+		//db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		//db<Thread>(WRN) << "@@@TIMER _initial = " << _initial << endl;
+		//db<Thread>(WRN) << "@@@TIMER FREQUENCY = " << FREQUENCY << endl;
 
-		db<Thread>(WRN) << "@@@TIMER::restart() => {f=" << frequency()
-			<< endl;
+		//db<Thread>(WRN) << "@@@TIMER::restart() => {f=" << frequency() << endl;
 			//<< ",h=" << reinterpret_cast<void *>(_handler)
 			//<< ",count=" << _current[CPU::id()] << "}" << endl;
 
-		db<Thread>(WRN) << "@@@TIMER: ANTES DO PERCENTAGE" << endl;
+		//db<Thread>(WRN) << "@@@TIMER: ANTES DO PERCENTAGE" << endl;
 
 		int percentage = _current[CPU::id()] * 100 / _initial;
 
-		db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DO PERCENTAGE" << endl;
+		//db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DO PERCENTAGE" << endl;
 		
 		_current[CPU::id()] = _initial;
 
-		db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DE SETAR O CPU_ID = " << _initial << endl;
+		//db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DE SETAR O CPU_ID = " << _initial << endl;
 
 		return percentage;
 	}

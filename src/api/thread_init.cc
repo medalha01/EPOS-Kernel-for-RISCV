@@ -84,11 +84,12 @@ void Thread::init()
         _timer = new (SYSTEM) Scheduler_Timer(QUANTUM, time_slicer);
 	}
 
-	db<Thread>(WRN) << "thread_init dps do _timer\n\n";
+	db<Thread>(WRN) << "ANTES DA BARREIRA NO FINAL DO THREAD_INIT" << endl;
+	CPU::smp_barrier();
+	db<Thread>(WRN) << "thread_init dps do _timer\n\n" << endl;
 
     // No more interrupts until we reach init_end
     CPU::int_disable();
-    CPU::smp_barrier();
 }
 
 __END_SYS

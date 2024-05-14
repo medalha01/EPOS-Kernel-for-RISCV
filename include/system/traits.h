@@ -103,7 +103,6 @@ class Thread;
 class Active;
 class Periodic_Thread;
 class RT_Thread;
-class Task;
 class Priority;
 class FCFS;
 class RR;

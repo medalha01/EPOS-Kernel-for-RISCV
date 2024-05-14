@@ -85,8 +85,6 @@ public:
     const volatile Criterion &priority() const { return _link.rank(); }
     void priority(Criterion p);
 
-    Task *task() const { return _task; }
-
     int join();
     void pass();
     void suspend();
@@ -156,8 +154,6 @@ private:
     static void init();
 
 protected:
-    Task *_task;
-
     char *_stack;
     Context *volatile _context;
     volatile State _state;
@@ -172,67 +168,9 @@ protected:
     static Spin _lock;
 };
 
-class Task
-{
-    friend class Thread;    // for Task(), enroll() and dismiss()
-    friend class Alarm;     // for enroll() and dismiss()
-    friend class Mutex;     // for enroll() and dismiss()
-    friend class Condition; // for enroll() and dismiss()
-    friend class Semaphore; // for enroll() and dismiss()
-    friend class Segment;   // for enroll() and dismiss()
-
-private:
-    typedef Typed_List<> Resources;
-    typedef Resources::Element Resource;
-
-protected:
-    // This constructor is only used by Thread::init()
-    template <typename... Tn>
-    Task(int (*entry)(Tn...), Tn... an)
-    {
-        _current = this;
-        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), entry, an...);
-    }
-
-public:
-    ~Task();
-
-    Thread *main() const { return _main; }
-
-    int join() { return _main->join(); }
-
-    static Task *volatile self() { return current(); }
-
-private:
-    template <typename T>
-    void enroll(T *o)
-    {
-        db<Task>(TRC) << "Task::enroll(t=" << Type<T>::ID << ", o=" << o << ")" << endl;
-        _resources.insert(new (SYSTEM) Resource(o, Type<T>::ID));
-    }
-    void dismiss(void *o)
-    {
-        db<Task>(TRC) << "Task::dismiss(" << o << ")" << endl;
-        Resource *r = _resources.remove(o);
-        if (r)
-            delete r;
-    }
-
-    static Task *volatile current() { return _current; }
-    static void current(Task *t) { _current = t; }
-
-    static void init();
-
-private:
-    Thread *_main;
-    Resources _resources;
-
-    static Task *volatile _current;
-};
-
 template <typename... Tn>
 inline Thread::Thread(int (*entry)(Tn...), Tn... an)
-    : _task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
+    : _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
 	db<Thread>(WRN) << "construtor da Thread\n" << endl;
     constructor_prologue(STACK_SIZE);
@@ -242,7 +180,7 @@ inline Thread::Thread(int (*entry)(Tn...), Tn... an)
 
 template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
-    : _task(Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
+    : _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
 	db<Thread>(WRN) << "construtor da Thread\n" << endl;
     constructor_prologue(conf.stack_size);

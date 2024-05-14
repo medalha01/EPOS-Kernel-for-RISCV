@@ -234,7 +234,6 @@ template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<RT_Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Active> { static const Type_Id ID = ACTIVE_ID; };
-template<> struct Type<Task> { static const Type_Id ID = TASK_ID; };
 
 template<> struct Type<Address_Space> { static const Type_Id ID = ADDRESS_SPACE_ID; };
 template<> struct Type<Segment> { static const Type_Id ID = SEGMENT_ID; };

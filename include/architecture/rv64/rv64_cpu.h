@@ -321,7 +321,7 @@ public:
             ASM("1: lr.w    %0, (%1)        \n"
                 "   sc.w    t3, %2, (%1)    \n"
                 "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&lock), "r"(one) : "t3", "cc", "memory");
-        asm volatile("fence rw,rw");
+        // asm volatile("fence rw,rw");
         return old;
     }
     /* static T tsl(volatile T &lock)
@@ -376,7 +376,7 @@ public:
                 "   sc.w    t3, %3, (%1)    \n"
                 "   bnez    t3, 1b          \n"
                 "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
-        asm volatile("fence rw,rw");
+        // asm volatile("fence rw,rw");
 
         return old;
     }

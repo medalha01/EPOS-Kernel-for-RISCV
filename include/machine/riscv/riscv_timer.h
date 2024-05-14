@@ -38,19 +38,33 @@ public:
     static const Hertz CLOCK = Traits<Timer>::CLOCK;
 
 protected:
-    Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true)
-        : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler)
-    {
-        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void *>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
+	Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true)
+		: _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler)
+	{
+		db<Thread>(WRN) << "--Timer(f=" << frequency
+			<< ",h=" << reinterpret_cast<void *>(handler)
+			<< ",ch=" << channel << ") => {count=" << _initial << "}"
+			<< endl;
 
-        if (_initial && (channel < CHANNELS) && !_channels[channel])
-            _channels[channel] = this;
-        else
-            db<Timer>(WRN) << "Timer not installed!" << endl;
+		if (_initial && (channel < CHANNELS) && !_channels[channel])
+		{
+			db<Thread>(WRN) << "timer: no if _initial && channel\n\n" << endl;
+			_channels[channel] = this;
+		}
+		else
+		{
+			db<Thread>(WRN) << "timer: NO ELSE\n\n" << endl;
+			db<Timer>(WRN) << "Timer not installed!" << endl;
+		}
 
-        for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
-            _current[i] = _initial;
-    }
+		for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
+		{
+			db<Thread>(WRN) << "timer: current[" << i << "] = initial\n\n" << endl;
+			_current[i] = _initial;
+		}
+
+		db<Thread>(WRN) << "\n\ntimer:cabou" << endl;
+	}
 
 public:
     ~Timer()

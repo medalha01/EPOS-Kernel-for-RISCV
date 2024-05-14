@@ -12,7 +12,7 @@
 #define MACH riscv
 #define MMOD sifive_u
 #define NETW standalone
-#define APPL hello
+#define APPL philosophers_dinner
 #define __library__
 #define __rv64__
 #define __riscv__

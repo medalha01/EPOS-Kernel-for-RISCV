@@ -110,13 +110,17 @@ protected:
     {
         CPU::int_disable();
         if (Traits<Machine>::multi)
+		{
             lock->acquire();
+		}
     }
     //
     static void unlock(Spin *lock = &_lock)
     {
         if (Traits<Machine>::multi)
+		{
             lock->release();
+		}
         CPU::int_enable();
     }
     static volatile bool locked() { return (Traits<Machine>::multi) ? _lock.taken() : CPU::int_disabled(); }
@@ -137,9 +141,13 @@ protected:
 
     static void for_all_threads(Criterion::Event event)
     {
-        for (Queue::Iterator i = _scheduler.begin(); i != _scheduler.end(); ++i)
-            if (i->object()->criterion() != IDLE)
+        for (Queue::Iterator i = _scheduler.begin(); i != _scheduler.end(); ++i) 
+		{
+            if (i->object()->criterion() != IDLE) 
+			{
                 i->object()->criterion().handle(event);
+			}
+		}
     }
 
     static int idle();
@@ -182,8 +190,6 @@ protected:
     template <typename... Tn>
     Task(int (*entry)(Tn...), Tn... an)
     {
-        db<Task, Init>(TRC) << "Task(entry=" << reinterpret_cast<void *>(entry) << ") => " << this << endl;
-
         _current = this;
         _main = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), entry, an...);
     }
@@ -228,6 +234,7 @@ template <typename... Tn>
 inline Thread::Thread(int (*entry)(Tn...), Tn... an)
     : _task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
+	db<Thread>(WRN) << "construtor da Thread\n" << endl;
     constructor_prologue(STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an...);
     constructor_epilogue(entry, STACK_SIZE);
@@ -237,17 +244,10 @@ template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
     : _task(Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
-    db<Thread>(TRC)
-        << "FAZ O L CAPITAO" << endl;
+	db<Thread>(WRN) << "construtor da Thread\n" << endl;
     constructor_prologue(conf.stack_size);
-    db<Thread>(TRC) << "\n\nPICANHA1\n\n"
-                    << endl;
     _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an...);
-    db<Thread>(TRC) << "\n\nPICANHA2\n\n"
-                    << endl;
     constructor_epilogue(entry, conf.stack_size);
-    db<Thread>(TRC) << "\n\nPICANHA3\n\n"
-                    << endl;
 }
 
 // A Java-like Active Object

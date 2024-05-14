@@ -192,10 +192,10 @@ private:
 };
 
 // Heap
-class Heap: public Heap_Wrapper<Simple_Heap, Traits<System>::multicore>
+class Heap: public Heap_Wrapper<Simple_Heap, Traits<Machine>::multi>
 {
 private:
-    typedef Heap_Wrapper<Simple_Heap, Traits<System>::multicore> Base;
+    typedef Heap_Wrapper<Simple_Heap, Traits<Machine>::multi> Base;
 
 public:
     Heap() {}

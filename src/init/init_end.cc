@@ -15,7 +15,7 @@ class Init_End
 public:
     Init_End()
     {
-        db<Init>(TRC) << "Init_End()" << endl;
+        db<Thread>(WRN) << "Init_End()" << endl;
 
 		CPU::smp_barrier();
 
@@ -25,7 +25,7 @@ public:
             return;
         }
 
-        db<Init>(TRC) << "AUUUU()" << endl;
+        db<Thread>(WRN) << "AUUUU()" << endl;
 
 
         if (CPU::is_bootstrap())
@@ -37,6 +37,7 @@ public:
         }
 
         db<Init>(TRC) << "AII()" << endl;
+		db<Thread>(WRN) << "BARRIER NO INIT_END\n" << endl;
         CPU::smp_barrier();
 
         db<Init>(INF) << "INIT ends here!" << endl;
@@ -45,9 +46,10 @@ public:
         // even if no reschedule() was called (running is set by the Scheduler at each insert())
         // It will return MAIN for CPU0 and IDLE for the others
 		db<Thread>(WRN) << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
+
         Thread *first = Thread::self();
 
-        db<Init, Thread>(INF) << "Dispatching the first thread: " << first << endl;
+        db<Init, Thread>(WRN) << "-----Dispatching the first thread: " << first << endl;
 
 		CPU::smp_barrier();
 
@@ -57,6 +59,8 @@ public:
         {
             Timer::reset();
         }
+
+		db<Thread>(WRN) << "banana na sacada\n" << endl;
 
         first->_context->load();
     }

@@ -562,8 +562,10 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
                             << endl;
         }
     }
-
-    db<Thread>(WRN) << "FDAJKFJDASLFJASLFJDALFJLSJ" << endl;
+	else 
+	{
+		db<Thread>(WRN) << "----dispatch: prev = next\n" << endl;
+	}
 }
 
 int Thread::idle()

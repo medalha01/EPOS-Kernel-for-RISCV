@@ -62,6 +62,7 @@ extern "C"
             }
         }
     }
+
     void _print_trailler(bool error)
     {
         if (Traits<Machine>::multi)
@@ -76,7 +77,9 @@ extern "C"
                 _print_lock = -1;
             }
         }
-        if (error)
-            Machine::panic();
+        if (error) 
+		{
+            Machine::panic(__FILE__, __LINE__);
+		}
     }
 }

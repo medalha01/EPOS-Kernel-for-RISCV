@@ -76,8 +76,10 @@ void IC::dispatch()
 void IC::int_not(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
-    if (Traits<Build>::hysterically_debugged)
-        Machine::panic();
+    if (Traits<Build>::hysterically_debugged) 
+	{
+        Machine::panic(__FILE__, __LINE__);
+	}
 }
 
 void IC::exception(Interrupt_Id id)

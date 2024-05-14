@@ -123,7 +123,7 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const bool simulate_capacity = false;
     static const int priority_inversion_protocol = NONE;
 
-    typedef RR Criterion;
+    typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
 

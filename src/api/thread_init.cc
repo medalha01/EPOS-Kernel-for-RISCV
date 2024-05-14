@@ -12,7 +12,6 @@ extern "C"
 	void __epos_app_entry();
 }
 
-volatile bool isInitReady = false;
 void Thread::init()
 {
 	db<Init, Thread>(WRN) << "no Thread::init()" << endl;
@@ -51,38 +50,33 @@ void Thread::init()
 
 	if (CPU::is_bootstrap())
 	{
-		db<Thread>(WRN) << "is_bootstrap no if\n\n"
-						<< endl;
+		db<Thread>(WRN) << "@@@THREAD_INIT@@@ is_bootstrap no if\n\n" << endl;
 
 		Main *main = reinterpret_cast<Main *>(__epos_app_entry);
 
-		db<Thread>(WRN) << "INIT_MAIN BOOOTSTRAP, core = " << CPU::id() << endl;
+		db<Thread>(WRN) << "@@@THREAD_INIT@@@ INIT_MAIN BOOOTSTRAP, core = " << CPU::id() << endl;
 		new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::MAIN), main);
 
-		db<Thread>(WRN) << "DPS DA MAIN BOOTSTRAP, core = " << CPU::id() << endl;
+		db<Thread>(WRN) << "@@@THREAD_INIT@@@ DPS DA MAIN BOOTSTRAP, core = " << CPU::id() << endl;
 
 		// Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
 	}
 	else
 	{
-		Machine::delay(1000000);
+		//Machine::delay(1000000);
 	}
-	db<Thread>(WRN) << "------------smp_barrier do thread_init, core = "
-					<< CPU::id() << endl;
+	db<Thread>(WRN) << "@@@THREAD_INIT@@@------------smp_barrier do thread_init, core = " << CPU::id() << endl;
 	CPU::smp_barrier();
-	db<Thread>(WRN) << "------------DEPOIS do smp_barrier do thread_init, core = "
-					<< CPU::id() << endl;
+	db<Thread>(WRN) << "@@@THREAD_INIT@@@------------DEPOIS do smp_barrier do thread_init" << endl;
 
 	// Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
 	new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
 
-	db<Thread>(WRN) << "DEPOIS DE INIT IDLE\n"
-					<< endl;
+	db<Thread>(WRN) << "@@@THREAD_INIT@@@ ANTES DA BARRIER DPS DA IDLE\n" << endl;
 
 	CPU::smp_barrier();
 
-	db<Thread>(WRN) << "DPS DA IDLE IDLE IDLE\n"
-					<< endl;
+	db<Thread>(WRN) << "@@@THREAD_INIT@@@ DPS DA BARRIER E DA IDLE" << endl;
 	// The installation of the scheduler timer handler does not need to be done after the
 	// creation of threads, since the constructor won't call reschedule() which won't call
 	// dispatch that could call timer->reset()
@@ -91,6 +85,8 @@ void Thread::init()
 	// has a lower priority)
 	if (Criterion::timed && (CPU::is_bootstrap()))
 	{
+		// BUG: @arthur aqui
+		db<Thread>(WRN) << "@@@TIMER@@@ - O QUANTO EH IGUAL A  =  "<< QUANTUM << endl;
 		_timer = new (SYSTEM) Scheduler_Timer(QUANTUM, time_slicer);
 	}
 

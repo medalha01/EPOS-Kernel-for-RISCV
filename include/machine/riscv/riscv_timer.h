@@ -38,9 +38,15 @@ public:
     static const Hertz CLOCK = Traits<Timer>::CLOCK;
 
 protected:
-	Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true)
-		: _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler)
+	Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true) 
+		: _channel(channel),
+		  _initial(FREQUENCY / frequency),
+		  _retrigger(retrigger),
+		  _handler(handler)
 	{
+		db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency << endl;
+		db<Thread>(WRN) << "@@@TIMER CONS@@@ FREQUENCY / frequency = " << FREQUENCY / frequency << endl;
+
 		db<Thread>(WRN) << "--Timer(f=" << frequency
 			<< ",h=" << reinterpret_cast<void *>(handler)
 			<< ",ch=" << channel << ") => {count=" << _initial << "}"
@@ -76,15 +82,53 @@ public:
 
     Tick read() { return _current[CPU::id()]; }
 
-    int restart()
-    {
-        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current[CPU::id()] << "}" << endl;
+	int restart() {
+		// TODO: change to <Timer> again
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
+		db<Thread>(WRN) << "@@@TIMER _initial = " << _initial << endl;
+		db<Thread>(WRN) << "@@@TIMER FREQUENCY = " << FREQUENCY << endl;
 
-        int percentage = _current[CPU::id()] * 100 / _initial;
-        _current[CPU::id()] = _initial;
+		db<Thread>(WRN) << "@@@TIMER::restart() => {f=" << frequency()
+			<< endl;
+			//<< ",h=" << reinterpret_cast<void *>(_handler)
+			//<< ",count=" << _current[CPU::id()] << "}" << endl;
 
-        return percentage;
-    }
+		db<Thread>(WRN) << "@@@TIMER: ANTES DO PERCENTAGE" << endl;
+
+		int percentage = _current[CPU::id()] * 100 / _initial;
+
+		db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DO PERCENTAGE" << endl;
+		
+		_current[CPU::id()] = _initial;
+
+		db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DE SETAR O CPU_ID = " << _initial << endl;
+
+		return percentage;
+	}
 
     static void reset() { config(FREQUENCY); }
     static void enable() {}
@@ -100,7 +144,12 @@ public:
     void handler(Handler handler) { _handler = handler; }
 
 private:
-    static void config(Hertz frequency) { mtimecmp(mtime() + (CLOCK / frequency)); }
+    static void config(Hertz frequency) 
+	{ 
+		db<Thread>(WRN) << "TIMER config antes do mtimecmp" << endl;
+		mtimecmp(mtime() + (CLOCK / frequency)); 
+		db<Thread>(WRN) << "TIMER config depois do mtimecmp" << endl;
+	}
 
     static void int_handler(Interrupt_Id i);
 
@@ -120,7 +169,11 @@ protected:
 class Scheduler_Timer : public Timer
 {
 public:
-    Scheduler_Timer(Microsecond quantum, Handler handler) : Timer(SCHEDULER, 1000000 / quantum, handler) {}
+    Scheduler_Timer(Microsecond quantum, Handler handler) : Timer(SCHEDULER, 1000000 / quantum, handler) 
+	{
+		db<Thread>(WRN) << "@@@SCHEDTIMER@@@ quantum = " << quantum << endl;
+		db<Thread>(WRN) << "@@@SCHEDTIMER@@@ _initial = " << 1000000 / quantum << endl;
+	}
 };
 
 // Timer used by Alarm

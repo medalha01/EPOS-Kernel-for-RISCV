@@ -502,24 +502,22 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
     // if (charge && Criterion::timed)
     if (charge && Criterion::timed)
     {
-        db<Thread>(WRN) << "timer restart?????????" << endl;
-        _timer->restart();
+        db<Thread>(WRN) << "@@@ TIMER: antes do restart" << endl;
+        _timer->restart(); // scheduler_timer
     }
 
-    db<Thread>(WRN) << "----dispatch depois do if criterion::timed\n"
-                    << endl;
+	// NOTE: não chega aqui... para no _timer->restart()
+    db<Thread>(WRN) << "----dispatch depois do if criterion::timed\n" << endl;
 
     if (prev != next)
     {
         if (Criterion::dynamic)
         {
-            db<Thread>(WRN) << "----dispatch inicio do if criterion::dynamic\n"
-                            << endl;
+            db<Thread>(WRN) << "----dispatch inicio do if criterion::dynamic\n" << endl;
             prev->criterion().handle(Criterion::CHARGE | Criterion::LEAVE);
             for_all_threads(Criterion::UPDATE);
             next->criterion().handle(Criterion::AWARD | Criterion::ENTER);
-            db<Thread>(WRN) << "----dispatch inicio final do if criterion::dynamic\n"
-                            << endl;
+            db<Thread>(WRN) << "----dispatch inicio final do if criterion::dynamic\n" << endl;
         }
 
         if (prev->_state == RUNNING)

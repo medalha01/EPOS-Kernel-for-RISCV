@@ -162,7 +162,7 @@ void matrix_multiply(int index_a, int index_b, int index_c, int index_d, int ind
             {
                 matrices[index_d][i][j] += matrices[index_a][i][k] * matrices[index_b][k][j];
                 matrices[index_e][i][j] += matrices[index_d][i][k] * matrices[index_c][k][j];
-                if ((i < 7) & (j < 3))
+                if ((i % 10 == 0) & (j % 10 == 0))
                     cout << "Matrix"
                          << "I" << i << "J" << j << "Value" << matrices[index_e][i][j] << endl;
             }

@@ -30,6 +30,7 @@ int main()
 
 int hello()
 {
+    CPU::smp_barrier();
 
     hello_lock.lock();
     cout

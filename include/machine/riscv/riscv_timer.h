@@ -44,32 +44,26 @@ protected:
 		  _retrigger(retrigger),
 		  _handler(handler)
 	{
-		//db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency  << " - --- -AAAAAAAAAA" << endl;
-		//db<Thread>(WRN) << "@@@TIMER CONS@@@ FREQUENCY / frequency = " << FREQUENCY / frequency << endl;
 
-		//db<Thread>(WRN) << "--Timer(f=" << frequency
-		//	<< ",h=" << reinterpret_cast<void *>(handler)
-		//	<< ",ch=" << channel << ") => {count=" << _initial << "}"
-		//	<< endl;
+		db<Thread>(WRN) << "--Timer(f=" << frequency
+			<< ",h=" << reinterpret_cast<void *>(handler)
+			<< ",ch=" << channel << ") => {count=" << _initial << "}"
+			<< endl;
 
 		if (_initial && (channel < CHANNELS) && !_channels[channel])
 		{
-			db<Thread>(WRN) << "timer: no if _initial && channel\n\n" << endl;
 			_channels[channel] = this;
 		}
 		else
 		{
-			db<Thread>(WRN) << "timer: NO ELSE\n\n" << endl;
 			db<Timer>(WRN) << "Timer not installed!" << endl;
 		}
 
 		for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
 		{
-			db<Thread>(WRN) << "timer: current[" << i << "] = initial\n\n" << endl;
 			_current[i] = _initial;
 		}
 
-		db<Thread>(WRN) << "\n\ntimer:cabou" << endl;
 	}
 
 public:
@@ -86,24 +80,12 @@ public:
 
 	int restart() {
 		// TODO: change to <Timer> again
-		//
-		//db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		//db<Thread>(WRN) << "@@@TIMER _initial = " << _initial << endl;
-		//db<Thread>(WRN) << "@@@TIMER FREQUENCY = " << FREQUENCY << endl;
-
-		//db<Thread>(WRN) << "@@@TIMER::restart() => {f=" << frequency() << endl;
-			//<< ",h=" << reinterpret_cast<void *>(_handler)
-			//<< ",count=" << _current[CPU::id()] << "}" << endl;
-
-		//db<Thread>(WRN) << "@@@TIMER: ANTES DO PERCENTAGE" << endl;
 
 		int percentage = _current[CPU::id()] * 100 / _initial;
 
-		//db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DO PERCENTAGE" << endl;
 		
 		_current[CPU::id()] = _initial;
 
-		//db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DE SETAR O CPU_ID = " << _initial << endl;
 
 		return percentage;
 	}
@@ -124,9 +106,7 @@ public:
 private:
     static void config(Hertz frequency) 
 	{ 
-		//db<Thread>(WRN) << "TIMER config antes do mtimecmp" << endl;
 		mtimecmp(mtime() + (CLOCK / frequency)); 
-		//db<Thread>(WRN) << "TIMER config depois do mtimecmp" << endl;
 	}
 
     static void int_handler(Interrupt_Id i);
@@ -149,9 +129,7 @@ class Scheduler_Timer : public Timer
 public:
     Scheduler_Timer(Microsecond quantum, Handler handler) : Timer(SCHEDULER, 1000000 / quantum, handler) 
 	{
-		db<Thread>(WRN) << "@@@SCHEDTIMER@@@ quantum = " << quantum << endl;
-		db<Thread>(WRN) << "@@@SCHEDTIMER@@@ _initial = " << 1000000 / quantum << endl;
-	}
+		}
 };
 
 // Timer used by Alarm

@@ -15,29 +15,26 @@ class Init_End
 public:
     Init_End()
     {
-        db<Thread>(WRN) << "Init_End()" << endl;
+        db<Thread>(TRC) << "Start of Init_End()" << endl;
 
-		CPU::smp_barrier();
+        CPU::smp_barrier();
 
         if (!Traits<System>::multithread)
         {
+            db<Thread>(WRN) << "System is not multithreaded, finishing Init_End()" << endl;
+
             CPU::int_enable();
             return;
         }
 
-        db<Thread>(WRN) << "AUUUU()" << endl;
-
-
         if (CPU::is_bootstrap())
         {
-            if (Memory_Map::BOOT_STACK != Memory_Map::NOT_USED) 
-			{
+            if (Memory_Map::BOOT_STACK != Memory_Map::NOT_USED)
+            {
                 MMU::free(Memory_Map::BOOT_STACK, MMU::pages(Traits<Machine>::STACK_SIZE));
-			}
+            }
         }
 
-        db<Init>(TRC) << "AII()" << endl;
-		db<Thread>(WRN) << "BARRIER NO INIT_END\n" << endl;
         CPU::smp_barrier();
 
         db<Init>(INF) << "INIT ends here!" << endl;
@@ -45,13 +42,12 @@ public:
         // Thread::self() and Task::self() can be safely called after the construction of MAIN
         // even if no reschedule() was called (running is set by the Scheduler at each insert())
         // It will return MAIN for CPU0 and IDLE for the others
-		//db<Thread>(WRN) << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
 
         Thread *first = Thread::self();
 
-        //db<Init, Thread>(WRN) << "-----Dispatching the first thread: " << first << endl;
+        db<Init, Thread>(TRC) << "-----Dispatching the first thread: " << first << endl;
 
-		CPU::smp_barrier();
+        CPU::smp_barrier();
 
         // Interrupts have been disabled at Thread::init() and will be reenabled by CPU::Context::load()
         // but we first reset the timer to avoid getting a time interrupt during load()
@@ -60,7 +56,8 @@ public:
             Timer::reset();
         }
 
-		db<Thread>(WRN) << "banana na sacada\n" << endl;
+        db<Thread>(TRC) << "End of Init loading first context!\n"
+                        << endl;
 
         first->_context->load();
     }

@@ -4,7 +4,7 @@
 
 __BEGIN_UTIL
 
-void Simple_Heap::out_of_memory(unsigned long bytes)
+void Heap::out_of_memory(unsigned long bytes)
 {
     db<Heaps, System>(ERR) << "Heap::alloc(this=" << this << "): out of memory while allocating " << bytes << " bytes!" << endl;
 }

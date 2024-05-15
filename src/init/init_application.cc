@@ -20,7 +20,6 @@ public:
     {
         db<Init>(TRC) << "Init_Application()" << endl;
 
-		db<Thread>(WRN) << "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n" << endl;
 
 		db<Thread>(WRN) << "__init_app = Init_Application()" << endl;
         CPU::smp_barrier();

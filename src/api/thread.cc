@@ -45,13 +45,13 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    // db<Thread>(TRC) << "Thread(entry=" << entry
-    //                 << ",state=" << _state
-    //                 << ",priority=" << _link.rank()
-    //                 << ",stack={b=" << reinterpret_cast<void *>(_stack)
-    //                 << ",s=" << stack_size
-    //                 << "},context={b=" << _context
-    //                 << "," << *_context << "}) => " << this << endl;
+    db<Thread>(TRC) << "Thread(entry=" << entry
+                    << ",state=" << _state
+                    << ",priority=" << _link.rank()
+                    << ",stack={b=" << reinterpret_cast<void *>(_stack)
+                    << ",s=" << stack_size
+                    << "},context={b=" << _context
+                    << "," << *_context << "}) => " << this << endl;
 
     db<Thread>(WRN) << "constructor_epilogue start" << endl;
 
@@ -124,7 +124,6 @@ Thread::~Thread()
 
     delete _stack;
 }
-
 void Thread::priority(Criterion c)
 {
     lock();
@@ -437,7 +436,6 @@ void Thread::deprioritize(Queue *q)
 
 void Thread::reschedule(unsigned int cpu)
 {
-    // db<Thread>(WRN) << "dentro do reschedule\n\n" << endl;
 
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
     {
@@ -448,7 +446,6 @@ void Thread::reschedule(unsigned int cpu)
 
     if (!Traits<Machine>::multi || CPU::id() == cpu)
     {
-        // db<Thread>(WRN) << "indo pro reschedule sem cpu\n " << endl;
         reschedule();
     }
     else

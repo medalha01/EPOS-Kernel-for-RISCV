@@ -38,96 +38,89 @@ public:
     static const Hertz CLOCK = Traits<Timer>::CLOCK;
 
 protected:
-	Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true) 
-		: _channel(channel),
-		  _initial(FREQUENCY / frequency),
-		  _retrigger(retrigger),
-		  _handler(handler)
-	{
-		//db<Thread>(WRN) << "@@@TIMER CONS@@@ frequency = " << frequency  << " - --- -AAAAAAAAAA" << endl;
-		//db<Thread>(WRN) << "@@@TIMER CONS@@@ FREQUENCY / frequency = " << FREQUENCY / frequency << endl;
+    Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true) 
+        : _channel(channel),
+          _initial(FREQUENCY / frequency),
+          _retrigger(retrigger),
+          _handler(handler)
+    {
+        db<Timer>(INF) << "Initializing Timer: channel = " << channel
+                       << ", frequency = " << frequency
+                       << ", handler = " << reinterpret_cast<void *>(handler)
+                       << ", retrigger = " << retrigger << endl;
 
-		//db<Thread>(WRN) << "--Timer(f=" << frequency
-		//	<< ",h=" << reinterpret_cast<void *>(handler)
-		//	<< ",ch=" << channel << ") => {count=" << _initial << "}"
-		//	<< endl;
+        if (_initial && (channel < CHANNELS) && !_channels[channel])
+        {
+            db<Timer>(INF) << "Setting up timer channel " << channel << " with initial count " << _initial << endl;
+            _channels[channel] = this;
+        }
+        else
+        {
+            db<Timer>(WRN) << "Failed to install Timer on channel " << channel << endl;
+        }
 
-		if (_initial && (channel < CHANNELS) && !_channels[channel])
-		{
-			db<Thread>(WRN) << "timer: no if _initial && channel\n\n" << endl;
-			_channels[channel] = this;
-		}
-		else
-		{
-			db<Thread>(WRN) << "timer: NO ELSE\n\n" << endl;
-			db<Timer>(WRN) << "Timer not installed!" << endl;
-		}
+        for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
+        {
+            db<Timer>(TRC) << "Initializing current tick for CPU " << i << " with initial count " << _initial << endl;
+            _current[i] = _initial;
+        }
 
-		for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
-		{
-			db<Thread>(WRN) << "timer: current[" << i << "] = initial\n\n" << endl;
-			_current[i] = _initial;
-		}
-
-		db<Thread>(WRN) << "\n\ntimer:cabou" << endl;
-	}
+        db<Timer>(INF) << "Timer initialization complete for channel " << channel << endl;
+    }
 
 public:
-	~Timer() {
-		db<Timer>(TRC) << "~Timer(f=" << frequency()
-			<< ",h=" << reinterpret_cast<void *>(_handler)
-			<< ",ch=" << _channel << ") => {count=" << _initial
-			<< "}" << endl;
+    ~Timer() {
+        db<Timer>(TRC) << "Destroying Timer: frequency = " << frequency()
+                       << ", handler = " << reinterpret_cast<void *>(_handler)
+                       << ", channel = " << _channel
+                       << ", initial count = " << _initial << endl;
 
-		_channels[_channel] = 0;
-	}
+        _channels[_channel] = nullptr;
+    }
 
-    Tick read() { return _current[CPU::id()]; }
+    Tick read() { 
+        return _current[CPU::id()]; 
+    }
 
-	int restart() {
-		// TODO: change to <Timer> again
-		//
-		//db<Thread>(WRN) << "@@@TIMER _initialjkfldsajfldsajfedsjlkfdsajlkfdsajlkfdsajlksafdjlflsdaj" << endl; 
-		//db<Thread>(WRN) << "@@@TIMER _initial = " << _initial << endl;
-		//db<Thread>(WRN) << "@@@TIMER FREQUENCY = " << FREQUENCY << endl;
+    int restart() {
+        db<Timer>(INF) << "Restarting Timer: current tick = " << _current[CPU::id()] 
+                       << ", initial count = " << _initial << endl;
 
-		//db<Thread>(WRN) << "@@@TIMER::restart() => {f=" << frequency() << endl;
-			//<< ",h=" << reinterpret_cast<void *>(_handler)
-			//<< ",count=" << _current[CPU::id()] << "}" << endl;
+        int percentage = _current[CPU::id()] * 100 / _initial;
 
-		//db<Thread>(WRN) << "@@@TIMER: ANTES DO PERCENTAGE" << endl;
+        db<Timer>(TRC) << "Computed percentage: " << percentage << "%" << endl;
 
-		int percentage = _current[CPU::id()] * 100 / _initial;
+        _current[CPU::id()] = _initial;
 
-		//db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DO PERCENTAGE" << endl;
-		
-		_current[CPU::id()] = _initial;
+        db<Timer>(INF) << "Reset current tick for CPU " << CPU::id() << " to initial count " << _initial << endl;
 
-		//db<Thread>(WRN) << "@@@TIMER: LOGO DEPOIS DE SETAR O CPU_ID = " << _initial << endl;
+        return percentage;
+    }
 
-		return percentage;
-	}
+    static void reset() { 
+        config(FREQUENCY); 
+    }
+    static void enable() {
+    }
+    static void disable() {
+    }
 
-    static void reset() { config(FREQUENCY); }
-    static void enable() {}
-    static void disable() {}
-
-    Hertz frequency() const { return (FREQUENCY / _initial); }
-    void frequency(Hertz f)
-    {
+    Hertz frequency() const { 
+        return (FREQUENCY / _initial); 
+    }
+    void frequency(Hertz f) {
         _initial = FREQUENCY / f;
         reset();
     }
 
-    void handler(Handler handler) { _handler = handler; }
+    void handler(Handler handler) { 
+        _handler = handler; 
+    }
 
 private:
-    static void config(Hertz frequency) 
-	{ 
-		//db<Thread>(WRN) << "TIMER config antes do mtimecmp" << endl;
-		mtimecmp(mtime() + (CLOCK / frequency)); 
-		//db<Thread>(WRN) << "TIMER config depois do mtimecmp" << endl;
-	}
+    static void config(Hertz frequency) { 
+		mtimecmp(mtime() + (CLOCK / frequency));
+    }
 
     static void int_handler(Interrupt_Id i);
 
@@ -147,18 +140,23 @@ protected:
 class Scheduler_Timer : public Timer
 {
 public:
-    Scheduler_Timer(Microsecond quantum, Handler handler) : Timer(SCHEDULER, 1000000 / quantum, handler) 
-	{
-		db<Thread>(WRN) << "@@@SCHEDTIMER@@@ quantum = " << quantum << endl;
-		db<Thread>(WRN) << "@@@SCHEDTIMER@@@ _initial = " << 1000000 / quantum << endl;
-	}
+    Scheduler_Timer(Microsecond quantum, Handler handler) 
+        : Timer(SCHEDULER, 1000000 / quantum, handler) 
+    {
+        db<Scheduler_Timer>(INF) << "Initializing Scheduler_Timer: quantum = " << quantum
+                                 << ", initial count = " << 1000000 / quantum << endl;
+    }
 };
 
 // Timer used by Alarm
 class Alarm_Timer : public Timer
 {
 public:
-    Alarm_Timer(Handler handler) : Timer(ALARM, FREQUENCY, handler) {}
+    Alarm_Timer(Handler handler) 
+        : Timer(ALARM, FREQUENCY, handler) 
+    {
+        db<Alarm_Timer>(INF) << "Initializing Alarm_Timer with frequency " << FREQUENCY << endl;
+    }
 };
 
 __END_SYS

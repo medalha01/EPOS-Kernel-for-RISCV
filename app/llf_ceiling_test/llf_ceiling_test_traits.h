@@ -126,18 +126,18 @@ template <>
 struct Traits<Thread> : public Traits<Build>
 
 {
-    static const bool debugged = true; // Enable debugging for MyClass
-    static const bool error = true;    // Enable error level debugging for MyClass
-    static const bool warning = true;  // Enable warning level debugging for MyClass
-    static const bool info = false;    // Enable info level debugging for MyClass
-    static const bool trace = false;   // Enable trace level debugging for MyClass
+    static const bool debugged = false; // Enable debugging for MyClass
+    static const bool error = true;     // Enable error level debugging for MyClass
+    static const bool warning = true;   // Enable warning level debugging for MyClass
+    static const bool info = false;     // Enable info level debugging for MyClass
+    static const bool trace = false;    // Enable trace level debugging for MyClass
     static const bool enabled = Traits<System>::multithread;
     static const bool trace_idle = hysterically_debugged;
     static const bool simulate_capacity = false;
 
     typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
-    static const int priority_inversion_protocol = NONE;
+    static const int priority_inversion_protocol = CEILING;
 };
 
 template <>

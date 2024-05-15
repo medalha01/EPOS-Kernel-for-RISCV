@@ -20,7 +20,6 @@ int consumer()
 {
     int out = 0;
     for(int i = 0; i < iterations; i++) {
-        cout << "CPU ID \n\n" << CPU::id() << "\n\n CPU PRINTADA" << endl;
         full.p();
         cout << "C<-" << buffer[out] << " ";
         out = (out + 1) % BUF_SIZE;
@@ -40,7 +39,6 @@ int main()
     // producer
     int in = 0;
     for(int i = 0; i < iterations; i++) {
-        cout << "CPU ID \n\n" << CPU::id() << "\n\n CPU PRINTADA" << endl;
         empty.p();
         Alarm::delay(100000);
         buffer[in] = 'a' + in;

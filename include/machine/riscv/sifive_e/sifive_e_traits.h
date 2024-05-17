@@ -52,14 +52,14 @@ public:
     static const unsigned long SYS              = NOT_USED;
 
     // Default Sizes and Quantities
-    static const unsigned int MAX_THREADS       = 6;
-    static const unsigned int STACK_SIZE        = 756;
-    static const unsigned int HEAP_SIZE         = 8192;
+    static const unsigned int MAX_THREADS       = 8;
+    static const unsigned int STACK_SIZE        = 1024;
+    static const unsigned int HEAP_SIZE         = 2048;
 };
 
 template <> struct Traits<IC>: public Traits<Machine_Common>
 {
-    static const bool debugged =false;
+    static const bool debugged = hysterically_debugged;
 
     static const unsigned int PLIC_IRQS = 53;           // IRQ0 is used by PLIC to signalize that there is no interrupt being serviced or pending
 
@@ -89,7 +89,7 @@ template <> struct Traits<Timer>: public Traits<Machine_Common>
     // Meaningful values for the timer frequency range from 100 to 10000 Hz. The
     // choice must respect the scheduler time-slice, i. e., it must be higher
     // than the scheduler invocation frequency.
-    static const int FREQUENCY = 1000; // Hz
+    static const int FREQUENCY = 100; // Hz
 };
 
 template <> struct Traits<UART>: public Traits<Machine_Common>

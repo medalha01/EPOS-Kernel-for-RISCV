@@ -11,7 +11,7 @@ Alarm_Timer * Alarm::_timer;
 volatile Alarm::Tick Alarm::_elapsed;
 Alarm::Queue Alarm::_request;
 
-Alarm::Alarm(const Microsecond & time, Handler * handler, unsigned int times)
+Alarm::Alarm(Microsecond time, Handler * handler, unsigned int times)
 : _time(time), _handler(handler), _times(times), _ticks(ticks(time)), _link(this, _ticks)
 {
     lock();
@@ -26,6 +26,8 @@ Alarm::Alarm(const Microsecond & time, Handler * handler, unsigned int times)
         unlock();
         (*handler)();
     }
+
+    Task::self()->enroll(this);
 }
 
 Alarm::~Alarm()
@@ -35,6 +37,8 @@ Alarm::~Alarm()
     db<Alarm>(TRC) << "~Alarm(this=" << this << ")" << endl;
 
     _request.remove(this);
+
+    Task::self()->dismiss(this);
 
     unlock();
 }
@@ -55,7 +59,7 @@ void Alarm::reset()
         unlock();
 }
 
-void Alarm::period(const Microsecond & p)
+void Alarm::period(Microsecond p)
 {
     bool locked = Thread::locked();
     if(!locked)
@@ -73,7 +77,7 @@ void Alarm::period(const Microsecond & p)
 }
 
 
-void Alarm::delay(const Microsecond & time)
+void Alarm::delay(Microsecond time)
 {
     db<Alarm>(TRC) << "Alarm::delay(time=" << time << ")" << endl;
 

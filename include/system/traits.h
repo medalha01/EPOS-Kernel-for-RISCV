@@ -109,6 +109,7 @@ class FCFS;
 class RR;
 class RM;
 class DM;
+class LM;
 class EDF;
 class LLF;
 class GRR;
@@ -203,6 +204,9 @@ struct Traits_Tokens
 
     // SmartData predictors
     enum :unsigned char {NONE, LVP, DBP};
+
+    // Priority inversion protocols
+    enum {CEILING, INHERITANCE};
 
     // Default aspects
     typedef ALIST<> ASPECTS;

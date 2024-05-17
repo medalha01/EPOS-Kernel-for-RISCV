@@ -7,12 +7,9 @@ __BEGIN_SYS
 
 void Alarm::init()
 {
-    if (CPU::is_bootstrap())
-    {
-        db<Init, Alarm>(TRC) << "Alarm::init()" << endl;
+    db<Init, Alarm>(TRC) << "Alarm::init()" << endl;
 
-        _timer = new (SYSTEM) Alarm_Timer(handler);
-    }
+    _timer = new (SYSTEM) Alarm_Timer(handler);
 }
 
 __END_SYS

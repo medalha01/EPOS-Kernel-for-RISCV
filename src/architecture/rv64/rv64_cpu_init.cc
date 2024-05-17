@@ -2,31 +2,26 @@
 
 #include <architecture.h>
 
-extern "C"
-{
-    void __epos_library_app_entry(void);
-}
+extern "C" { void __epos_library_app_entry(void); }
 
 __BEGIN_SYS
 
 void CPU::init()
 {
     db<Init, CPU>(TRC) << "CPU::init()" << endl;
-    if (CPU::is_bootstrap())
-    {
-        if (Traits<MMU>::enabled)
-            MMU::init();
-        else
-            db<Init, MMU>(WRN) << "MMU is disabled!" << endl;
-    }
+
+    if(Traits<MMU>::enabled)
+        MMU::init();
+    else
+        db<Init, MMU>(WRN) << "MMU is disabled!" << endl;
 
 #ifdef __TSC_H
-    if (Traits<TSC>::enabled)
+    if(Traits<TSC>::enabled)
         TSC::init();
 #endif
 
 #ifdef __PMU_H
-    if (Traits<PMU>::enabled)
+    if(Traits<PMU>::enabled)
         PMU::init();
 #endif
 }

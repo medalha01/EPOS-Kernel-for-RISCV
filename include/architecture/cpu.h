@@ -16,75 +16,55 @@ protected:
     CPU_Common() {}
 
 public:
-    typedef UInt8 Reg8;
+    typedef UInt8  Reg8;
     typedef UInt16 Reg16;
     typedef UInt32 Reg32;
     typedef UInt64 Reg64;
-    typedef UInt Reg;
-    typedef UInt Interrupt_Id;
+    typedef UInt   Reg;
+    typedef UInt   Interrupt_Id;
 
     template <typename Reg>
     class Address
     {
     public:
         constexpr Address() {}
-        Address(const Address &a) : _addr(a._addr) {}
-        Address(const Reg &a) : _addr(a) {}
-        template <typename T>
-        Address(T *a) : _addr(Reg(a)) {}
+        Address(const Address & a) : _addr(a._addr) {}
+        Address(const Reg & a) : _addr(a) {}
+        template<typename T>
+        Address(T * a) : _addr(Reg(a)) {}
 
         constexpr operator Reg() const { return _addr; }
 
-        template <typename T>
+        template<typename T>
         operator T *() const { return reinterpret_cast<T *>(_addr); }
 
-        template <typename T>
+        template<typename T>
         bool operator==(T a) const { return (_addr == Reg(a)); }
-        template <typename T>
-        bool operator<(T a) const { return (_addr < Reg(a)); }
-        template <typename T>
-        bool operator>(T a) const { return (_addr > Reg(a)); }
-        template <typename T>
+        template<typename T>
+        bool operator< (T a) const { return (_addr < Reg(a)); }
+        template<typename T>
+        bool operator> (T a) const { return (_addr > Reg(a)); }
+        template<typename T>
         bool operator>=(T a) const { return (_addr >= Reg(a)); }
-        template <typename T>
+        template<typename T>
         bool operator<=(T a) const { return (_addr <= Reg(a)); }
 
-        template <typename T>
+        template<typename T>
         Address operator-(T a) const { return _addr - Reg(a); }
-        template <typename T>
+        template<typename T>
         Address operator+(T a) const { return _addr + Reg(a); }
-        template <typename T>
-        Address &operator+=(T a)
-        {
-            _addr += Reg(a);
-            return *this;
-        }
-        template <typename T>
-        Address &operator-=(T a)
-        {
-            _addr -= Reg(a);
-            return *this;
-        }
-        template <typename T>
-        Address &operator&=(T a)
-        {
-            _addr &= Reg(a);
-            return *this;
-        }
-        template <typename T>
-        Address &operator|=(T a)
-        {
-            _addr |= Reg(a);
-            return *this;
-        }
+        template<typename T>
+        Address & operator+=(T a) { _addr += Reg(a); return *this; }
+        template<typename T>
+        Address & operator-=(T a) { _addr -= Reg(a); return *this; }
+        template<typename T>
+        Address & operator&=(T a) { _addr &= Reg(a); return *this; }
+        template<typename T>
+        Address & operator|=(T a) { _addr |= Reg(a); return *this; }
 
-        Address &operator[](int i) { return *(this + i); }
+        Address & operator[](int i) { return *(this + i); }
 
-        friend OStream &operator<<(OStream &os, const Address &a)
-        {
-            os << reinterpret_cast<void *>(a._addr);
-            return os;
-        }
+        friend OStream & operator<<(OStream & os, const Address & a) { os << reinterpret_cast<void *>(a._addr); return os; }
 
     private:
         Reg _addr;
@@ -96,21 +76,21 @@ public:
     class Context;
 
 public:
-    static Log_Addr pc(); // program counter / instruction pointer
+    static Log_Addr pc();       // program counter / instruction pointer
 
-    static Log_Addr sp(); // ABI stack pointer
+    static Log_Addr sp();       // ABI stack pointer
     static void sp(Log_Addr sp);
 
-    static Log_Addr fp(); // ABI frame pointer
+    static Log_Addr fp();       // ABI frame pointer
     static void fp(Log_Addr sp);
 
-    static Log_Addr ra(); // ABI return address (either link register or from the stack)
+    static Log_Addr ra();       // ABI return address (either link register or from the stack)
 
-    static Reg fr(); // ABI function return (either a register or from the stack)
+    static Reg fr();            // ABI function return (either a register or from the stack)
     static void fr(Reg fr);
 
-    static Hertz clock() { return Traits<CPU>::CLOCK; }
-    static void clock(const Hertz &frequency) {}
+    static Hertz clock()  { return Traits<CPU>::CLOCK; }
+    static void clock(const Hertz & frequency) {}
     static Hertz max_clock() { return Traits<CPU>::CLOCK; }
     static Hertz min_clock() { return Traits<CPU>::CLOCK; }
 
@@ -121,76 +101,59 @@ public:
     static bool int_enabled();
     static bool int_disabled();
 
-    static void halt()
-    {
-        for (;;)
-            ;
-    }
+    static void halt() { for(;;); }
 
-    static void switch_context(Context *volatile *o, Context *volatile n);
+    static void switch_context(Context * volatile * o, Context * volatile n);
+
 
     static unsigned int id();
     static unsigned int cores();
 
     template <typename T>
-    static T tsl(volatile T &lock)
-    {
+    static T tsl(volatile T & lock) {
         T old = lock;
         lock = 1;
         return old;
     }
 
     template <typename T>
-    static T finc(volatile T &value)
-    {
+    static T finc(volatile T & value) {
         T old = value;
         value++;
         return old;
     }
 
     template <typename T>
-    static T fdec(volatile T &value)
-    {
+    static T fdec(volatile T & value) {
         T old = value;
         value--;
         return old;
     }
 
     template <typename T>
-    static T cas(volatile T &value, T compare, T replacement)
-    {
+    static T cas(volatile T & value, T compare, T replacement) {
         T old = value;
-        if (value == compare)
-        {
+        if(value == compare) {
             value = replacement;
         }
         return old;
     }
 
-    template <int (*finc)(volatile int &)>
-    static void smp_barrier(unsigned int cores, unsigned int id)
-    {
-		db<Thread>(WRN) << "no barrier, id = " << id << endl;
-
-        if (cores > 1)
-        {
+    template <int (* finc)(volatile int &)>
+    static void smp_barrier(unsigned int cores, unsigned int id) {
+        if(cores > 1) {
             static volatile int ready[2];
             static volatile int i;
 
             int j = i;
 
             finc(ready[j]);
-            if (id == 1)
-            {
-                while (ready[j] < int(cores))
-                    ;         // wait for all CPUs to be ready
-                i = !i;       // toggle ready
-                ready[j] = 0; // signalizes waiting CPUs
-            }
-            else
-            {
-                while (ready[j])
-                    ; // wait for CPU[0] signal
+            if(id == 0) {
+                while(ready[j] < int(cores));       // wait for all CPUs to be ready
+                i = !i;                             // toggle ready
+                ready[j] = 0;                       // signalizes waiting CPUs
+            } else {
+                while(ready[j]);                    // wait for CPU[0] signal
             }
         }
     }
@@ -221,28 +184,31 @@ public:
     static Reg16 ntohs(Reg16 v) { return htons(v); }
 
 protected:
-    static Reg64 swap64(Reg64 v) { return ((v & 0xff00000000000000ULL) >> 56) |
-                                          ((v & 0x00ff000000000000ULL) >> 40) |
-                                          ((v & 0x0000ff0000000000ULL) >> 24) |
-                                          ((v & 0x000000ff00000000uLL) >> 8) |
-                                          ((v & 0x00000000ff000000ULL) << 8) |
-                                          ((v & 0x0000000000ff0000ULL) << 24) |
-                                          ((v & 0x000000000000ff00ULL) << 40) |
-                                          ((v & 0x00000000000000ffULL) << 56); }
-    static Reg32 swap32(Reg32 v) { return ((v & 0xff000000) >> 24) |
-                                          ((v & 0x00ff0000) >> 8) |
-                                          ((v & 0x0000ff00) << 8) |
-                                          ((v & 0x000000ff) << 24); }
-    static Reg16 swap16(Reg16 v) { return ((v & 0xff00) >> 8) |
-                                          ((v & 0x00ff) << 8); }
+    static Reg64 swap64(Reg64 v) { return
+        ((v & 0xff00000000000000ULL) >> 56) |
+        ((v & 0x00ff000000000000ULL) >> 40) |
+        ((v & 0x0000ff0000000000ULL) >> 24) |
+        ((v & 0x000000ff00000000uLL) >> 8)  |
+        ((v & 0x00000000ff000000ULL) << 8)  |
+        ((v & 0x0000000000ff0000ULL) << 24) |
+        ((v & 0x000000000000ff00ULL) << 40) |
+        ((v & 0x00000000000000ffULL) << 56); }
+    static Reg32 swap32(Reg32 v) { return
+        ((v & 0xff000000) >> 24) |
+        ((v & 0x00ff0000) >> 8) |
+        ((v & 0x0000ff00) << 8) |
+        ((v & 0x000000ff) << 24); }
+    static Reg16 swap16(Reg16 v) { return
+        ((v & 0xff00) >> 8) |
+        ((v & 0x00ff) << 8); }
 };
 
-template <typename T>
-inline T align32(const T &addr) { return (addr + 3) & ~3U; }
-template <typename T>
-inline T align64(const T &addr) { return (addr + 7) & ~7U; }
-template <typename T>
-inline T align128(const T &addr) { return (addr + 15) & ~15U; }
+template<typename T>
+inline T align32(const T & addr) { return (addr + 3) & ~3U; }
+template<typename T>
+inline T align64(const T & addr) { return (addr + 7) & ~7U; }
+template<typename T>
+inline T align128(const T & addr) { return (addr + 15) & ~15U; }
 
 __END_SYS
 

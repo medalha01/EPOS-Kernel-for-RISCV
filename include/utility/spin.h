@@ -16,35 +16,22 @@ public:
     Spin(): _level(0), _owner(0) {}
 
     void acquire() {
-		//db<Thread>(WRN) << "spin acquire" << endl;
-
         unsigned long me = _running();
 
-		//db<Thread>(WRN) << "antes do while acquire" << endl;
-
-        while(CPU::cas(_owner, 0UL, me) != me) {};
-
-		//db<Thread>(WRN) << "depois do while acquire" << endl;
-		
+        while(CPU::cas(_owner, 0UL, me) != me);
         _level++;
 
-        //db<Spin>(TRC) << "Spin::acquire[this=" << this << ",id=" << hex << me
-        //              << "]() => {owner=" << _owner << dec
-        //              << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::acquire[this=" << this << ",id=" << hex << me << "]() => {owner=" << _owner << dec << ",level=" << _level << "}" << endl;
     }
 
     void release() {
-		//db<Thread>(WRN) << "spin release()" << endl;
+        db<Spin>(TRC) << "Spin::release[this=" << this << "]() => {owner=" << hex << _owner << dec << ",level=" << _level << "}" << endl;
 
-		//db<Spin>(TRC)
-		//	<< "Spin::release[this=" << this << "]() => {owner=" << hex
-		//	<< _owner << dec << ",level=" << _level << "}" << endl;
-
-		if (--_level <= 0) {
-			_level = 0;
-			_owner = 0;
-		}
-	}
+        if(--_level <= 0) {
+    	    _level = 0;
+            _owner = 0;
+    	}
+    }
 
     volatile bool taken() const { return (_owner != 0); }
 
@@ -60,16 +47,12 @@ public:
     Simple_Spin(): _locked(false) {}
 
     void acquire() {
-		db<Thread>(WRN) << "simple_spin acquire" << endl;
-
         while(CPU::tsl(_locked));
 
         db<Spin>(TRC) << "Spin::acquire[SPIN=" << this << "]()" << endl;
     }
 
     void release() {
-		db<Thread>(WRN) << "simple_spin release" << endl;
-
         _locked = 0;
 
         db<Spin>(TRC) << "Spin::release[SPIN=" << this << "]()}" << endl;

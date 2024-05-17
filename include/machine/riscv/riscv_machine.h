@@ -28,7 +28,7 @@ public:
     using Machine_Common::delay;
     using Machine_Common::clear_bss;
 
-    static void panic(const char* file, int line);
+    static void panic();
     static void reboot();
     static void poweroff();
 

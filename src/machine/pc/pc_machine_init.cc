@@ -3,13 +3,10 @@
 #include <machine.h>
 
 __BEGIN_SYS
-extern OStream kout, kerr;
 
-void Machine::pre_init(System_Info *si)
+void Machine::pre_init(System_Info * si)
 {
-
-    if (CPU::is_bootstrap())
-        Display::init();
+    Display::init();
 
     db<Init, Machine>(TRC) << "Machine::pre_init()" << endl;
 }
@@ -18,27 +15,27 @@ void Machine::init()
 {
     db<Init, Machine>(TRC) << "Machine::init()" << endl;
 
-    if (Traits<IC>::enabled)
+    if(Traits<IC>::enabled)
         IC::init();
 
-    if (Traits<Timer>::enabled)
+    if(Traits<Timer>::enabled)
         Timer::init();
 
-    if (Traits<PCI>::enabled)
+    if(Traits<PCI>::enabled)
         PCI::init();
 
 #ifdef __SCRATCHPAD_H
-    if (Traits<Scratchpad>::enabled)
+    if(Traits<Scratchpad>::enabled)
         Scratchpad::init();
 #endif
 
 #ifdef __KEYBOARD_H
-    if (Traits<Keyboard>::enabled)
+    if(Traits<Keyboard>::enabled)
         Keyboard::init();
 #endif
 
 #ifdef __FPGA_H
-    if (Traits<FPGA>::enabled)
+    if(Traits<FPGA>::enabled)
         FPGA::init();
 #endif
 }

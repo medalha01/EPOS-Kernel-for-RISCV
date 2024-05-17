@@ -227,9 +227,6 @@ public:
     static unsigned int id() { return supervisor ? tp() : mhartid(); }
     static unsigned int cores() { return 1; }
 
-    static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, CPU::id()); }
-
-
     using CPU_Common::clock;
     using CPU_Common::min_clock;
     using CPU_Common::max_clock;

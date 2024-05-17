@@ -8,16 +8,11 @@ __BEGIN_SYS
 
 void System::init()
 {
-    if (CPU::is_bootstrap())
-    {
-        if (Traits<Alarm>::enabled)
-            Alarm::init();
-    }
-    if (Traits<Thread>::enabled) 
-	{
-		db<Thread>(WRN) << "antes do thread::init\n " <<endl;
+    if(Traits<Alarm>::enabled)
+        Alarm::init();
+
+    if(Traits<Thread>::enabled)
         Thread::init();
-	}
 }
 
 __END_SYS

@@ -12,8 +12,7 @@ void Timer::init()
 
     assert(CPU::int_disabled());
 
-    if (CPU::is_bootstrap())
-        IC::int_vector(IC::INT_SYS_TIMER, int_handler);
+    IC::int_vector(IC::INT_SYS_TIMER, int_handler);
 
     reset();
     IC::enable(IC::INT_SYS_TIMER);

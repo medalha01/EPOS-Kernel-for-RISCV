@@ -5,103 +5,45 @@
 
 __BEGIN_SYS
 
-inline RT_Common::Tick RT_Common::elapsed() { return Alarm::elapsed(); }
+// The following Scheduling Criteria depend on Alarm, which is not available at scheduler.h
+template <typename... Tn>
+FCFS::FCFS(int p, Tn &...an) : Priority((p == IDLE) ? IDLE : Alarm::elapsed()) {}
 
-RT_Common::Tick RT_Common::ticks(Microsecond time) {
-    return Timer_Common::ticks(time, Alarm::timer()->frequency());
+EDF::EDF(const Microsecond &d, const Microsecond &p, const Microsecond &c, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
+
+void EDF::update()
+{
+    if ((_priority >= PERIODIC) && (_priority < APERIODIC) && !locked)
+        _priority = Alarm::elapsed() + _deadline;
 }
 
-Microsecond RT_Common::time(Tick ticks) {
-    return Timer_Common::time(ticks, Alarm::timer()->frequency());
+LLF::LLF(const Microsecond &_deadline, const Microsecond &_period, const Microsecond &_capacity, unsigned int) : Real_Time_Scheduler_Common(Alarm::ticks(_deadline - _capacity), Alarm::ticks(_deadline), _period, Alarm::ticks(_capacity)) {}
+
+void LLF::reset_init_time()
+{
+    _computed_time = 0;
+    _init_time = Alarm::elapsed();
+    _start_of_computation = 0;
+    locked = false;
 }
 
-void RT_Common::handle(Event event) {
-    db<Thread>(TRC) << "RT::handle(this=" << this << ",e=";
-    if(event & CREATE) {
-        db<Thread>(TRC) << "CREATE";
-
-        _statistics.thread_creation = elapsed();
-        _statistics.job_released = false;
-    }
-    if(event & FINISH) {
-        db<Thread>(TRC) << "FINISH";
-
-        _statistics.thread_destruction = elapsed();
-    }
-    if(event & ENTER) {
-        db<Thread>(TRC) << "ENTER";
-
-        _statistics.thread_last_dispatch = elapsed();
-    }
-    if(event & LEAVE) {
-        Tick cpu_time = elapsed() - _statistics.thread_last_dispatch;
-
-        db<Thread>(TRC) << "LEAVE";
-
-        _statistics.thread_last_preemption = elapsed();
-        _statistics.thread_execution_time += cpu_time;
-//        if(_statistics.job_released) {
-            _statistics.job_utilization += cpu_time;
-//        }
-    }
-    if(periodic() && (event & JOB_RELEASE)) {
-        db<Thread>(TRC) << "RELEASE";
-
-        _statistics.job_released = true;
-        _statistics.job_release = elapsed();
-        _statistics.job_start = 0;
-        _statistics.job_utilization = 0;
-        _statistics.jobs_released++;
-    }
-    if(periodic() && (event & JOB_FINISH)) {
-        db<Thread>(TRC) << "WAIT";
-
-        _statistics.job_released = false;
-        _statistics.job_finish = elapsed();
-        _statistics.jobs_finished++;
-//        _statistics.job_utilization += elapsed() - _statistics.thread_last_dispatch;
-    }
-    if(event & COLLECT) {
-        db<Thread>(TRC) << "|COLLECT";
-    }
-    if(periodic() && (event & CHARGE)) {
-        db<Thread>(TRC) << "|CHARGE";
-    }
-    if(periodic() && (event & AWARD)) {
-        db<Thread>(TRC) << "|AWARD";
-    }
-    if(periodic() && (event & UPDATE)) {
-        db<Thread>(TRC) << "|UPDATE";
-    }
-    db<Thread>(TRC) << ") => {i=" << _priority << ",p=" << _period << ",d=" << _deadline << ",c=" << _capacity << "}" << endl;
+void LLF::start_calculation()
+{
+    _start_of_computation = Alarm::elapsed();
 }
 
+void LLF::set_calculated_time()
+{
 
-template <typename ... Tn>
-FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : RT_Common::elapsed()) {}
-
-
-EDF::EDF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
-
-void EDF::handle(Event event) {
-    RT_Common::handle(event);
-
-    // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-    if(periodic() && (event & JOB_RELEASE))
-        _priority = elapsed() + _deadline;
+    _computed_time = Alarm::elapsed() - _start_of_computation;
 }
 
-
-LLF::LLF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}
-
-void LLF::handle(Event event) {
-    if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
-        _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
+void LLF::update()
+{
+    if ((_priority < IDLE) && (!locked)) // Não podemos dar update na IDLE, se não o avião cai.
+    {
+        _priority = _deadline + _init_time - _capacity + _computed_time;
     }
-    RT_Common::handle(event);
-
-    // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-//    if((_priority >= PERIODIC) && (_priority < APERIODIC) && ((event & JOB_FINISH) || (event & UPDATE_ALL)))
 }
 
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.

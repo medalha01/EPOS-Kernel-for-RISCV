@@ -10,16 +10,12 @@ __BEGIN_SYS
 Condition::Condition()
 {
     db<Synchronizer>(TRC) << "Condition() => " << this << endl;
-
-    Task::self()->enroll(this);
 }
 
 
 Condition::~Condition()
 {
     db<Synchronizer>(TRC) << "~Condition(this=" << this << ")" << endl;
-
-    Task::self()->dismiss(this);
 }
 
 
@@ -27,9 +23,9 @@ void Condition::wait()
 {
     db<Synchronizer>(TRC) << "Condition::wait(this=" << this << ")" << endl;
 
-    lock_for_acquiring();
+    begin_atomic();
     sleep();
-    unlock_for_acquiring();
+    end_atomic();
 }
 
 
@@ -37,9 +33,9 @@ void Condition::signal()
 {
     db<Synchronizer>(TRC) << "Condition::signal(this=" << this << ")" << endl;
 
-    lock_for_releasing();
+    begin_atomic();
     wakeup();
-    unlock_for_releasing();
+    end_atomic();
 }
 
 
@@ -47,9 +43,9 @@ void Condition::broadcast()
 {
     db<Synchronizer>(TRC) << "Condition::broadcast(this=" << this << ")" << endl;
 
-    lock_for_releasing();
+    begin_atomic();
     wakeup_all();
-    unlock_for_releasing();
+    end_atomic();
 }
 
 // This is an alternative implementation, which does impose ordering

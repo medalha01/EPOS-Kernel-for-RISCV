@@ -21,7 +21,7 @@ void Thread::init()
     // In this case, _init will have already been called, before Init_Application to construct MAIN's global objects.
     Main * main = reinterpret_cast<Main *>(__epos_app_entry);
 
-    new (SYSTEM) Task(main);
+    new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), main);
 
     // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
     new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
@@ -37,6 +37,9 @@ void Thread::init()
 
     // No more interrupts until we reach init_end
     CPU::int_disable();
+
+    // Transition from CPU-based locking to thread-based locking
+    _not_booting = true;
 }
 
 __END_SYS

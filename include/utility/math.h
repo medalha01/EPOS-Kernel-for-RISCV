@@ -115,12 +115,6 @@ constexpr T max(T x, T y)
     return (x > y) ? x : y;
 }
 
-template<typename T>
-constexpr T max(T x, T y, T z)
-{
-    return ((x >= y) && (x >= z)) ? x : ((y >= x) && (y >= z) ? y : z);
-}
-
 template <typename T>
 constexpr T abs(T x)
 {

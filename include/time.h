@@ -32,35 +32,35 @@ class Alarm
 {
     friend class System;                        // for init()
     friend class Alarm_Chronometer;             // for elapsed()
-    friend class Thread;                        // for elapsed()
-    friend class RT_Common;                     // for elapsed()
-    friend class Periodic_Thread;               // for times()
+    friend class Periodic_Thread;               // for ticks(), times(), and elapsed()
+    friend class FCFS;                          // for ticks() and elapsed()
+    friend class EDF;                           // for ticks() and elapsed()
+    friend class LLF;                           // for ticks() and elapsed()
 
 private:
     typedef Timer_Common::Tick Tick;
     typedef Relative_Queue<Alarm, Tick> Queue;
 
 public:
-    Alarm(Microsecond time, Handler * handler, unsigned int times = 1);
+    Alarm(const Microsecond & time, Handler * handler, unsigned int times = 1);
     ~Alarm();
 
     const Microsecond & period() const { return _time; }
-    void period(Microsecond p);
+    void period(const Microsecond & p);
 
     void reset();
 
     static Hertz frequency() { return _timer->frequency(); }
 
-    static void delay(Microsecond time);
+    static void delay(const Microsecond & time);
 
 private:
     unsigned int times() const { return _times; }
 
     static volatile Tick & elapsed() { return _elapsed; }
 
-    static Alarm_Timer * timer() { return _timer; }
-
-    static Tick ticks(Microsecond time) { return Timer_Common::ticks(time, frequency()); }
+    static Microsecond timer_period() { return 1000000 / frequency(); }
+    static Tick ticks(const Microsecond & time) { return (time + timer_period() / 2) / timer_period(); }
 
     static void lock() { Thread::lock(); }
     static void unlock() { Thread::unlock(); }
@@ -85,7 +85,7 @@ private:
 class Delay
 {
 public:
-    Delay(Microsecond time): _time(time)  { Alarm::delay(_time); }
+    Delay(const Microsecond & time): _time(time)  { Alarm::delay(_time); }
 
 private:
     Microsecond _time;

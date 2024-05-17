@@ -5,10 +5,23 @@
 
 __BEGIN_SYS
 
+void Machine::panic()
+{
+    CPU::int_disable();
+
+    if(Traits<Display>::enabled)
+        Display::puts("\nPANIC!\n");
+
+    if(Traits<System>::reboot)
+        reboot();
+    else
+        poweroff();
+}
+
 void Machine::reboot()
 {
     if(Traits<System>::reboot) {
-        db<Machine>(TRC) << "Machine::reboot()" << endl;
+        db<Machine>(WRN) << "Machine::reboot()" << endl;
 
 #ifdef __sifive_e__
         CPU::Reg * reset = reinterpret_cast<CPU::Reg *>(Memory_Map::AON_BASE);
@@ -26,7 +39,7 @@ void Machine::reboot()
 
 void Machine::poweroff()
 {
-    db<Machine>(TRC) << "Machine::poweroff()" << endl;
+    db<Machine>(WRN) << "Machine::poweroff()" << endl;
 
 #ifdef __sifive_e__
         CPU::Reg * reset = reinterpret_cast<CPU::Reg *>(Memory_Map::AON_BASE);

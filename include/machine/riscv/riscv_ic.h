@@ -14,8 +14,6 @@ class CLINT
 {
 private:
     typedef CPU::Reg Reg;
-    typedef CPU::Reg32 Reg32;
-    typedef CPU::Reg64 Reg64;
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Log_Addr Log_Addr;
 
@@ -23,6 +21,9 @@ private:
     static const unsigned long CPU_OFFSET = Traits<Machine>::CPU_OFFSET;
 
 public:
+    typedef CPU::Reg32 Reg32;
+    typedef CPU::Reg64 Reg64;
+
     static const unsigned int IRQS = 16;
 
     // Interrupts ([M|S]CAUSE with interrupt = 1)
@@ -44,16 +45,23 @@ public:
 
     };
 
-    // Registers offsets from CLINT_BASE (all registers are 32 bits wide; 32-bit word pairs, like MTIMECMP, can be accessed as a 64-bit word in RV64)
-    enum : Reg {                  // Description
-        MSIP            = 0x0000, // Per-HART 32-bit software interrupts (IPI) trigger; each HART is offset by 4 bytes from MSIP
-        MTIMECMP        = 0x4000, // Per-HART 64-bit timer compare register; lower 32 bits stored first; each HART is offset by 8 bytes from MTIMECMP
-        MTIME           = 0xbff8, // Timer counter shared by all HARTs lower 32 bits stored first
+    // Registers offsets from CLINT_BASE (all registers are 32 bits wide; 32-bit
+    // word pairs, like MTIMECMP, can be accessed as a 64-bit word in RV64)
+    enum : Reg {     // Description
+      MSIP = 0x0000, // Per-HART 32-bit software interrupts (IPI) trigger; each
+                     // HART is offset by 4 bytes from MSIP
+      MTIMECMP =
+          0x4000, // Per-HART 64-bit timer compare register; lower 32 bits
+                  // stored first; each HART is offset by 8 bytes from MTIMECMP
+      MTIME = 0xbff8, // Timer counter shared by all HARTs lower 32 bits stored
+                      // first
     };
 
-public:
+  public:
     static Reg64 mtime() { return *reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIME); }
-    static void  mtimecmp(Reg64 v) { *reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIMECMP + 8 * (CPU::id() + CPU_OFFSET)) = v; }
+    static void mtimecmp(Reg64 v) {
+      *reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIMECMP + 8 * (CPU::id() + CPU_OFFSET)) = v;
+    }
 
     static volatile Reg32 & msip(unsigned int cpu) { return *reinterpret_cast<volatile Reg32 *>(Memory_Map::CLINT_BASE + MSIP + 4 * (cpu + CPU_OFFSET)); }
 };
@@ -71,16 +79,29 @@ private:
 public:
     static const unsigned int IRQS = Traits<IC>::PLIC_IRQS;
 
-    // Registers offsets from PLIC_BASE (all registers are 32 bits wide; 32-bit word pairs, like PENDING, can be accessed as a 64-bit word in RV64)
-    enum {                              // Description
-        PRIORITY        = 0x000000,     // Interrupt Source Priority (RW), 32 bits per source, up to 1024 sources;  0 => disable, 1 => lowest, .... 7 => highest
-        PENDING         = 0x001000,     // Interrupt Pending Register (RO), 1 bit per source, up to 1024 sources (bit 0 is always 0, since source 0 does not exist)
-        ENABLED         = 0x002000,     // per-context Interrupt Enable Register (RW), 1 bit per source, up to 1024 sources; contexts offset by 0x80 bytes
-        THRESHOLD       = 0x200000,     // per-context Interrupt Priority Threshold Register (RW), 3 bits (priority 1 to 7), interrupts bellow the threshold are masked; contexts offset by 0x10000
-        CLAIM           = 0x200004,     // per-context Claim/Complete Register (RW), 32 bits containing the highest interrupt source id; id == 0 => no pending interrupts; write ID to Complete (i.e. EOI); contexts offset by 0x10000
+    // Registers offsets from PLIC_BASE (all registers are 32 bits wide; 32-bit
+    // word pairs, like PENDING, can be accessed as a 64-bit word in RV64)
+    enum {                 // Description
+      PRIORITY = 0x000000, // Interrupt Source Priority (RW), 32 bits per
+                           // source, up to 1024 sources;  0 => disable, 1 =>
+                           // lowest, .... 7 => highest
+      PENDING = 0x001000,  // Interrupt Pending Register (RO), 1 bit per source,
+                          // up to 1024 sources (bit 0 is always 0, since source
+                          // 0 does not exist)
+      ENABLED =
+          0x002000, // per-context Interrupt Enable Register (RW), 1 bit per
+                    // source, up to 1024 sources; contexts offset by 0x80 bytes
+      THRESHOLD =
+          0x200000, // per-context Interrupt Priority Threshold Register (RW), 3
+                    // bits (priority 1 to 7), interrupts bellow the threshold
+                    // are masked; contexts offset by 0x10000
+      CLAIM = 0x200004, // per-context Claim/Complete Register (RW), 32 bits
+                        // containing the highest interrupt source id; id == 0
+                        // => no pending interrupts; write ID to Complete (i.e.
+                        // EOI); contexts offset by 0x10000
     };
 
-public:
+  public:
     static void enable() { for(Reg32 id = 1; id < IRQS; id++) enable(id); }
     static void enable(Reg32 id) { _enable(context(), id); }
     static void disable() { for(Reg32 id = 1; id < IRQS; id++) disable(id); }
@@ -138,6 +159,10 @@ private:
     typedef CPU::Reg Reg;
 
     static const bool supervisor = Traits<Machine>::supervisor;
+	static CLINT::Reg64 irq_exec_highest_time;
+	static CLINT::Reg64 irq_iter_sum; // Sum of all measured irq_exec_times thus far
+	static int n_measures; // number of times irq handler was called 
+						   // --> useful for calculating the average later on
 
 public:
     static const unsigned int EXCS = CPU::EXCEPTIONS;
@@ -193,6 +218,29 @@ public:
         assert(i < INTS);
         _int_vector[i] = h;
     }
+
+	inline static void update_if_highest_irq_time(CLINT::Reg64 cur_time) {
+		if (cur_time > irq_exec_highest_time) {
+			irq_exec_highest_time = cur_time;
+		}
+	}
+
+	static CLINT::Reg64 highest_irq_time() {
+		return irq_exec_highest_time;
+	}
+
+	static void record_irq_time(CLINT::Reg64 cur_time) {
+		n_measures++;
+		irq_iter_sum += cur_time;
+		update_if_highest_irq_time(cur_time);	
+	}
+
+	static CLINT::Reg64 average_irq_handle_time() {
+		if (n_measures <= 0) {
+			return irq_exec_highest_time;
+		}
+		return (long)(irq_iter_sum / n_measures);
+	}
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
@@ -264,9 +312,10 @@ public:
     static void ipi_eoi(Interrupt_Id i) { msip(CPU::id()) = 0; }
 
 private:
-    static void dispatch();
+    static void dispatch(unsigned int start);
 
     // Logical handlers
+    static void syscall(Interrupt_Id i);
     static void int_not(Interrupt_Id i);
     static void exception(Interrupt_Id i);
 

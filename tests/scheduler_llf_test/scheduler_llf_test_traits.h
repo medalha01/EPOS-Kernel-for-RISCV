@@ -14,14 +14,14 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = RV64;
     static const unsigned int MACHINE = RISCV;
     static const unsigned int MODEL = SiFive_U;
-    static const unsigned int CPUS = 4;
+    static const unsigned int CPUS = 1;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
     // Default flags
     static const bool enabled = true;
     static const bool monitored = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
 };
 
@@ -38,7 +38,13 @@ struct Traits<Debug> : public Traits<Build>
 template <>
 struct Traits<Lists> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    //static const bool debugged = hysterically_debugged;
+    static const bool debugged = true;
+	
+	static const bool error = false;
+	static const bool warning = false;
+	static const bool trace = true;
+	static const bool info = false;
 };
 
 template <>
@@ -128,14 +134,18 @@ struct Traits<Thread> : public Traits<Build>
     static const bool simulate_capacity = false;
     static const int priority_inversion_protocol = INHERITANCE;
 
-    typedef GLLF Criterion;
+    typedef LLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
 
 template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
-    static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
+    static const bool debugged = true; //Traits<Thread>::trace_idle || hysterically_debugged;
+	static const bool trace = true;
+	static const bool warning = false;
+	static const bool info = false;
+	static const bool error = false;
 };
 
 template <>

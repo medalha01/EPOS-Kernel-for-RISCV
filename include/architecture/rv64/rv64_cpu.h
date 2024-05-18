@@ -285,9 +285,12 @@ public:
     }
     static void fr(Reg r) { ASM("mv a0, %0" : : "r"(r) :); }
 
-    static unsigned int id() { return tp(); }
+    static unsigned int id() { return supervisor ? tp() : mhartid(); }
+
     static bool is_bootstrap() { return (CPU::id() == 0); }
+
     static unsigned int cores() { return number_of_cores; }
+
     static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
     using CPU_Common::bus_clock;
     using CPU_Common::clock;

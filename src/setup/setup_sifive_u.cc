@@ -14,7 +14,7 @@ extern "C" {
 
     // SETUP entry point is in .init (and not in .text), so it will be linked first and will be the first function after the ELF header in the image
     void _entry() __attribute__ ((used, naked, section(".init")));
-    void _int_m2s() __attribute((naked, aligned(4)));
+    void _int_m2s() __attribute__ ((naked, aligned(4)));
     void _setup();
 
     // LD eliminates this variable while performing garbage collection, that's why the used attribute.
@@ -32,22 +32,22 @@ class Setup
 {
 private:
     // Physical memory map
-    static const unsigned long RAM_BASE         = Memory_Map::RAM_BASE;
-    static const unsigned long RAM_TOP          = Memory_Map::RAM_TOP;
-    static const unsigned long MIO_BASE         = Memory_Map::MIO_BASE;
-    static const unsigned long MIO_TOP          = Memory_Map::MIO_TOP;
-    static const unsigned long FREE_BASE        = Memory_Map::FREE_BASE; // only used in LIBRARY mode
-    static const unsigned long FREE_TOP         = Memory_Map::FREE_TOP;  // only used in LIBRARY mode
-    static const unsigned long SETUP            = Memory_Map::SETUP;
-    static const unsigned long BOOT_STACK       = Memory_Map::BOOT_STACK;
-    static const unsigned long INT_M2S          = Memory_Map::INT_M2S;
-    static const unsigned long FLAT_MEM_MAP     = Memory_Map::FLAT_MEM_MAP;
+    static const unsigned long RAM_BASE = Memory_Map::RAM_BASE;
+    static const unsigned long RAM_TOP = Memory_Map::RAM_TOP;
+    static const unsigned long MIO_BASE = Memory_Map::MIO_BASE;
+    static const unsigned long MIO_TOP = Memory_Map::MIO_TOP;
+    static const unsigned long FREE_BASE = Memory_Map::FREE_BASE; // only used in LIBRARY mode
+    static const unsigned long FREE_TOP = Memory_Map::FREE_TOP;  // only used in LIBRARY mode
+    static const unsigned long SETUP = Memory_Map::SETUP;
+    static const unsigned long BOOT_STACK = Memory_Map::BOOT_STACK;
+    static const unsigned long INT_M2S = Memory_Map::INT_M2S;
+    static const unsigned long FLAT_MEM_MAP = Memory_Map::FLAT_MEM_MAP;
 
     // Architecture Imports
     typedef CPU::Reg Reg;
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Log_Addr Log_Addr;
-    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
+    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disabled, but we need the correct MMU for the Flat Memory Model.
     typedef MMU::Page Page;
     typedef MMU::Page_Flags Flags;
     typedef MMU::Page_Table Page_Table;
@@ -68,10 +68,9 @@ private:
     void call_next();
 
 private:
-    System_Info * si;
+    System_Info *si;
     MMU mmu;
 };
-
 
 Setup::Setup()
 {
@@ -85,12 +84,12 @@ Setup::Setup()
     kerr << endl;
 
     db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si) << ",sp=" << CPU::sp() << ")" << endl;
-    db<Setup>(INF) << "Setup:si=" << *si << endl;
+    db<Setup>(INF) << "Setup: si=" << *si << endl;
 
     // Print basic facts about this EPOS instance
     say_hi();
 
-    if(Traits<Machine>::supervisor) {
+    if (Traits<Machine>::supervisor) {
         // Configure a flat memory model for the single task in the system
         setup_flat_paging();
 
@@ -104,27 +103,6 @@ Setup::Setup()
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();
 }
-
-
-void Setup::setup_flat_paging()
-{
-    db<Setup>(TRC) << "Setup::setup_flat_paging()" << endl;
-
-    // Single-level mapping, 2 MB pages with SV32 and 1 GB pages with SV39
-    static const unsigned long PD_ENTRIES = (Math::max(RAM_TOP, MIO_TOP) - Math::min(RAM_BASE, MIO_BASE) + sizeof(MMU::Huge_Page) - 1) / sizeof(MMU::Huge_Page);
-
-    Page_Directory * pd = reinterpret_cast<Page_Directory *>(FLAT_MEM_MAP);
-    Phy_Addr page = Math::min(RAM_BASE, MIO_BASE);
-    for(unsigned int i = 0; i < PD_ENTRIES; i++, page += sizeof(MMU::Huge_Page))
-        (*pd)[i] = (page >> 2) | MMU::Page_Flags::FLAT_MEM_PD;
-
-    db<Setup>(INF) << "PD[" << pd << "]=" << *pd << endl;
-
-    // Free chunks (passed to MMU::init())
-    si->pmm.free1_base = MMU::align_page(FREE_BASE);
-    si->pmm.free1_top = MMU::align_page(FREE_TOP);
-}
-
 
 void Setup::say_hi()
 {
@@ -140,21 +118,39 @@ void Setup::say_hi()
     kout << "  User memory:  " << (FREE_TOP - FREE_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(FREE_BASE) << ":" << reinterpret_cast<void *>(FREE_TOP) << "]" << endl;
     kout << "  I/O space:    " << (MIO_TOP + 1 - MIO_BASE) / 1024 << " KB [" << reinterpret_cast<void *>(MIO_BASE) << ":" << reinterpret_cast<void *>(MIO_TOP) << "]" << endl;
     kout << "  Node Id:      ";
-    if(si->bm.node_id != -1)
+    if (si->bm.node_id != -1)
         kout << si->bm.node_id << endl;
     else
         kout << "will get from the network!" << endl;
     kout << "  Position:     ";
-    if(si->bm.space_x != -1)
+    if (si->bm.space_x != -1)
         kout << "(" << si->bm.space_x << "," << si->bm.space_y << "," << si->bm.space_z << ")" << endl;
     else
         kout << "will get from the network!" << endl;
-    if(si->bm.extras_offset != -1UL)
+    if (si->bm.extras_offset != -1UL)
         kout << "  Extras:       " << si->lm.app_extra_size << " bytes" << endl;
 
     kout << endl;
 }
 
+void Setup::setup_flat_paging()
+{
+    db<Setup>(TRC) << "Setup::setup_flat_paging()" << endl;
+
+    // Single-level mapping, 2 MB pages with SV32 and 1 GB pages with SV39
+    static const unsigned long PD_ENTRIES = (Math::max(RAM_TOP, MIO_TOP) - Math::min(RAM_BASE, MIO_BASE) + sizeof(MMU::Huge_Page) - 1) / sizeof(MMU::Huge_Page);
+
+    Page_Directory *pd = reinterpret_cast<Page_Directory *>(FLAT_MEM_MAP);
+    Phy_Addr page = Math::min(RAM_BASE, MIO_BASE);
+    for (unsigned int i = 0; i < PD_ENTRIES; i++, page += sizeof(MMU::Huge_Page))
+        (*pd)[i] = (page >> 2) | MMU::Page_Flags::FLAT_MEM_PD;
+
+    db<Setup>(INF) << "PD[" << pd << "]=" << *pd << endl;
+
+    // Free chunks (passed to MMU::init())
+    si->pmm.free1_base = MMU::align_page(FREE_BASE);
+    si->pmm.free1_top = MMU::align_page(FREE_TOP);
+}
 
 void Setup::setup_m2s()
 {
@@ -163,11 +159,10 @@ void Setup::setup_m2s()
     memcpy(reinterpret_cast<void *>(INT_M2S), reinterpret_cast<void *>(&_int_m2s), sizeof(Page));
 }
 
-
 void Setup::enable_paging()
 {
     db<Setup>(TRC) << "Setup::enable_paging()" << endl;
-    if(Traits<Setup>::hysterically_debugged) {
+    if (Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "Setup::pc=" << CPU::pc() << endl;
         db<Setup>(INF) << "Setup::sp=" << CPU::sp() << endl;
     }
@@ -178,12 +173,11 @@ void Setup::enable_paging()
     // Flush TLB to ensure we've got the right memory organization
     MMU::flush_tlb();
 
-    if(Traits<Setup>::hysterically_debugged) {
+    if (Traits<Setup>::hysterically_debugged) {
         db<Setup>(INF) << "Setup::pc=" << CPU::pc() << endl;
         db<Setup>(INF) << "Setup::sp=" << CPU::sp() << endl;
     }
 }
-
 
 void Setup::call_next()
 {
@@ -202,23 +196,23 @@ using namespace EPOS::S;
 
 void _entry() // machine mode
 {
-    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disable, but we need the correct MMU for the Flat Memory Model.
+    typedef IF<Traits<CPU>::WORD_SIZE == 32, SV32_MMU, SV39_MMU>::Result MMU; // architecture.h will use No_MMU if multitasking is disabled, but we need the correct MMU for the Flat Memory Model.
 
-    if(CPU::mhartid() == 0)                             // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
+    if (CPU::mhartid() == 0) // SiFive-U has 2 cores, but core 0 (an E51) does not feature an MMU, so we halt it and let core 1 (an U54) run in a single-core configuration
         CPU::halt();
 
-    CPU::mstatusc(CPU::MIE);                            // disable interrupts (they will be reenabled at Init_End)
+    CPU::mstatusc(CPU::MIE); // disable interrupts (they will be reenabled at Init_End)
 
-    CPU::tp(CPU::mhartid() - 1);                        // tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
+    CPU::tp(CPU::mhartid() - 1); // tp will be CPU::id() for supervisor mode; we won't count core 0, which is a heterogeneous E51
     CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE - sizeof(long)); // set the stack pointer, thus creating a stack for SETUP
 
     Machine::clear_bss();
 
-    if(Traits<Machine>::supervisor) {
+    if (Traits<Machine>::supervisor) {
         CPU::mtvec(CPU::INT_DIRECT, Memory_Map::INT_M2S);   // setup a machine mode interrupt handler to forward timer interrupts (which cannot be delegated via mideleg)
         CPU::mideleg(CPU::SSI | CPU::STI | CPU::SEI);       // delegate supervisor interrupts to supervisor mode
         CPU::medeleg(0xf1ff);                               // delegate all exceptions to supervisor mode but ecalls
-        CPU::mie(CPU::MSI | CPU::MTI | CPU::MEI);           // enable interrupt generation by at machine level before going into supervisor mode
+        CPU::mie(CPU::MSI | CPU::MTI | CPU::MEI);           // enable interrupt generation at machine level before going into supervisor mode
         CPU::mstatus(CPU::MPP_S | CPU::MPIE | CPU::MXR);    // prepare jump into supervisor mode at MRET with interrupts enabled at machine level
         CPU::mstatusc(CPU::SIE);                            // disable interrupts (they will be reenabled at Init_End)
         CPU::sstatuss(CPU::SUM);                            // allows User Memory access in supervisor mode
@@ -227,13 +221,13 @@ void _entry() // machine mode
         CPU::mstatus(CPU::MPP_M);                           // continue in machine mode at MRET
     }
 
-    CLINT::mtimecmp(-1ULL);                             // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
+    CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
 
-    CPU::pmpcfg0(0b11111); 				// configure PMP region 0 as (L=unlocked [0], [00], A = NAPOT [11], X [1], W [1], R [1])
-    CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1);          // comprising the whole memory space
+    CPU::pmpcfg0(0b11111); // configure PMP region 0 as (L=unlocked [0], [00], A = NAPOT [11], X [1], W [1], R [1])
+    CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1); // comprising the whole memory space
 
-    CPU::mepc(CPU::Reg(&_setup));                       // entry = _setup
-    CPU::mret();                                        // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
+    CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
+    CPU::mret(); // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)
 }
 
 void _setup() // supervisor mode
@@ -250,61 +244,60 @@ void _int_m2s()
 {
     // Save context
     ASM("       csrw    mscratch, sp            \n");
-if(Traits<CPU>::WORD_SIZE == 32) {
-    ASM("       auipc    sp,      1             \n"     // SP = PC + 1 << 2 (INT_M2S + 4 + sizeof(Page))
-        "       slli     gp, tp,  8             \n"
-        "       sub      sp, sp, gp             \n"     // SP -= 256 * CPU::id()
-        "       sw       a0,  -8(sp)            \n"
-        "       sw       a1, -12(sp)            \n"
-        "       sw       a2, -16(sp)            \n"
-        "       sw       a3, -20(sp)            \n"
-        "       sw       a4, -24(sp)            \n"
-        "       sw       a5, -28(sp)            \n"
-        "       sw       a6, -32(sp)            \n"
-        "       sw       a7, -36(sp)            \n");
-} else {
-    ASM("       auipc    sp,      1             \n"     // SP = PC + 1 << 2 (INT_M2S + 4 + sizeof(Page))
-        "       slli     gp, tp,  8             \n"
-        "       sub      sp, sp, gp             \n"     // SP -= 256 * CPU::id()
-        "       sd       a0, -12(sp)            \n"
-        "       sd       a1, -20(sp)            \n"
-        "       sd       a2, -28(sp)            \n"
-        "       sd       a3, -36(sp)            \n"
-        "       sd       a4, -44(sp)            \n"
-        "       sd       a5, -52(sp)            \n");
-}
+    if (Traits<CPU>::WORD_SIZE == 32) {
+        ASM("       auipc    sp,      1             \n"     // SP = PC + 1 << 2 (INT_M2S + 4 + sizeof(Page))
+            "       slli     gp, tp,  8             \n"
+            "       sub      sp, sp, gp             \n"     // SP -= 256 * CPU::id()
+            "       sw       a0,  -8(sp)            \n"
+            "       sw       a1, -12(sp)            \n"
+            "       sw       a2, -16(sp)            \n"
+            "       sw       a3, -20(sp)            \n"
+            "       sw       a4, -24(sp)            \n"
+            "       sw       a5, -28(sp)            \n"
+            "       sw       a6, -32(sp)            \n"
+            "       sw       a7, -36(sp)            \n");
+    } else {
+        ASM("       auipc    sp,      1             \n"     // SP = PC + 1 << 2 (INT_M2S + 4 + sizeof(Page))
+            "       slli     gp, tp,  8             \n"
+            "       sub      sp, sp, gp             \n"     // SP -= 256 * CPU::id()
+            "       sd       a0, -12(sp)            \n"
+            "       sd       a1, -20(sp)            \n"
+            "       sd       a2, -28(sp)            \n"
+            "       sd       a3, -36(sp)            \n"
+            "       sd       a4, -44(sp)            \n"
+            "       sd       a5, -52(sp)            \n");
+    }
 
     CPU::Reg id = CPU::mcause();
 
-    if((id & CLINT::INT_MASK) == CLINT::IRQ_MAC_TIMER) {
-        Timer::reset();                                 // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer (i.e. adjusting MTIMECMP) seems to be the only way to clear it
+    if ((id & CLINT::INT_MASK) == CLINT::IRQ_MAC_TIMER) {
+        Timer::reset(); // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer (i.e. adjusting MTIMECMP) seems to be the only way to clear it
         CPU::miec(CPU::MTI);
-        CPU::mips(CPU::STI);                            // forward desired interrupts to supervisor mode
-    } else if(id == CPU::EXC_ENVS) {
-        CPU::mipc(CPU::STI);                            // STI was handled in supervisor mode, so clear the corresponding pending bit
+        CPU::mips(CPU::STI); // forward desired interrupts to supervisor mode
+    } else if (id == CPU::EXC_ENVS) {
+        CPU::mipc(CPU::STI); // STI was handled in supervisor mode, so clear the corresponding pending bit
         CPU::mies(CPU::MTI);
         CPU::mepc(CPU::mepc() + 4);
     }
 
     // Restore context
-if(Traits<CPU>::WORD_SIZE == 32) {
-    ASM("       lw       a0,  -8(sp)            \n"
-        "       lw       a1, -12(sp)            \n"
-        "       lw       a2, -16(sp)            \n"
-        "       lw       a3, -20(sp)            \n"
-        "       lw       a4, -24(sp)            \n"
-        "       lw       a5, -28(sp)            \n"
-        "       lw       a6, -32(sp)            \n"
-        "       lw       a7, -36(sp)            \n");
-} else {
-    ASM("       ld       a0, -12(sp)            \n"
-        "       ld       a1, -20(sp)            \n"
-        "       ld       a2, -28(sp)            \n"
-        "       ld       a3, -36(sp)            \n"
-        "       ld       a4, -44(sp)            \n"
-        "       ld       a5, -52(sp)            \n");
-}
+    if (Traits<CPU>::WORD_SIZE == 32) {
+        ASM("       lw       a0,  -8(sp)            \n"
+            "       lw       a1, -12(sp)            \n"
+            "       lw       a2, -16(sp)            \n"
+            "       lw       a3, -20(sp)            \n"
+            "       lw       a4, -24(sp)            \n"
+            "       lw       a5, -28(sp)            \n"
+            "       lw       a6, -32(sp)            \n"
+            "       lw       a7, -36(sp)            \n");
+    } else {
+        ASM("       ld       a0, -12(sp)            \n"
+            "       ld       a1, -20(sp)            \n"
+            "       ld       a2, -28(sp)            \n"
+            "       ld       a3, -36(sp)            \n"
+            "       ld       a4, -44(sp)            \n"
+            "       ld       a5, -52(sp)            \n");
+    }
     ASM("       csrr     sp, mscratch           \n"
         "       mret                            \n");
 }
-

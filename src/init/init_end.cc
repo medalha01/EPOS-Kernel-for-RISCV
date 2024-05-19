@@ -22,7 +22,12 @@ public:
         }
 
         if(Memory_Map::BOOT_STACK != Memory_Map::NOT_USED)
-            MMU::free(Memory_Map::BOOT_STACK, MMU::pages(Traits<Machine>::STACK_SIZE));
+		{
+			// Since there are possibly multiple cores now, we ought to free the same amount of memory
+			// that was allocated to the entire BOOT_STACK, which was previously allocated linearly in
+			// regards to how many cores there are at present in the system.
+            MMU::free(Memory_Map::BOOT_STACK, MMU::pages(Traits<Machine>::STACK_SIZE * CPU::cores()));
+		}
 
         db<Init>(INF) << "INIT ends here!" << endl;
 

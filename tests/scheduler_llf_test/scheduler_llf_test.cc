@@ -4,17 +4,16 @@
 #include <real-time.h>
 using namespace EPOS;
 
-/*
-const unsigned int iterations = 100;
-const unsigned int period_a = 100;   // ms
-const unsigned int period_b = 80;    // ms
-const unsigned int period_c = 60;    // ms
-const unsigned int wcet_a = 50;      // ms
-const unsigned int wcet_b = 20;      // ms
-const unsigned int wcet_c = 10;      // ms
-const unsigned int deadline_a = 100; // ms
-const unsigned int deadline_b = 80;  // ms
-const unsigned int deadline_c = 60;  // ms*/
+//const unsigned int iterations = 100;
+//const unsigned int period_a = 100;   // ms
+//const unsigned int period_b = 80;    // ms
+//const unsigned int period_c = 60;    // ms
+//const unsigned int wcet_a = 50;      // ms
+//const unsigned int wcet_b = 20;      // ms
+//const unsigned int wcet_c = 10;      // ms
+//const unsigned int deadline_a = 100; // ms
+//const unsigned int deadline_b = 80;  // ms
+//const unsigned int deadline_c = 60;  // ms
 
 const unsigned int iterations = 10;
 const unsigned int period_a = 50;    // ms

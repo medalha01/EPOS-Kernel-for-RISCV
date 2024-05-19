@@ -35,9 +35,22 @@ protected:
     long fdec(volatile long & number) { return CPU::fdec(number); }
 
     // Thread operations
-    void lock_for_acquiring() { Thread::lock(); Thread::prioritize(&_granted); }
-    void unlock_for_acquiring() { _granted.insert(new (SYSTEM) Queue::Element(Thread::running())); Thread::unlock(); }
-    void lock_for_releasing() { Thread::lock(); Queue::Element * e = _granted.remove(); if(e) delete e; Thread::deprioritize(&_granted); Thread::deprioritize(&_waiting); }
+    void lock_for_acquiring() {
+      Thread::lock();
+      Thread::prioritize(&_granted);
+    }
+    void unlock_for_acquiring() {
+      _granted.insert(new (SYSTEM) Queue::Element(Thread::running()));
+      Thread::unlock();
+    }
+    void lock_for_releasing() {
+      Thread::lock();
+      Queue::Element *e = _granted.remove();
+      if (e)
+        delete e;
+      Thread::deprioritize(&_granted);
+      Thread::deprioritize(&_waiting);
+    }
     void unlock_for_releasing() { Thread::unlock(); }
 
     void sleep() { Thread::sleep(&_waiting); }

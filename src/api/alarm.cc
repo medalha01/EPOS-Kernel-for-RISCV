@@ -82,6 +82,7 @@ void Alarm::delay(Microsecond time)
     db<Alarm>(TRC) << "Alarm::delay(time=" << time << ")" << endl;
 
     Semaphore semaphore(0);
+	db<Thread>(WRN) << "@@@alarm -- sem handler set in delay" << endl;
     Semaphore_Handler handler(&semaphore);
     Alarm alarm(time, &handler, 1); // if time < tick trigger v()
     semaphore.p();

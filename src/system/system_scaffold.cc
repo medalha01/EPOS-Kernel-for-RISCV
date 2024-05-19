@@ -38,4 +38,8 @@ extern "C" {
     void _print(const char * s) { Display::puts(s); }
     void _print_preamble() {}
     void _print_trailler(bool error) { if(error) Machine::panic(); }
+
+    //void _print(const char * s) {}
+    //void _print_preamble() {}
+    //void _print_trailler(bool error) {}
 }

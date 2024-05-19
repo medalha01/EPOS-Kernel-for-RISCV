@@ -39,7 +39,7 @@ template <>
 struct Traits<Lists> : public Traits<Build>
 {
     //static const bool debugged = hysterically_debugged;
-    static const bool debugged = true;
+    static const bool debugged = false;
 	
 	static const bool error = false;
 	static const bool warning = false;
@@ -123,7 +123,8 @@ struct Traits<System> : public Traits<Build>
     static const bool reboot = true;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1)
+		* Traits<Application>::STACK_SIZE;
 };
 
 template <>
@@ -132,7 +133,12 @@ struct Traits<Thread> : public Traits<Build>
     static const bool enabled = Traits<System>::multithread;
     static const bool trace_idle = hysterically_debugged;
     static const bool simulate_capacity = false;
-    static const int priority_inversion_protocol = INHERITANCE;
+    static const int priority_inversion_protocol = CEILING;
+
+	static const bool error = false; 
+	static const bool warning = true;
+	static const bool info = false; 
+	static const bool trace = false; 
 
     typedef LLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
@@ -141,7 +147,7 @@ struct Traits<Thread> : public Traits<Build>
 template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
-    static const bool debugged = true; //Traits<Thread>::trace_idle || hysterically_debugged;
+    static const bool debugged = false; //Traits<Thread>::trace_idle || hysterically_debugged;
 	static const bool trace = true;
 	static const bool warning = false;
 	static const bool info = false;

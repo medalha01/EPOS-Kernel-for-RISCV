@@ -24,7 +24,8 @@ class Thread
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
-    static const int priority_inversion_protocol = Traits<Thread>::priority_inversion_protocol;
+    static const int priority_inversion_protocol = 
+		Traits<Thread>::priority_inversion_protocol;
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
     static const unsigned int STACK_SIZE = Traits<Application>::STACK_SIZE;
 
@@ -64,7 +65,6 @@ public:
         Criterion criterion;
         unsigned int stack_size;
     };
-
 
 public:
     template<typename ... Tn>
@@ -115,10 +115,15 @@ protected:
 
     static void dispatch(Thread * prev, Thread * next, bool charge = true);
 
-    static void for_all_threads(Criterion::Event event) {
+    static void for_all_threads(Criterion::Event event) 
+	{
         for(Queue::Iterator i = _scheduler.begin(); i != _scheduler.end(); ++i)
+		{
             if(i->object()->criterion() != IDLE)
+			{
                 i->object()->criterion().handle(event);
+			}
+		}
     }
 
     static int idle();
@@ -142,7 +147,6 @@ protected:
     static Scheduler<Thread> _scheduler;
 };
 
-
 class Task
 {
     friend class Thread;           // for Task(), enroll() and dismiss()
@@ -157,14 +161,15 @@ private:
     typedef Resources::Element Resource;
 
 protected:
-    // This constructor is only used by Thread::init()
-    template<typename ... Tn>
-    Task(int (* entry)(Tn ...), Tn ... an) {
-        db<Task, Init>(TRC) << "Task(entry=" << reinterpret_cast<void *>(entry) << ") => " << this << endl;
+	// This constructor is only used by Thread::init()
+	template <typename... Tn> Task(int (*entry)(Tn...), Tn... an) {
+		db<Task, Init>(TRC) << "Task(entry=" << reinterpret_cast<void *>(entry)
+			<< ") => " << this << endl;
 
-        _current = this;
-        _main = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), entry, an ...);
-    }
+		_current = this;
+		_main = new (SYSTEM)
+			Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), entry, an...);
+	}
 
 public:
     ~Task();
@@ -199,7 +204,6 @@ private:
     static Task * volatile _current;
 };
 
-
 template<typename ... Tn>
 inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
 : _task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
@@ -218,7 +222,6 @@ inline Thread::Thread(Configuration conf, int (* entry)(Tn ...), Tn ... an)
     constructor_epilogue(entry, conf.stack_size);
 }
 
-
 // A Java-like Active Object
 class Active: public Thread
 {
@@ -233,7 +236,6 @@ public:
 private:
     static int entry(Active * runnable) { return runnable->run(); }
 };
-
 
 // An event handler that triggers a thread (see handler.h)
 class Thread_Handler : public Handler

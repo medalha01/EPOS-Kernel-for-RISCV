@@ -52,10 +52,17 @@ public:
     };
 
 public:
-    static Reg64 mtime() { return *reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIME); }
-    static void  mtimecmp(Reg64 v) { *reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIMECMP + 8 * (CPU::id() + CPU_OFFSET)) = v; }
+	static Reg64 mtime() {
+		return *reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIME);
+	}
 
-    static volatile Reg32 & msip(unsigned int cpu) { return *reinterpret_cast<volatile Reg32 *>(Memory_Map::CLINT_BASE + MSIP + 4 * (cpu + CPU_OFFSET)); }
+	static void mtimecmp(Reg64 v) {
+		*reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIMECMP + 8 * (CPU::id() + CPU_OFFSET)) = v;
+	}
+	
+	static volatile Reg32 &msip(unsigned int cpu) {
+		return *reinterpret_cast<volatile Reg32 *>(Memory_Map::CLINT_BASE + MSIP + 4 * (cpu + CPU_OFFSET));
+	}
 };
 
 

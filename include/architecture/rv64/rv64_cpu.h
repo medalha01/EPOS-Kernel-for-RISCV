@@ -15,6 +15,8 @@ private:
     static const bool supervisor = Traits<Machine>::supervisor;
 
 public:
+	//static const bool setup_complete = false;
+
     // CPU Native Data Types
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
@@ -114,7 +116,9 @@ public:
 
     public:
         Context() {}
-        // Contexts are loaded with [m|s]ret, which gets pc from [m|s]epc and updates some bits of [m|s]status, that's why _st is initialized with [M|S]PIE and [M|S]PP
+
+        // Contexts are loaded with [m|s]ret, which gets pc from [m|s]epc and updates some bits of [m|s]status,
+		// that's why _st is initialized with [M|S]PIE and [M|S]PP
         Context(Log_Addr entry, Log_Addr exit): _pc(entry), _st(supervisor ? ((exit ? SPIE : 0) | SPP_S | SUM) : ((exit ? MPIE : 0) | MPP_M)), _x1(exit) {
             if(Traits<Build>::hysterically_debugged || Traits<Thread>::trace_idle) {
                                                                         _x5 =  5;  _x6 =  6;  _x7 =  7;  _x8 =  8;  _x9 =  9;
@@ -228,8 +232,13 @@ public:
     static Log_Addr fr() { Reg r; ASM("mv %0, a0" :  "=r"(r)); return r; }
     static void fr(Reg r) {       ASM("mv a0, %0" : : "r"(r) :); }
 
-    static unsigned int id() { return supervisor ? tp() : mhartid(); }
-    static unsigned int cores() { return 1; }
+    static unsigned int id() { return tp(); }
+    static unsigned int cores() { return Traits<Build>::CPUS; }
+	//static unsigned int id() { return setup_complete ? running() : tp();  } 
+    //static unsigned int cores() { return 1; }
+    //static unsigned int id() { return supervisor ? tp() : mhartid(); }
+	// TODO: @arthur ponteiro da thread depois do setup
+	//
 
     using CPU_Common::clock;
     using CPU_Common::min_clock;
@@ -524,7 +533,7 @@ if(supervisor) {
         "       sd      x30,  224(sp)           \n"
         "       sd      x31,  232(sp)           \n");
 if(interrupt) {
-    ASM("       mv       x3, sp                 \n");   // leave TMP pointing the context to easy subsequent access to the saved context
+    ASM("       mv       x3, sp                 \n");   // leave TMP pointing the context to easy subseqguent access to the saved context
 }
 }
 

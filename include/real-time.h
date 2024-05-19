@@ -60,13 +60,17 @@ protected:
     typedef IF<Criterion::dynamic | Traits<System>::monitored, Dynamic_Handler, Static_Handler>::Result Handler;
 
 public:
-    struct Configuration: public Thread::Configuration {
-        Configuration(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN, Microsecond a = NOW, const unsigned int n = INFINITE, State s = READY, unsigned int ss = STACK_SIZE)
-        : Thread::Configuration(s, Criterion(p, d, c), ss), activation(a), times(n) {}
+	struct Configuration : public Thread::Configuration {
+		Configuration(Microsecond p, Microsecond d = SAME,
+				Microsecond c = UNKNOWN, Microsecond a = NOW,
+				const unsigned int n = INFINITE, State s = READY,
+				unsigned int ss = STACK_SIZE)
+			: Thread::Configuration(s, Criterion(p, d, c), ss), activation(a),
+			times(n) {}
 
-        Microsecond activation;
-        unsigned int times;
-    };
+		Microsecond activation;
+		unsigned int times;
+	};
 
 public:
     template<typename ... Tn>

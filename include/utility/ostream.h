@@ -25,7 +25,10 @@ public:
     struct Err {};
 
 public:
-    OStream(): _base(10), _error(false) {}
+    OStream(): _base(10), _error(false) 
+	{
+		
+	}
 
     OStream & operator<<(const Begl & begl) {
         _error = false;
@@ -155,6 +158,7 @@ public:
 
 private:
     void print(const char * s) { _print(s); }
+    //void print(const char * s) {}
 
     int itoa(int v, char * s);
     int utoa(unsigned int v, char * s, unsigned int i = 0);

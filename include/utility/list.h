@@ -936,7 +936,8 @@ public:
     using Base::insert_tail;
     using Base::search;
 
-    void insert(Element * e) {
+    void insert(Element * e) 
+	{
         db<Lists>(TRC) << "Ordered_List::insert(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *) -1)
                        << ",o=" << (e ? e->object() : (void *) -1)
@@ -944,39 +945,61 @@ public:
                        << "}" << endl;
 
         if(empty())
+		{
             insert_first(e);
-        else {
+		}
+        else 
+		{
             Element * next;
-            for(next = head();
-                (next->rank() <= e->rank()) && next->next();
-                next = next->next())
+
+            for(next = head(); (next->rank() <= e->rank()) && next->next(); next = next->next())
+			{
+                if(relative) 
+				{
+					e->rank(e->rank() - next->rank());
+				}
+			}
+
+            if (next->rank() <= e->rank()) 
+			{
                 if(relative)
+				{
                     e->rank(e->rank() - next->rank());
-            if(next->rank() <= e->rank()) {
-                if(relative)
-                    e->rank(e->rank() - next->rank());
+				}
                 insert_tail(e);
-            } else if(!next->prev()) {
+            }
+			else if (!next->prev()) 
+			{
                 if(relative)
+				{
                     next->rank(next->rank() - e->rank());
+				}
                 insert_head(e);
-            } else {
+            }
+			else 
+			{
                 if(relative)
+				{
                     next->rank(next->rank() - e->rank());
+				}
                 Base::insert(e, next->prev(), next);
             }
         }
     }
 
-    Element * remove() {
+    Element * remove()
+	{
         db<Lists>(TRC) << "Ordered_List::remove()" << endl;
         Element * e = Base::remove_head();
         if(e && relative && e->next())
+		{
             e->next()->rank(e->next()->rank() + e->rank());
+		}
         return e;
     }
 
-    Element * remove(Element * e) {
+    Element * remove(Element * e) 
+	{
         db<Lists>(TRC) << "Ordered_List::remove(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *) -1)
                        << ",o=" << (e ? e->object() : (void *) -1)
@@ -985,12 +1008,15 @@ public:
 
         Base::remove(e);
         if(relative && e->next())
+		{
             e->next()->rank(e->next()->rank() + e->rank());
+		}
 
         return e;
     }
 
-    Element * remove(const Object_Type * obj) {
+    Element * remove(const Object_Type * obj)
+	{
         db<Lists>(TRC) << "Ordered_List::remove(o=" << obj << ")" << endl;
 
         Element * e = search(obj);
@@ -1000,13 +1026,15 @@ public:
             return 0;
     }
 
-    Element * search_rank(const Rank_Type & rank) {
+    Element * search_rank(const Rank_Type & rank) 
+	{
         Element * e = head();
         for(; e && (e->rank() != rank); e = e->next());
         return e;
     }
 
-    Element * remove_rank(const Rank_Type & rank) {
+    Element * remove_rank(const Rank_Type & rank) 
+	{
         db<Lists>(TRC) << "Ordered_List::remove_rank(r=" << rank << ")" << endl;
 
         Element * e = search_rank(rank);
@@ -1169,7 +1197,9 @@ public:
 public:
     Multihead_Scheduling_List() {
         for(unsigned int i = 0; i < H; i++)
+		{
             _chosen[i] = 0;
+		}
     }
 
     using Base::empty;

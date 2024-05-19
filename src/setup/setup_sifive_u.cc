@@ -243,7 +243,14 @@ void _entry() // machine mode
 			+ Traits<Machine>::STACK_SIZE * (CPU::id() + 1)
 			- sizeof(long)); 
 
-	Machine::clear_bss();
+	if (CPU::is_bootstrap()) {
+		db<Thread>(WRN) << "antes do clear bss.\n\n\n" << endl;
+		Machine::clear_bss();
+	}
+
+	CPU::smp_barrier();
+
+	db<Thread>(WRN) << "depois do barrier.\n\n\n" << endl;
 
 	if (Traits<Machine>::supervisor) {
 		// setup a machine mode interrupt handler to

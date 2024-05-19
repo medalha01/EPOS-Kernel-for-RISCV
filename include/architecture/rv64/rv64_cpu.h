@@ -234,11 +234,11 @@ public:
 
     static unsigned int id() { return tp(); }
     static unsigned int cores() { return Traits<Build>::CPUS; }
-	//static unsigned int id() { return setup_complete ? running() : tp();  } 
-    //static unsigned int cores() { return 1; }
-    //static unsigned int id() { return supervisor ? tp() : mhartid(); }
+	static bool is_bootstrap() { return id() == 0; }
+
+	static void smp_barrier() { CPU_Common::smp_barrier<&CPU::finc>(cores(), id()); };
+	
 	// TODO: @arthur ponteiro da thread depois do setup
-	//
 
     using CPU_Common::clock;
     using CPU_Common::min_clock;

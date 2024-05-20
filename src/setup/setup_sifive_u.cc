@@ -101,16 +101,19 @@ Setup::Setup()
         }
 
         // Enable paging
-        CPU::smp_barrier();
 
         enable_paging();
     }
+
+    CPU::smp_barrier();
 
     // Enable paging
     if (Traits<Machine>::supervisor)
         enable_paging();
 
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
+    CPU::smp_barrier();
+
     call_next();
 }
 

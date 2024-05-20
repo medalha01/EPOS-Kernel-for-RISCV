@@ -309,9 +309,9 @@ public:
 
     unsigned int get_cpu_with_lowest_priority()
     {
-        unsigned int min = Thread::IDLE;
+        int min = Thread::IDLE;
         unsigned int lowest_priority_cpu = 0;
-        for (int i = 0; i < Traits<Build>::CPUS; i++)
+        for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
         {
             if (min > *threads_criterion_on_execution[i])
             {
@@ -325,7 +325,7 @@ public:
 
     unsigned int get_idle_cpu()
     {
-        for (int i = 0; i < Traits<Build>::CPUS; i++)
+        for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
         {
             if ((running_thread_by_core[i] == nullptr) or (*threads_criterion_on_execution[i] == Thread::IDLE))
             {
@@ -335,7 +335,7 @@ public:
         return -1;
     }
 
-    void clear_cpu(int cpu_id)
+    void clear_cpu(unsigned int cpu_id)
     {
         assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
         running_thread_by_core[cpu_id] = nullptr;

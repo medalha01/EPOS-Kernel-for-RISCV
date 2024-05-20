@@ -88,19 +88,27 @@ Setup::Setup()
     db<Setup>(INF) << "Setup: si=" << *si << endl;
 
     // Print basic facts about this EPOS instance
-    say_hi();
-
-    if (Traits<Machine>::supervisor)
+    if (CPU::is_bootstrap())
     {
-        // Configure a flat memory model for the single task in the system
-        setup_flat_paging();
+        say_hi();
+        if (Traits<Machine>::supervisor)
+        {
+            // Configure a flat memory model for the single task in the system
+            setup_flat_paging();
 
-        // Relocate the machine to supervisor interrupt forwarder
-        setup_m2s();
+            // Relocate the machine to supervisor interrupt forwarder
+            setup_m2s();
+        }
 
         // Enable paging
+        CPU::smp_barrier();
+
         enable_paging();
     }
+
+    // Enable paging
+    if (Traits<Machine>::supervisor)
+        enable_paging();
 
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
     call_next();

@@ -14,7 +14,6 @@ class Synchronizer_Common
 protected:
     typedef Thread::Queue Queue;
     typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Queue_Element;
-    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> Synchronizer_List;
 
 protected:
     Synchronizer_Common() {}
@@ -170,13 +169,15 @@ class Sync_Object
 
 public:
     typedef Thread::Queue Queue;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Queue_Element;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Sync_element;
+    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> Synchronizer_List;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> Semaphore_link;
 
     Sync_Object(Thread *thread_pointer, Semaphore *semaphore_pointer, bool isHolding)
     {
         tp = thread_pointer;
         smpp = semaphore_pointer;
-        reference_pointer = new (SYSTEM) Queue_Element(this);
+        reference_pointer = new (SYSTEM) Sync_element(this);
         isHolding = isHolding;
     }
 
@@ -184,7 +185,7 @@ public:
     {
         tp = thread_pointer;
         mup = mutex_pointer;
-        reference_pointer = new (SYSTEM) Queue_Element(this);
+        reference_pointer = new (SYSTEM) Sync_element(this);
         isHolding = isHolding;
     }
     ~Sync_Object()
@@ -195,15 +196,15 @@ public:
         }
     }
 
-    void add_synchronizer(Queue::Element *syncObj) { synchronizer_list.insert(syncObj); }
-    void remove_synchronizer(Queue::Element *syncObj) { synchronizer_list.remove(syncObj); }
+    void add_synchronizer(Semaphore_link *syncObj) { synchronizer_list.insert(syncObj); }
+    void remove_synchronizer(Semaphore_link *syncObj) { synchronizer_list.remove(syncObj); }
 
     Thread *tp = nullptr;
     Semaphore *smpp = nullptr;
     Mutex *mup = nullptr;
-    Queue_Element *reference_pointer = nullptr;
+    Sync_element *reference_pointer = nullptr;
     bool isHolding = false;
-    Queue synchronizer_list;
+    Synchronizer_List synchronizer_list;
 };
 
 __END_SYS

@@ -13,6 +13,8 @@ class Synchronizer_Common
 {
 protected:
     typedef Thread::Queue Queue;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Queue_Element;
+    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> Synchronizer_List;
 
 protected:
     Synchronizer_Common() {}
@@ -79,6 +81,8 @@ protected:
 protected:
     Queue _waiting;
     Queue _granted;
+    List<Sync_Object, List_Elements::Doubly_Linked<Sync_Object>> resource_holder_list;
+    List<Sync_Object, List_Elements::Doubly_Linked<Sync_Object>> resource_waiting_list;
 };
 
 class Mutex : protected Synchronizer_Common
@@ -161,14 +165,18 @@ private:
 
 class Sync_Object
 {
+    friend Synchronizer_Common;
+    friend Thread;
+
 public:
     typedef Thread::Queue Queue;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Queue_Element;
 
     Sync_Object(Thread *thread_pointer, Semaphore *semaphore_pointer, bool isHolding)
     {
         tp = thread_pointer;
         smpp = semaphore_pointer;
-        reference_pointer = new (SYSTEM) Queue::Element(thread_pointer);
+        reference_pointer = new (SYSTEM) Queue_Element(this);
         isHolding = isHolding;
     }
 
@@ -176,7 +184,7 @@ public:
     {
         tp = thread_pointer;
         mup = mutex_pointer;
-        reference_pointer = new (SYSTEM) Queue::Element(thread_pointer);
+        reference_pointer = new (SYSTEM) Queue_Element(this);
         isHolding = isHolding;
     }
     ~Sync_Object()
@@ -193,7 +201,7 @@ public:
     Thread *tp = nullptr;
     Semaphore *smpp = nullptr;
     Mutex *mup = nullptr;
-    Queue::Element *reference_pointer = nullptr;
+    Queue_Element *reference_pointer = nullptr;
     bool isHolding = false;
     Queue synchronizer_list;
 };

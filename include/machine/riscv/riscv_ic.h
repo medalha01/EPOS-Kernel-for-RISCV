@@ -41,14 +41,19 @@ public:
         IRQ_PLIC        = (supervisor ? IRQ_SUP_EXT: IRQ_MAC_EXT),
         INTERRUPT       = 1UL << (Traits<CPU>::WORD_SIZE - 1),
         INT_MASK        = ~INTERRUPT
-
     };
 
-    // Registers offsets from CLINT_BASE (all registers are 32 bits wide; 32-bit word pairs, like MTIMECMP, can be accessed as a 64-bit word in RV64)
-    enum : Reg {                  // Description
-        MSIP            = 0x0000, // Per-HART 32-bit software interrupts (IPI) trigger; each HART is offset by 4 bytes from MSIP
-        MTIMECMP        = 0x4000, // Per-HART 64-bit timer compare register; lower 32 bits stored first; each HART is offset by 8 bytes from MTIMECMP
-        MTIME           = 0xbff8, // Timer counter shared by all HARTs lower 32 bits stored first
+    // Registers offsets from CLINT_BASE (all registers are 32 bits wide;
+	// 32-bit word pairs, like MTIMECMP, can be accessed as a 64-bit word in RV64)
+    enum : Reg {
+		// Per-HART 32-bit software interrupts (IPI) trigger; 
+		// each HART is offset by 4 bytes from MSIP
+        MSIP            = 0x0000, 
+		// Per-HART 64-bit timer compare register; lower 32 bits stored first; 
+		// each HART is offset by 8 bytes from MTIMECMP
+        MTIMECMP        = 0x4000, 
+		// Timer counter shared by all HARTs lower 32 bits stored first
+        MTIME           = 0xbff8, 
     };
 
 public:
@@ -61,6 +66,10 @@ public:
 	}
 	
 	static volatile Reg32 &msip(unsigned int cpu) {
+		// TODO: @arthur big problem here possibly: this is going to be MSIP + 4 at least by default,
+		// to the point that software interrupts to core 1 might rather be going into core 2.
+		//
+		// Esse -1 aqui eu que coloquei...
 		return *reinterpret_cast<volatile Reg32 *>(Memory_Map::CLINT_BASE + MSIP + 4 * (cpu + CPU_OFFSET));
 	}
 };
@@ -78,20 +87,33 @@ private:
 public:
     static const unsigned int IRQS = Traits<IC>::PLIC_IRQS;
 
-    // Registers offsets from PLIC_BASE (all registers are 32 bits wide; 32-bit word pairs, like PENDING, can be accessed as a 64-bit word in RV64)
-    enum {                              // Description
-        PRIORITY        = 0x000000,     // Interrupt Source Priority (RW), 32 bits per source, up to 1024 sources;  0 => disable, 1 => lowest, .... 7 => highest
-        PENDING         = 0x001000,     // Interrupt Pending Register (RO), 1 bit per source, up to 1024 sources (bit 0 is always 0, since source 0 does not exist)
-        ENABLED         = 0x002000,     // per-context Interrupt Enable Register (RW), 1 bit per source, up to 1024 sources; contexts offset by 0x80 bytes
-        THRESHOLD       = 0x200000,     // per-context Interrupt Priority Threshold Register (RW), 3 bits (priority 1 to 7), interrupts bellow the threshold are masked; contexts offset by 0x10000
-        CLAIM           = 0x200004,     // per-context Claim/Complete Register (RW), 32 bits containing the highest interrupt source id; id == 0 => no pending interrupts; write ID to Complete (i.e. EOI); contexts offset by 0x10000
-    };
+	// Registers offsets from PLIC_BASE (all registers are 32 bits wide; 32-bit
+	// word pairs, like PENDING, can be accessed as a 64-bit word in RV64)
+	enum {                 // Description
+		PRIORITY = 0x000000, // Interrupt Source Priority (RW), 32 bits per
+							 // source, up to 1024 sources;  0 => disable, 1 =>
+							 // lowest, .... 7 => highest
+		PENDING = 0x001000,  // Interrupt Pending Register (RO), 1 bit per source,
+							 // up to 1024 sources (bit 0 is always 0, since source
+							 // 0 does not exist)
+		ENABLED =
+			0x002000, // per-context Interrupt Enable Register (RW), 1 bit per
+					  // source, up to 1024 sources; contexts offset by 0x80 bytes
+		THRESHOLD =
+			0x200000, // per-context Interrupt Priority Threshold Register (RW), 3
+					  // bits (priority 1 to 7), interrupts bellow the threshold
+					  // are masked; contexts offset by 0x10000
+		CLAIM = 0x200004, // per-context Claim/Complete Register (RW), 32 bits
+						  // containing the highest interrupt source id; id == 0
+						  // => no pending interrupts; write ID to Complete (i.e.
+						  // EOI); contexts offset by 0x10000
+	};
 
 public:
-    static void enable() { for(Reg32 id = 1; id < IRQS; id++) enable(id); }
-    static void enable(Reg32 id) { _enable(context(), id); }
-    static void disable() { for(Reg32 id = 1; id < IRQS; id++) disable(id); }
-    static void disable(Reg32 id) { _disable(context(), id); }
+	static void enable() { for(Reg32 id = 1; id < IRQS; id++) enable(id); }
+	static void enable(Reg32 id) { _enable(context(), id); }
+	static void disable() { for(Reg32 id = 1; id < IRQS; id++) disable(id); }
+	static void disable(Reg32 id) { _disable(context(), id); }
 
     static Reg32 claim() {
         if(!_claimed)
@@ -275,7 +297,7 @@ private:
     static void dispatch();
 
     // Logical handlers
-    static void int_not(Interrupt_Id i);
+    static void int_software(Interrupt_Id i);
     static void exception(Interrupt_Id i);
 
     // Physical handler

@@ -25,23 +25,34 @@ public:
 	
 	// Run EPOS library in machine mode (works in supervisor as well)
     //static const bool supervisor = true;
-    static const bool supervisor = true;
+    static const bool supervisor = false;
 
     // CPU numbering
-    static const unsigned long CPU_OFFSET       = 1;                          
-    //static const unsigned long CPU_OFFSET       = supervisor ? 1 : 0;                           // We skip core zero, which is a E CPU without MMU
+	// We skip core zero, which is a E CPU without MMU
+    static const unsigned long CPU_OFFSET       = 1;
+    //static const unsigned long CPU_OFFSET       = supervisor ? 1 : 0;
 
-    // Clocks
-    static const unsigned long CLOCK            = 1000000000;                                   // CORECLK
-    static const unsigned long HFCLK            =   33330000;                                   // FU540-C000 generates all internal clocks from 33.33 MHz hfclk driven from an external oscillator (HFCLKIN) or crystal (HFOSCIN) input, selected by input HFXSEL.
-    static const unsigned long RTCCLK           =    1000000;                                   // The CPU real time clock (rtcclk) runs at 1 MHz and is driven from input pin RTCCLKIN. This should be connected to an external oscillator.
-    static const unsigned long TLCLK            = CLOCK / 2;                                    // L2 cache and peripherals such as UART, SPI, I2C, and PWM operate in a single clock domain (tlclk) running at coreclk/2 rate. There is a low-latency 2:1 crossing between coreclk and tlclk domains.
+	// Clocks
+	static const unsigned long CLOCK = 1000000000; // CORECLK
+	static const unsigned long HFCLK =
+		33330000; // FU540-C000 generates all internal clocks from 33.33 MHz
+				  // hfclk driven from an external oscillator (HFCLKIN) or
+				  // crystal (HFOSCIN) input, selected by input HFXSEL.
+	static const unsigned long RTCCLK =
+		1000000; // The CPU real time clock (rtcclk) runs at 1 MHz and is driven
+				 // from input pin RTCCLKIN. This should be connected to an
+				 // external oscillator.
+	static const unsigned long TLCLK =
+		CLOCK /
+		2; // L2 cache and peripherals such as UART, SPI, I2C, and PWM operate
+		   // in a single clock domain (tlclk) running at coreclk/2 rate. There
+		   // is a low-latency 2:1 crossing between coreclk and tlclk domains.
 
-    // Physical Memory
-    static const unsigned long RAM_BASE         = 0x80000000;                                   // 2 GB
-    static const unsigned long RAM_TOP          = 0x87ffffff;                                   // 2 GB + 128 MB (max 256 GB of RAM + MIO)
-    static const unsigned long MIO_BASE         = 0x00000000;
-    static const unsigned long MIO_TOP          = 0x1fffffff;                                   // 512 MB
+		   // Physical Memory
+	static const unsigned long RAM_BASE         = 0x80000000;                                   // 2 GB
+	static const unsigned long RAM_TOP          = 0x87ffffff;                                   // 2 GB + 128 MB (max 256 GB of RAM + MIO)
+	static const unsigned long MIO_BASE         = 0x00000000;
+	static const unsigned long MIO_TOP          = 0x1fffffff;                                   // 512 MB
 
     // Physical Memory at Boot
     static const unsigned long BOOT             = NOT_USED;
@@ -61,7 +72,8 @@ public:
 
     // Default Sizes and Quantities
     static const unsigned int MAX_THREADS       = 15;
-    static const unsigned int STACK_SIZE        = 16 * 32 * 1024;
+	// NOTE: @arthur esteque.
+    static const unsigned int STACK_SIZE        = 64 * 1024;
     static const unsigned int HEAP_SIZE         = 4 * 1024 * 1024;
 };
 

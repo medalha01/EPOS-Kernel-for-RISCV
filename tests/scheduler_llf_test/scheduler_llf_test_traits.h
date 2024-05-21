@@ -141,7 +141,7 @@ struct Traits<Thread> : public Traits<Build>
 	static const bool info = false; 
 	static const bool trace = true; 
 
-    typedef LLF Criterion;
+    typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
 

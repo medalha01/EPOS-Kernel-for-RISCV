@@ -52,6 +52,7 @@ public:
 			Timer::reset();
 		}
 
+		db<Thread>(WRN) << "oi oi oio oi oi o\n\n\n" << endl;
 		first->_context->load();
 	}
 };

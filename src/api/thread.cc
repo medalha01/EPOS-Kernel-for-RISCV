@@ -419,6 +419,10 @@ void Thread::reschedule()
 
     assert(locked()); // locking handled by caller
 
+	db<Thread>(WRN) << "@@@int reschedule send interrupt" << endl;
+	IC::ipi(CPU::id(), IC::INT_RESCHEDULER);
+	db<Thread>(WRN) << "@@@int reschedule already sent the interrupt" << endl;
+
     Thread * prev = running();
     Thread * next = _scheduler.choose();
 
@@ -485,17 +489,18 @@ int Thread::idle()
     db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
 
 	// someone else besides idle
-    while(_thread_count > 1) 
+    while(_thread_count > CPU::cores()) 
 	{ 
         if(Traits<Thread>::trace_idle)
 		{
             db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
 		}
 
+		db<Thread>(WRN) << "idle here..\n\n\n" << endl;
         CPU::int_enable();
         CPU::halt();
 
-		if (_scheduler.schedulables() > CPU::cores() && !preemptive) 
+		if (_scheduler.schedulables() > CPU::cores() || !preemptive) 
 		{
 			db<Thread>(WRN) << "yield da IDLE\n\n" << endl;
 			yield();

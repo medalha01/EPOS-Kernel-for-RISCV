@@ -21,15 +21,44 @@ public:
 
         // Initialize Application's heap
         db<Init>(INF) << "Initializing application's heap: ";
-        if(Traits<System>::multiheap) { // heap in data segment arranged by SETUP
-            db<Init>(INF) << endl;
-            char * heap = (MMU::align_page(&_end) >= CPU::Log_Addr(Memory_Map::APP_DATA)) ? MMU::align_page(&_end) : CPU::Log_Addr(Memory_Map::APP_DATA); // ld is eliminating the data segment in some compilations, particularly for RISC-V, and placing _end in the code segment
-            Application::_heap = new (&Application::_preheap[0]) Heap(heap, HEAP_SIZE);
-        } else {
-            db<Init>(INF) << "adding all free memory to the unified system's heap!" << endl;
-            for(unsigned int frames = MMU::allocable(); frames; frames = MMU::allocable())
-                System::_heap->free(MMU::alloc(frames), frames * sizeof(MMU::Page));
-        }
+
+		// TODO: @arthur possivelmente tirar esse barrier. vide comentário abaixo.
+		CPU::smp_barrier();
+
+		// TODO: @arthur ver onde que o Init_Application é chamado na hierarquia de calls.
+		if (CPU::is_bootstrap())
+		{
+			if(Traits<System>::multiheap) 
+			{ 
+				// heap in data segment arranged by SETUP
+				db<Init>(INF) << endl;
+
+				// ld is eliminating the data segment in some compilations,
+				// particularly for RISC-V, and placing _end in the code segment
+				char * heap = (MMU::align_page(&_end) >= CPU::Log_Addr(Memory_Map::APP_DATA)) 
+					? MMU::align_page(&_end)
+					: CPU::Log_Addr(Memory_Map::APP_DATA); 
+
+				Application::_heap = new (&Application::_preheap[0]) Heap(heap, HEAP_SIZE);
+			} 
+			else
+			{
+				db<Init>(INF) << "adding all free memory to the unified system's heap!" << endl;
+
+				// TODO: @arthur verificar se isso aqui está correto para múltiplos cores
+				for(unsigned int frames = MMU::allocable(); frames; frames = MMU::allocable())
+				{
+					System::_heap->free(MMU::alloc(frames), frames * sizeof(MMU::Page));
+				}
+			}
+		}
+
+		// Guarantees that the previous heap operations were initialized successfully. 
+		// Otherwise, different cores might be trying to perform allocations, which would
+		// result in memory errors, as either there is no heap in the system just yet,
+		// or the heap freeing operation that unifies it into the system's heap has not 
+		// yet been completed by the bootstrap core.
+		CPU::smp_barrier();
     }
 };
 

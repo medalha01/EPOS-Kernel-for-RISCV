@@ -26,9 +26,7 @@ public:
 		// in LIBRARY mode, a single-level mapping of the whole memory space is used
         FLAT_MEM_MAP    = INT_M2S - 4096,
 		// will be used as the stack's base, not the stack pointer
-        BOOT_STACK      = FLAT_MEM_MAP -
-			//Traits<Machine>::STACK_SIZE, 
-			Traits<Machine>::STACK_SIZE * Traits<Build>::CPUS, 
+        BOOT_STACK      = FLAT_MEM_MAP - Traits<Machine>::STACK_SIZE * Traits<Build>::CPUS, 
 		FREE_BASE       = RAM_BASE,
         FREE_TOP        = BOOT_STACK - 1,
 

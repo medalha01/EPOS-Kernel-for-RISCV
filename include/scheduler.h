@@ -261,7 +261,6 @@ public:
     void handle(Event event);
 };
 
-
 // Least Laxity First
 class LLF: public RT_Common
 {
@@ -275,6 +274,49 @@ public:
     void handle(Event event);
 };
 
+class GLLF: public LLF
+{
+public:
+	static const unsigned int HEADS = Traits<Build>::CPUS;
+
+public:
+	GLLF(int p = APERIODIC): LLF(p) {}
+	GLLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN) 
+		: LLF(p, d, c) { };
+
+	//unsigned int queue() const { return current_head(); }
+	//void queue(unsigned int q) {}
+	static unsigned int current_head() { return CPU::id(); }
+};
+
+class PLLF: public LLF
+{
+public:
+	static const unsigned int HEADS = 1;
+
+public:
+	PLLF(int p = APERIODIC): LLF(p) {}
+	PLLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN)
+		: LLF(p, d, c) {};
+
+	// TODO: @arthur check if this is correct.
+	static unsigned int current_queue() { return CPU::id(); } 
+	static unsigned int current_head() { return CPU::id(); } 
+	unsigned int queue() const { return current_head(); }
+};
+
 __END_SYS
+
+__BEGIN_UTIL
+
+template<typename T>
+class Scheduling_Queue<T, GLLF>
+: public Multihead_Scheduling_List<T> {};
+
+template<typename T>
+class Scheduling_Queue<T, PLLF>
+: public Multihead_Scheduling_List<T> {};
+
+__END_UTIL
 
 #endif

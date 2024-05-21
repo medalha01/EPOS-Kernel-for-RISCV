@@ -42,6 +42,13 @@ void IC::dispatch()
         db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [sp=" << CPU::sp() << "]" << endl;
 	}
 
+	//db<Thread>(WRN) << "@@@int temo aqui though "<< endl;
+
+	if (id == INT_RESCHEDULER)
+	{
+		db<Thread>(WRN) << "@@@int YIIIIPEEEEEEE\n\n\n\n\n\n\n" << endl;
+	}
+
 	if (id == INT_SYS_TIMER) 
 	{
 		if (supervisor)
@@ -57,12 +64,17 @@ void IC::dispatch()
 		}
 	}
 
+	//db<Thread>(WRN) << "@@@int intvector, int_id = " << id << endl;
+	//db<Thread>(WRN) << "@@@int intvector, int_rescheduler = " << INT_RESCHEDULER << endl;
+	//db<Thread>(WRN) << "@@@int intvector, int_sys_timer = " << INT_SYS_TIMER << endl;
 	_int_vector[id](id);
 }
 
-void IC::int_not(Interrupt_Id id)
+void IC::int_software(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
+	db<Thread>(WRN) << "@@@int é os guri pae..." << endl;
+	IC::ipi_eoi(INT_RESCHEDULER);
 }
 
 void IC::exception(Interrupt_Id id)
@@ -119,7 +131,7 @@ void IC::exception(Interrupt_Id id)
 			db<IC, System>(WRN) << " => data page fault";
 			break;
 		default:
-			int_not(id);
+			int_software(id);
 			break;
 	}
 

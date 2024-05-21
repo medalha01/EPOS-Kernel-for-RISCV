@@ -81,7 +81,8 @@ Setup::Setup()
 	{
 		// SETUP doesn't handle global constructors,
 		// so we need to manually initialize any object with a non-empty default constructor
-		new (&kout) OStream; new (&kerr) OStream; Display::init(); }
+		new (&kout) OStream; new (&kerr) OStream; Display::init(); 
+	}
 
 	// This barrier guards against multiple allocations of the same kout and kerr variables,
 	// and also ensures that only one core initializes the display for all the others. 

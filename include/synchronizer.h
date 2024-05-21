@@ -159,6 +159,45 @@ private:
     Condition *_handler;
 };
 
+class Sync_Object
+{
+public:
+    typedef Thread::Queue Queue;
+
+    Sync_Object(Thread *thread_pointer, Semaphore *semaphore_pointer, bool isHolding)
+    {
+        tp = thread_pointer;
+        smpp = semaphore_pointer;
+        reference_pointer = new (SYSTEM) Queue::Element(thread_pointer);
+        isHolding = isHolding;
+    }
+
+    Sync_Object(Thread *thread_pointer, Mutex *mutex_pointer, bool isHolding)
+    {
+        tp = thread_pointer;
+        mup = mutex_pointer;
+        reference_pointer = new (SYSTEM) Queue::Element(thread_pointer);
+        isHolding = isHolding;
+    }
+    ~Sync_Object()
+    {
+        if (reference_pointer)
+        {
+            delete reference_pointer;
+        }
+    }
+
+    void add_synchronizer(Queue::Element *syncObj) { synchronizer_list.insert(syncObj); }
+    void remove_synchronizer(Queue::Element *syncObj) { synchronizer_list.remove(syncObj); }
+
+    Thread *tp = nullptr;
+    Semaphore *smpp = nullptr;
+    Mutex *mup = nullptr;
+    Queue::Element *reference_pointer = nullptr;
+    bool isHolding = false;
+    Queue synchronizer_list;
+};
+
 __END_SYS
 
 #endif

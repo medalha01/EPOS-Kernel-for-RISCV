@@ -32,7 +32,7 @@ class Thread
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
-    static const int priority_inversion_protocol = Traits<Thread>::priority_inversion_protocol;
+    static const int priority_inversion_protocol = 1;
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
     static const unsigned int STACK_SIZE = Traits<Application>::STACK_SIZE;
 
@@ -89,7 +89,6 @@ public:
 
     const volatile Criterion &priority() const { return _link.rank(); }
     void priority(Criterion p);
-
 
     int join();
     void pass();
@@ -182,7 +181,8 @@ template <typename... Tn>
 inline Thread::Thread(int (*entry)(Tn...), Tn... an)
     : _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
-    db<Thread>(WRN) << "construtor da Thread\n" << endl;
+    db<Thread>(WRN) << "construtor da Thread\n"
+                    << endl;
     constructor_prologue(STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an...);
     constructor_epilogue(entry, STACK_SIZE);
@@ -192,7 +192,8 @@ template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
     : _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
-    db<Thread>(WRN) << "construtor da Thread\n" << endl;
+    db<Thread>(WRN) << "construtor da Thread\n"
+                    << endl;
     constructor_prologue(conf.stack_size);
     _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an...);
     constructor_epilogue(entry, conf.stack_size);

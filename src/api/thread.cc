@@ -365,7 +365,7 @@ void Thread::prioritize(Queue *q)
 {
     assert(locked()); // locking handled by caller
 
-    if (priority_inversion_protocol == Traits<Build>::NONE)
+    if (priority_inversion_protocol == 0)
     {
         return;
     }
@@ -379,6 +379,7 @@ void Thread::prioritize(Queue *q)
         {
             r->_natural_priority = r->criterion();
             Criterion c = (priority_inversion_protocol == Traits<Build>::CEILING) ? CEILING : r->criterion();
+            Thread::priority(c);
             if (r->_state == READY)
             {
                 _scheduler.suspend(r); // TODO: talvez tenha que dar remove e insert aqui que nem anteriormente

@@ -120,6 +120,7 @@ class PEDF;
 class CEDF;
 class PRM;
 class EA_PEDF;
+class Sync_Object;
 
 class Address_Space;
 class Segment;

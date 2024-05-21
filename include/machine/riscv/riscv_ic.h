@@ -196,7 +196,8 @@ public:
     }
 
     static void int_vector(Interrupt_Id i, const Interrupt_Handler & h) {
-        db<IC>(TRC) << "IC::int_vector(int=" << i << ",h=" << reinterpret_cast<void *>(h) << ")" << endl;
+        db<IC>(TRC) << "IC::int_vector(int=" << i << ",h="
+					<< reinterpret_cast<void *>(h) << ")" << endl;
         assert(i < INTS);
         _int_vector[i] = h;
     }

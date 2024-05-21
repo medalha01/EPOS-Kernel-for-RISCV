@@ -21,11 +21,17 @@ public:
         while(CPU::cas(_owner, 0UL, me) != me);
         _level++;
 
-        db<Spin>(TRC) << "Spin::acquire[this=" << this << ",id=" << hex << me << "]() => {owner=" << _owner << dec << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::acquire[this=" << this 
+					  << ",id=" << hex << me 
+					  << "]() => {owner=" << _owner << dec 
+					  << ",level=" << _level << "}" << endl;
     }
 
     void release() {
-        db<Spin>(TRC) << "Spin::release[this=" << this << "]() => {owner=" << hex << _owner << dec << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::release[this=" << this
+				      << "]() => {owner=" << hex
+					  << _owner << dec << ",level="
+					  << _level << "}" << endl;
 
         if(--_level <= 0) {
     	    _level = 0;

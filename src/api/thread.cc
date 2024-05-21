@@ -495,8 +495,9 @@ int Thread::idle()
         CPU::int_enable();
         CPU::halt();
 
-		if (_scheduler.schedulables() > CPU::cores() || !preemptive) 
+		if (_scheduler.schedulables() > CPU::cores() && !preemptive) 
 		{
+			db<Thread>(WRN) << "yield da IDLE\n\n" << endl;
 			yield();
 		}
     }

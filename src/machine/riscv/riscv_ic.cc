@@ -133,6 +133,11 @@ __END_SYS
 
 static void print_context(bool push) {
 	__USING_SYS
-		db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx=" << *static_cast<CPU::Context *>(CPU::sp() + 3 * sizeof(CPU::Reg) + (push ? sizeof(CPU::Context) : 0)) << endl; // 3 words for function's stack frame
+	// 3 words for function's stack frame
+	db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop")
+						<< ":ctx=" << *static_cast<CPU::Context *>
+									(CPU::sp() + 3 * sizeof(CPU::Reg) 
+									 + (push ? sizeof(CPU::Context) : 0))
+						<< endl; 
 }
 

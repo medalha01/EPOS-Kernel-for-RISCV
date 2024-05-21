@@ -22,7 +22,10 @@ public:
 
     // RISC-V mode for library
     //static const bool supervisor = !library;                                                    // Run EPOS library in machine mode (works in supervisor as well)
-    static const bool supervisor = false;                                                    // Run EPOS library in machine mode (works in supervisor as well)
+	
+	// Run EPOS library in machine mode (works in supervisor as well)
+    //static const bool supervisor = true;
+    static const bool supervisor = true;
 
     // CPU numbering
     static const unsigned long CPU_OFFSET       = 1;                          
@@ -58,7 +61,7 @@ public:
 
     // Default Sizes and Quantities
     static const unsigned int MAX_THREADS       = 15;
-    static const unsigned int STACK_SIZE        = 16 * 1024;
+    static const unsigned int STACK_SIZE        = 16 * 32 * 1024;
     static const unsigned int HEAP_SIZE         = 4 * 1024 * 1024;
 };
 
@@ -66,7 +69,8 @@ template <> struct Traits<IC>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 
-    static const unsigned int PLIC_IRQS = 54;           // IRQ0 is used by PLIC to signalize that there is no interrupt being serviced or pending
+	// IRQ0 is used by PLIC to signalize that there is no interrupt being serviced or pending
+    static const unsigned int PLIC_IRQS = 54;           
 
     struct Interrupt_Source: public _SYS::Interrupt_Source {
         static const unsigned int IRQ_L2_CACHE  = 1;    // 3 contiguous interrupt sources

@@ -77,10 +77,17 @@ Setup::Setup()
 {
 	si = reinterpret_cast<System_Info *>(&__boot_time_system_info);
 
-	// SETUP doesn't handle global constructors, so we need to manually initialize any object with a non-empty default constructor
-	new (&kout) OStream;
-	new (&kerr) OStream;
-	Display::init();
+	if (CPU::is_bootstrap()) 
+	{
+		// SETUP doesn't handle global constructors,
+		// so we need to manually initialize any object with a non-empty default constructor
+		new (&kout) OStream; new (&kerr) OStream; Display::init(); }
+
+	// This barrier guards against multiple allocations of the same kout and kerr variables,
+	// and also ensures that only one core initializes the display for all the others. 
+	// Usage of kout and kerr thus needs to wait until they are initialized by the bootstrap core.
+	CPU::smp_barrier();
+
 	kout << endl;
 	kerr << endl;
 
@@ -90,12 +97,21 @@ Setup::Setup()
 	// Print basic facts about this EPOS instance
 	say_hi();
 
-	if(Traits<Machine>::supervisor) {
-		// Configure a flat memory model for the single task in the system
-		setup_flat_paging();
+	if(Traits<Machine>::supervisor) 
+	{
+		if (CPU::is_bootstrap()) 
+		{
+			// Configure a flat memory model for the single task in the system
+			setup_flat_paging();
 
-		// Relocate the machine to supervisor interrupt forwarder
-		setup_m2s();
+			// Relocate the machine to supervisor interrupt forwarder
+			setup_m2s();
+		}
+
+		// This barrier stops cores other than the bootstrap one from enabling the paging,
+		// when it is not yet ready (needs to be setup by the bootstrap core). Thus no memory
+		// issues arise from memory operations that expect there to be paging when there is none yet.
+		CPU::smp_barrier();
 
 		// Enable paging
 		enable_paging();
@@ -244,13 +260,12 @@ void _entry() // machine mode
 			- sizeof(long)); 
 
 	if (CPU::is_bootstrap()) {
-		db<Thread>(WRN) << "antes do clear bss.\n\n\n" << endl;
 		Machine::clear_bss();
 	}
 
+	// This barrier blockades other cores from potentially reading uninitialized static variables
+	// that have trash in them, from previous usage.
 	CPU::smp_barrier();
-
-	db<Thread>(WRN) << "depois do barrier.\n\n\n" << endl;
 
 	if (Traits<Machine>::supervisor) {
 		// setup a machine mode interrupt handler to
@@ -274,18 +289,20 @@ void _entry() // machine mode
 		// disable interrupts at CLINT (each device will enable
 		// the necessary ones)
 		CPU::mie(0);
-// continue in machine mode at MRET
+		// continue in machine mode at MRET
 		CPU::mstatus(CPU::MPP_M); 
 	}
 
 	// configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
 	CLINT::mtimecmp(-1ULL);
 
-	// configure PMP region 0 as
-	// (L=unlocked [0], [00], A = NAPOT [11], X [1], W [1], R [1])
-	CPU::pmpcfg0(0b11111); 				
-	// comprising the whole memory space
-	CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1); 
+	if (Traits<Machine>::supervisor) {
+		// configure PMP region 0 as
+		// (L=unlocked [0], [00], A = NAPOT [11], X [1], W [1], R [1])
+		CPU::pmpcfg0(0b11111); 				
+		// comprising the whole memory space
+		CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1); 
+	}
 
 	// entry = _setup
 	CPU::mepc(CPU::Reg(&_setup));                       

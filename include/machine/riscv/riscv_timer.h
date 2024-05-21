@@ -38,8 +38,12 @@ public:
 
 protected:
     Timer(unsigned int channel, Hertz frequency, Handler handler, bool retrigger = true)
-    : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
-        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
+    : _channel(channel), _initial(FREQUENCY / frequency),
+      _retrigger(retrigger), _handler(handler) 
+	{
+        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" 
+				       << reinterpret_cast<void*>(handler) << ",ch="
+					   << channel << ") => {count=" << _initial << "}" << endl;
 
         if(_initial && (channel < CHANNELS) && !_channels[channel])
             _channels[channel] = this;
@@ -51,7 +55,9 @@ protected:
 
 public:
     ~Timer() {
-        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" 
+					   << reinterpret_cast<void*>(_handler) << ",ch="
+					   << _channel << ") => {count=" << _initial << "}" << endl;
 
         _channels[_channel] = 0;
     }
@@ -59,7 +65,9 @@ public:
     Tick read() { return _current; }
 
     int restart() {
-        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h=" << reinterpret_cast<void *>(_handler) << ",count=" << _current << "}" << endl;
+        db<Timer>(TRC) << "Timer::restart() => {f=" << frequency() << ",h="
+					   << reinterpret_cast<void *>(_handler) << ",count="
+					   << _current << "}" << endl;
 
         int percentage = _current * 100 / _initial;
         _current = _initial;

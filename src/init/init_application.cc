@@ -18,6 +18,7 @@ private:
 public:
     Init_Application() {
         db<Init>(TRC) << "Init_Application()" << endl;
+		//db<Thread>(WRN) << "@@@INIT APP\n\n\n\n" << endl;
 
         // Initialize Application's heap
         db<Init>(INF) << "Initializing application's heap: ";

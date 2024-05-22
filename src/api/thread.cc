@@ -4,6 +4,11 @@
 #include <system.h>
 #include <process.h>
 
+extern "C"
+{
+    volatile unsigned long _running() __attribute__((alias("_ZN4EPOS1S6Thread4selfEv")));
+}
+
 __BEGIN_SYS
 
 extern OStream kout;
@@ -11,6 +16,14 @@ extern OStream kout;
 volatile unsigned int Thread::_thread_count;
 Scheduler_Timer * Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
+
+Thread *volatile Thread::self()
+{
+	return running();
+	// TODO: @arthur talvez fazer algo similar a isso
+	//
+	//return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
+}
 
 void Thread::constructor_prologue(unsigned int stack_size)
 {

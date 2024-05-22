@@ -241,6 +241,8 @@ public:
         }
         db<MMU>(TRC) << "MMU::alloc(bytes=" << bytes << ") => " << phy << endl;
 
+		db<Thread>(WRN) << "@@@MMU alloc bytes = " << bytes << endl;
+
         return phy;
     };
 
@@ -253,6 +255,8 @@ public:
     static void free(Phy_Addr addr, unsigned long n = 1) {
         db<MMU>(TRC) << "MMU::free(addr=" << addr << ",n=" << n << ")" << endl;
 
+		db<Thread>(WRN) << "@@@MMU free do No_MMU" << endl;
+
         // No unaligned addresses if the CPU doesn't support it
         assert(Traits<CPU>::unaligned_memory_access || !(addr % (Traits<CPU>::WORD_SIZE / 8)));
 
@@ -264,6 +268,8 @@ public:
             List::Element * m1, * m2;
             _free.insert_merging(e, &m1, &m2);
         }
+
+		db<Thread>(WRN) << "@@@MMU dps do No_MMU free propriamente dito" << endl;
     }
 
     static unsigned long allocable(Color color = WHITE) { return _free.head() ? _free.head()->size() : 0; }

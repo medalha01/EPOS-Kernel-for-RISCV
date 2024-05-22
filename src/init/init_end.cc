@@ -31,8 +31,12 @@ public:
 					  MMU::pages(Traits<Machine>::STACK_SIZE * CPU::cores()));
 		}
 
+		db<Thread>(WRN) << "@@@INITEND -- ANTESS do barrier médio " << endl; 
+
 		// Ensures that the other cores wait 
 		CPU::smp_barrier();
+
+		db<Thread>(WRN) << "@@@INITEND -- depois do barrier médio " << endl; 
 
         db<Init>(INF) << "INIT ends here!" << endl;
 

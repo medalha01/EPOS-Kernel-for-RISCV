@@ -87,7 +87,7 @@ public:
     void suspend();
     void resume();
 
-    static Thread * volatile self() { return running(); }
+    static Thread * volatile self();
     static void yield();
     static void exit(int status = 0);
 

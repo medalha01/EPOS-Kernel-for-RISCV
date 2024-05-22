@@ -478,11 +478,15 @@ public:
 
         db<MMU>(TRC) << "MMU::free(frame=" << frame << ",color=" << color << ",n=" << n << ")" << endl;
 
+		db<Thread>(WRN) << "@@@MMU: antes do free propriamente dito." << endl;
+
         if(frame && n) {
             List::Element * e = new (phy2log(frame)) List::Element(frame, n);
             List::Element * m1, * m2;
             _free[color].insert_merging(e, &m1, &m2);
         }
+
+		db<Thread>(WRN) << "@@@MMU: free garai." << endl;
     }
 
     static void white_free(Phy_Addr frame, unsigned long n) {

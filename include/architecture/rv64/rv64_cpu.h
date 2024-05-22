@@ -236,7 +236,7 @@ public:
     static unsigned int cores() { return Traits<Build>::CPUS; }
 	static bool is_bootstrap() { return id() == 0; }
 
-	static void smp_barrier() { CPU_Common::smp_barrier<&CPU::finc>(cores(), id()); };
+	static void smp_barrier() { CPU_Common::smp_barrier<&finc>(cores(), id()); };
 	
 	// TODO: @arthur ponteiro da thread depois do setup
 
@@ -353,6 +353,11 @@ public:
     }
 
 public:
+	static bool int_enabled_p(int pos = 5) {
+		int interrupt = 1 << pos;
+		return (ip() & interrupt) != 0;
+	}
+
     // RISC-V 64 specifics
     static Reg  status()   { return supervisor ? sstatus()   : mstatus(); }
     static void status(Status st) { supervisor ? sstatus(st) : mstatus(st); }

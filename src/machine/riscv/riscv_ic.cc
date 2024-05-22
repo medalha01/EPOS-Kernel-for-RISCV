@@ -37,6 +37,9 @@ void IC::dispatch()
 {
     Interrupt_Id id = int_id();
 
+	db<Thread>(WRN) << "@@@int ID DO INTERRUPT = " << id << endl;
+	db<Thread>(WRN) << "@@@int ID INT_RESCHEDULER = " << INT_RESCHEDULER << endl;
+
     if((id != INT_SYS_TIMER) || Traits<IC>::hysterically_debugged)
 	{
         db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [sp=" << CPU::sp() << "]" << endl;
@@ -46,7 +49,7 @@ void IC::dispatch()
 
 	if (id == INT_RESCHEDULER)
 	{
-		db<Thread>(WRN) << "@@@int YIIIIPEEEEEEE\n\n\n\n\n\n\n" << endl;
+		db<Thread>(WRN) << "@@@int certo YIIIIPEEEEEEE\n\n\n\n\n\n\n" << endl;
 	}
 
 	if (id == INT_SYS_TIMER) 
@@ -64,16 +67,13 @@ void IC::dispatch()
 		}
 	}
 
-	//db<Thread>(WRN) << "@@@int intvector, int_id = " << id << endl;
-	//db<Thread>(WRN) << "@@@int intvector, int_rescheduler = " << INT_RESCHEDULER << endl;
-	//db<Thread>(WRN) << "@@@int intvector, int_sys_timer = " << INT_SYS_TIMER << endl;
 	_int_vector[id](id);
 }
 
 void IC::int_software(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
-	db<Thread>(WRN) << "@@@int é os guri pae..." << endl;
+	db<Thread>(WRN) << "@@@int eh os guri pae..." << endl;
 	IC::ipi_eoi(INT_RESCHEDULER);
 }
 
@@ -91,7 +91,8 @@ void IC::exception(Interrupt_Id id)
 		<< ",sp=" << sp << ",status=" << status << ",cause=" << cause
 		<< ",epc=" << epc << ",tval=" << tval << "}" << dec;
 
-	switch(id) {
+	switch(id) 
+	{
 		case CPU::EXC_IALIGN: // instruction address misaligned
 			db<IC, System>(WRN) << " => unaligned instruction";
 			break;

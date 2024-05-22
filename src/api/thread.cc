@@ -219,8 +219,6 @@ void Thread::suspend()
 
 void Thread::resume()
 {
-
-
     lock();
 
     db<Thread>(TRC) << "Thread::resume(this=" << this << ")" << endl;
@@ -230,7 +228,7 @@ void Thread::resume()
         _state = READY;
         _scheduler.resume(this);
 
-        if(preemptive)
+        if (preemptive)
 		{
             reschedule();
 		}
@@ -403,8 +401,10 @@ void Thread::deprioritize(Queue * q)
 
     Thread * r = running();
     Criterion c = r->_natural_priority;
-    for(Queue::Iterator i = q->begin(); i != q->end(); ++i) {
-        if(i->object()->priority() != c) {
+    for(Queue::Iterator i = q->begin(); i != q->end(); ++i) 
+	{
+        if(i->object()->priority() != c) 
+		{
             if(r->_state == READY) 
 			{
                 _scheduler.suspend(r);

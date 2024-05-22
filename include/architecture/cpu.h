@@ -140,23 +140,52 @@ public:
     }
 
     template <int (* finc)(volatile int &)>
-    static void smp_barrier(unsigned int cores, unsigned int id) {
-        if(cores > 1) {
+    static void smp_barrier(unsigned int cores, unsigned int id) 
+	{
+        if(cores > 1) 
+		{
             static volatile int ready[2];
             static volatile int i;
 
             int j = i;
 
             finc(ready[j]);
-            if(id == 0) {
+            if(id == 0) 
+			{
                 while(ready[j] < int(cores));       // wait for all CPUs to be ready
                 i = !i;                             // toggle ready
                 ready[j] = 0;                       // signalizes waiting CPUs
-            } else {
+            }
+			else
+			{
                 while(ready[j]);                    // wait for CPU[0] signal
             }
         }
     }
+
+	//template <int (*finc)(volatile int &)>
+    //static void smp_barrier(unsigned int cores, unsigned int id)
+    //{
+    //    if (cores > 1)
+    //    {
+    //        static volatile int ready[2];
+    //        static volatile int i;
+
+    //        int j = i;
+
+    //        finc(ready[j]);
+    //        if (id == 1)
+    //        {
+    //            while (ready[j] < int(cores)) ;         // wait for all CPUs to be ready
+    //            i = !i;       // toggle ready
+    //            ready[j] = 0; // signalizes waiting CPUs
+    //        }
+    //        else
+    //        {
+    //            while (ready[j]) ; // wait for CPU[0] signal
+    //        }
+    //    }
+    //}
 
     static void fpu_save();
     static void fpu_restore();

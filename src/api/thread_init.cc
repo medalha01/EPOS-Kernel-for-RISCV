@@ -47,6 +47,9 @@ void Thread::init()
 	// Guarantees that the Scheduler_Timer is ready for all the cores.
 	CPU::smp_barrier();
 
+	// Allow for software interrupts (used for inter-core communication)
+	IC::enable(IC::INT_RESCHEDULER);
+	
     // No more interrupts until we reach init_end
     CPU::int_disable();
 }

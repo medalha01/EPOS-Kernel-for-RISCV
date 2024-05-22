@@ -79,7 +79,6 @@ public:
 			}
         }
 
-
 		// Waits for the bootstrap core to properly initialize the static _seed
 		// inside the Random class. If other cores try to utilize random(), it
 		// is possible that there would be some issues without this barrier.

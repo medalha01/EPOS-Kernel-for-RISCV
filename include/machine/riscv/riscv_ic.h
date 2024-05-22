@@ -64,16 +64,17 @@ public:
 	static void mtimecmp(Reg64 v) {
 		*reinterpret_cast<Reg64 *>(Memory_Map::CLINT_BASE + MTIMECMP + 8 * (CPU::id() + CPU_OFFSET)) = v;
 	}
-	
+
 	static volatile Reg32 &msip(unsigned int cpu) {
-		// TODO: @arthur big problem here possibly: this is going to be MSIP + 4 at least by default,
-		// to the point that software interrupts to core 1 might rather be going into core 2.
+		// TODO: @arthur big problem here possibly: this is going to be MSIP +
+		// 4 at least by default, to the point that software interrupts to
+		// core 1 might rather be going into core 2.
 		//
 		// Esse -1 aqui eu que coloquei...
-		return *reinterpret_cast<volatile Reg32 *>(Memory_Map::CLINT_BASE + MSIP + 4 * (cpu + CPU_OFFSET));
+		return *reinterpret_cast<volatile Reg32 *>(
+				Memory_Map::CLINT_BASE + MSIP + 4 * (cpu + CPU_OFFSET));
 	}
 };
-
 
 // Platform-Level Interrupt Controller (PLIC)
 class PLIC: public Traits<IC>::Interrupt_Source

@@ -236,7 +236,8 @@ public:
     static unsigned int cores() { return Traits<Build>::CPUS; }
 	static bool is_bootstrap() { return id() == 0; }
 
-	static void smp_barrier() { CPU_Common::smp_barrier<&CPU::finc>(cores(), id()); };
+	//static void smp_barrier() { CPU_Common::smp_barrier<&CPU::finc>(cores(), id()); };
+	static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
 	
 	// TODO: @arthur ponteiro da thread depois do setup
 

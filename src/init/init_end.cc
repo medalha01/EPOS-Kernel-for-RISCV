@@ -37,9 +37,6 @@ public:
 		CPU::smp_barrier();
 
 		db<Thread>(WRN) << "@@@INITEND -- depois do barrier médio " << endl; 
-		db<Thread>(WRN) << "@@@INITEND -- depois do barrier médio " << endl; 
-		db<Thread>(WRN) << "@@@INITEND -- depois do barrier médio " << endl; 
-		db<Thread>(WRN) << "@@@INITEND -- depois do barrier médio " << endl; 
 
         db<Init>(INF) << "INIT ends here!" << endl;
 

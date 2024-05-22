@@ -279,9 +279,9 @@ void _entry() // machine mode
 		// forward timer interrupts (which cannot be delegated via mideleg)
 		CPU::mtvec( CPU::INT_DIRECT, Memory_Map::INT_M2S);
 		// delegate supervisor interrupts to supervisor mode
-		CPU::mideleg( CPU::SSI | CPU::STI | CPU::SEI); 
+		CPU::mideleg(CPU::SSI | CPU::STI | CPU::SEI); 
 		// delegate all exceptions to supervisor mode but ecalls
-		CPU::medeleg( 0xf1ff);
+		CPU::medeleg(0xf1ff);
 		// enable interrupt generation by at machine level
 		// before going into supervisor mode
 		CPU::mie(CPU::MSI | CPU::MTI | CPU::MEI);

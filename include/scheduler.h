@@ -80,6 +80,7 @@ public:
     static const bool dynamic = false;
     static const bool preemptive = true;
     static const unsigned int QUEUES = 1;
+    bool _locked = false;
 
     // Runtime Statistics (for policies that don't use any; that's why its a union)
     union Dummy_Statistics

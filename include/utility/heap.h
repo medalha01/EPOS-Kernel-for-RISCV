@@ -16,9 +16,11 @@ protected:
     static const bool typed = Traits<System>::multiheap;
 
 public:
-    using Grouping_List<char>::empty;
-    using Grouping_List<char>::size;
-    using Grouping_List<char>::grouped_size;
+	typedef Grouping_List<char> Base;
+
+    using Base::empty;
+    using Base::size;
+    using Base::grouped_size;
 
     Heap() 
 	{
@@ -29,20 +31,16 @@ public:
 	{
         db<Init, Heaps>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
 
-		db<Thread>(WRN) << "@@@TEST tem sti? sti = " << CPU::int_enabled_p(5) << endl;
-		db<Thread>(WRN) << "@@@TEST tem mti? mti = " << CPU::int_enabled_p(7) << endl;
-
-		db<Thread>(WRN) << "@@@TEST outros = " << CPU::int_enabled_p(3) << endl;
-		db<Thread>(WRN) << "@@@TEST outros = " << CPU::int_enabled_p(4) << endl;
-		db<Thread>(WRN) << "@@@TEST outros = " << CPU::int_enabled_p(6) << endl;
-		db<Thread>(WRN) << "@@@TEST outros = " << CPU::int_enabled_p(8) << endl;
-		db<Thread>(WRN) << "@@@TEST outros = " << CPU::int_enabled_p(9) << endl;
-
-		db<Thread>(WRN) << "@@@TEST mip em geral = " << CPU::mip() << endl;
-		db<Thread>(WRN) << "@@@TEST sip em geral = " << CPU::sip() << endl;
-
         free(addr, bytes);
     }
+
+	unsigned long size() 
+	{
+		lock();
+		auto temp = Base::size();
+		unlock();
+		return temp;
+	}
 
 	void * alloc(unsigned long bytes) 
 	{
@@ -54,19 +52,9 @@ public:
 
 	void free(void * ptr, unsigned long bytes) 
 	{
-		db<Thread>(WRN) << "@@@SPIN: antes do lock()" << endl;
-
 		lock();
-
-		db<Thread>(WRN) << "@@@SPIN: depois do lock()" << endl;
-
 		_helper_free(ptr, bytes);
-
-		db<Thread>(WRN) << "@@@SPIN: antes do unlock()" << endl;
-
 		unlock();
-
-		db<Thread>(WRN) << "@@@SPIN: depois do unlock()" << endl;
 	}
 
     static void typed_free(void * ptr) 

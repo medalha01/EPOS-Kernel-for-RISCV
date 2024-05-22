@@ -13,7 +13,9 @@ void Machine::pre_init(System_Info * si)
 		Display::init();
 	}
 
+	db<Thread>(WRN) << "@@@MACHINEPREINIT ANTES do barrier " << endl;
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@MACHINEPREINIT depois do barrier " << endl;
 
     db<Init, Machine>(TRC) << "Machine::pre_init()" << endl;
 }
@@ -25,6 +27,7 @@ void Machine::init()
 
     if(Traits<IC>::enabled)
 	{
+		db<Thread>(WRN) << "@@@__ICINIT - ANTES ANTES ANTES DO IC INIT" << endl;
         IC::init();
 	}
 

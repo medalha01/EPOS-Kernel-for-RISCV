@@ -9,6 +9,7 @@ void Alarm::init()
 {
     db<Init, Alarm>(TRC) << "Alarm::init()" << endl;
 
+	db<Thread>(WRN) << "@@@ALARMINIT aqui pelo bootstrap " << endl;
     _timer = new (SYSTEM) Alarm_Timer(handler);
 }
 

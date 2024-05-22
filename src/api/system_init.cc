@@ -14,7 +14,9 @@ void System::init()
 	}
 
 	// Guarantees that the timer has been initialized in memory before proceeding
+	db<Thread>(WRN) << "@@@SYSINIT ANTES do barrier" << endl;
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@SYSINIT depois do barrier" << endl;
 
     if(Traits<Thread>::enabled)
 	{

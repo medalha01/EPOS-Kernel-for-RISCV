@@ -81,13 +81,17 @@ Setup::Setup()
 	{
 		// SETUP doesn't handle global constructors,
 		// so we need to manually initialize any object with a non-empty default constructor
-		new (&kout) OStream; new (&kerr) OStream; Display::init(); 
+		new (&kout) OStream;
+		new (&kerr) OStream; 
+		Display::init(); 
 	}
 
+	db<Thread>(WRN) << "@@@SETUP passa baixo nengue... " << endl;
 	// This barrier guards against multiple allocations of the same kout and kerr variables,
 	// and also ensures that only one core initializes the display for all the others. 
 	// Usage of kout and kerr thus needs to wait until they are initialized by the bootstrap core.
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@SETUP foi foi foi baixo nengue... " << endl;
 
 	kout << endl;
 	kerr << endl;
@@ -264,9 +268,11 @@ void _entry() // machine mode
 		Machine::clear_bss();
 	}
 
+	db<Thread>(WRN) << "@@@ENTRY entra baixo nengue" << endl;
 	// This barrier blockades other cores from potentially reading uninitialized static variables
 	// that have trash in them, from previous usage.
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@ENTRY passa baixo nengue" << endl;
 
 	if (Traits<Machine>::supervisor) {
 		// setup a machine mode interrupt handler to

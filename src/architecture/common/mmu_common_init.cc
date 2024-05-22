@@ -13,10 +13,14 @@ void No_MMU::init()
 {
     db<Init, MMU>(TRC) << "MMU::init()" << endl;
 
-    db<Init, MMU>(INF) << "MMU::init::dat.e=" << reinterpret_cast<void *>(&_edata) << ",bss.b=" << reinterpret_cast<void *>(&__bss_start) << ",bss.e=" << reinterpret_cast<void *>(&_end) << endl;
+    db<Init, MMU>(INF) << "MMU::init::dat.e="
+                       << reinterpret_cast<void *>(&_edata)
+                       << ",bss.b=" << reinterpret_cast<void *>(&__bss_start)
+                       << ",bss.e=" << reinterpret_cast<void *>(&_end) << endl;
 
     // For machines that do not feature a real MMU, frame size = 1 byte
     // Allocations (using Grouping_List<Frame>::search_decrementing() start from the end
+	// TODO: @arthur - multiply by number of cores here?
     free(&_end, pages(Memory_Map::FREE_TOP + 1 - reinterpret_cast<unsigned long>(&_end)));
 }
 

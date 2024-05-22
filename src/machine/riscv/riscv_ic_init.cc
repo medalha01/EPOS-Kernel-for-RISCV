@@ -30,9 +30,11 @@ void IC::init()
 		}
 	}
 
+	db<Thread>(WRN) << "@@@ICINIT ANTES do barrier " << endl;
 	// This ensures that, before enabling PLIC interrupts, the interrupt
 	// handler vector is correctly set up by the bootstrap core.
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@ICINIT depois do barrier " << endl;
 
 	IC::enable(INT_PLIC);
 	PLIC::threshold(0); // set the threshold to 0 so all enabled external

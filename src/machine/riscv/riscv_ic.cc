@@ -74,7 +74,13 @@ void IC::int_software(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
 	db<Thread>(WRN) << "@@@int eh os guri pae..." << endl;
+
 	IC::ipi_eoi(INT_RESCHEDULER);
+	
+	if (id == INT_RESCHEDULER) 
+	{
+				
+	}
 }
 
 void IC::exception(Interrupt_Id id)

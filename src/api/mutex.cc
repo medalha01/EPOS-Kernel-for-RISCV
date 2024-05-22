@@ -25,10 +25,12 @@ void Mutex::lock()
     db<Synchronizer>(TRC) << "Mutex::lock(this=" << this << ")" << endl;
 
     lock_for_acquiring();
+
     if (tsl(_locked))
 	{
         sleep();
 	}
+
     unlock_for_acquiring();
 }
 
@@ -38,10 +40,16 @@ void Mutex::unlock()
     db<Synchronizer>(TRC) << "Mutex::unlock(this=" << this << ")" << endl;
 
     lock_for_releasing();
+
     if(_waiting.empty())
+	{
         _locked = false;
+	}
     else
+	{
         wakeup();
+	}
+	
     unlock_for_releasing();
 }
 

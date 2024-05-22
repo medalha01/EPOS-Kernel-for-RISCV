@@ -13,7 +13,10 @@ class Synchronizer_Common
 {
 protected:
     typedef Thread::Queue Queue;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Queue_Element;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> SyncElement;
+    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> Synchronizer_List;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> Semaphore_link;
+    typedef List<Sync_Object, List_Elements::Doubly_Linked<Sync_Object>> SyncInteractionList;
 
 protected:
     Synchronizer_Common() {}
@@ -73,6 +76,76 @@ protected:
         Thread::unlock();
     }
 
+    void insert_sync_object(Sync_Object *resource, SyncInteractionList *list)
+    {
+        list->insert(new (SYSTEM) SyncElement(resource));
+    }
+
+    void remove_sync_object(Sync_Object *resource, SyncInteractionList *list)
+    {
+
+        if (resource->synchronizer_list.empty())
+        {
+            if (resource->isHolding)
+            {
+                resource->tp->_sync_Holder = nullptr;
+            }
+            else
+            {
+                resource->tp->_sync_Waiter = nullptr;
+            }
+            delete resource;
+        }
+
+        SyncElement *removed_obj = list->remove(resource);
+        delete removed_obj;
+    }
+
+    bool is_thread_present(Thread *exec_thread, SyncInteractionList *target_list)
+    {
+        SyncElement *sync_obj = target_list->head();
+        while (sync_obj != nullptr)
+        {
+            if (exec_thread == sync_obj->object()->tp)
+            {
+                return true;
+            }
+            sync_obj = sync_obj->next();
+        }
+        return false;
+    }
+
+    Sync_Object *get_sync_object(Thread *exec_thread, bool isHolder)
+    {
+        Sync_Object *resource = nullptr;
+
+        if (isHolder)
+        {
+            if (exec_thread->_sync_Holder == nullptr)
+            {
+                resource = new Sync_Object(exec_thread, isHolder);
+                exec_thread->_sync_Holder = resource;
+            }
+            else
+            {
+                resource = exec_thread->_sync_Holder;
+            }
+        }
+        else
+        {
+            if (exec_thread->_sync_Waiter == nullptr)
+            {
+                resource = new Sync_Object(exec_thread, isHolder);
+                exec_thread->_sync_Waiter = resource;
+            }
+            else
+            {
+                resource = exec_thread->_sync_Waiter;
+            }
+        }
+        return resource;
+    }
+
     void sleep() { Thread::sleep(&_waiting); }
     void wakeup() { Thread::wakeup(&_waiting); }
     void wakeup_all() { Thread::wakeup_all(&_waiting); }
@@ -80,8 +153,9 @@ protected:
 protected:
     Queue _waiting;
     Queue _granted;
-    List<Sync_Object, List_Elements::Doubly_Linked<Sync_Object>> resource_holder_list;
-    List<Sync_Object, List_Elements::Doubly_Linked<Sync_Object>> resource_waiting_list;
+    int highest_priority = Thread::CEILING;
+    SyncInteractionList resource_holder_list;
+    SyncInteractionList resource_waiting_list;
 };
 
 class Mutex : protected Synchronizer_Common
@@ -169,30 +243,31 @@ class Sync_Object
 
 public:
     typedef Thread::Queue Queue;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> Sync_element;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Sync_Object> SyncElement;
     typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> Synchronizer_List;
     typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> Semaphore_link;
 
-    Sync_Object(Thread *thread_pointer, Semaphore *semaphore_pointer, bool isHolding)
+    Sync_Object(Thread *thread, bool holding)
+        : tp(thread), isHolding(holding)
     {
-        tp = thread_pointer;
-        smpp = semaphore_pointer;
-        reference_pointer = new (SYSTEM) Sync_element(this);
-        isHolding = isHolding;
+        self_reference_pointer = new (SYSTEM) SyncElement(this);
+        if (holding)
+            tp->_sync_Holder = this;
+        else
+            tp->_sync_Waiter = this;
     }
+    /*
+        Sync_Object(Thread *thread, Mutex *mutex, bool holding)
+            : tp(thread), smpp(nullptr), mup(mutex), isHolding(holding)
+        {
+            self_reference_pointer = new (SYSTEM) SyncElement(this);
+        }*/
 
-    Sync_Object(Thread *thread_pointer, Mutex *mutex_pointer, bool isHolding)
-    {
-        tp = thread_pointer;
-        mup = mutex_pointer;
-        reference_pointer = new (SYSTEM) Sync_element(this);
-        isHolding = isHolding;
-    }
     ~Sync_Object()
     {
-        if (reference_pointer)
+        if (self_reference_pointer)
         {
-            delete reference_pointer;
+            delete self_reference_pointer;
         }
     }
 
@@ -200,9 +275,9 @@ public:
     void remove_synchronizer(Semaphore_link *syncObj) { synchronizer_list.remove(syncObj); }
 
     Thread *tp = nullptr;
-    Semaphore *smpp = nullptr;
-    Mutex *mup = nullptr;
-    Sync_element *reference_pointer = nullptr;
+    // Semaphore *smpp = nullptr;
+    // Mutex *mup = nullptr;
+    SyncElement *self_reference_pointer = nullptr;
     bool isHolding = false;
     Synchronizer_List synchronizer_list;
 };

@@ -95,10 +95,10 @@ protected:
         return most_urgent;
     }
 
-    void activateCeiling(int priority)
+    void activateCeiling(int priority = Thread::CEILING)
     {
         // Check if the highest priority is set to the ceiling value and the provided priority is lower than the highest priority
-        if (highest_priority == Thread::CEILING && priority < highest_priority)
+        if ((highest_priority) == Thread::CEILING || (priority < highest_priority))
         {
             // Update the highest priority to the new lower priority
             highest_priority = priority;
@@ -110,12 +110,43 @@ protected:
             while (current != nullptr)
             {
                 // Get the criterion of the thread associated with the current element
-                current->object()->threadPointer->raise_priority(priority);
+                current->object()->threadPointer->raise_priority(highest_priority);
                 // Move to the next element in the resource waiting list
                 current = current->next();
             }
         }
     }
+
+    void setThreadPriority(Thread *exec_thread)
+    {
+        SyncObject *syncWatcher = exec_thread->_syncHolder;
+        SemaphoreLink *syncLink = syncWatcher->synchronizerList.head();
+        int starter = Thread::IDLE;
+
+        if (syncLink == nullptr)
+        {
+            exec_thread->criterion()._locked = false; // TODO RESET THREAD UNPRIORITIZE
+            return;
+        }
+        while (syncLink != nullptr)
+        {
+            Synchronizer_Common *current = syncLink->object();
+            if (current->ceilingIsActive && current->highest_priority < starter)
+            {
+                starter = current->highest_priority;
+            }
+            syncLink = syncLink->next();
+        }
+
+        if (starter > exec_thread->_natural_priority)
+        {
+            exec_thread->criterion()._locked = false; // TODO RESET THREAD UNPRIORITIZE
+            return;
+        }
+
+        return exec_thread->raise_priority(starter);
+
+    }; // TODO
 
     void lock_for_releasing()
     {
@@ -210,7 +241,8 @@ protected:
 protected:
     Queue _waiting;
     Queue _granted;
-    int highest_priority = Thread::CEILING;
+    bool ceilingIsActive = false;
+    int highest_priority = Thread::IDLE;
     SyncInteractionList resource_holder_list;
     SyncInteractionList resource_waiting_list;
 };

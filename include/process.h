@@ -136,6 +136,7 @@ protected:
     static void wakeup(Queue *queue);
     static void wakeup_all(Queue *queue);
 
+    void raise_priority(int criterion);
     static void prioritize(Queue *queue);
     static void deprioritize(Queue *queue);
 

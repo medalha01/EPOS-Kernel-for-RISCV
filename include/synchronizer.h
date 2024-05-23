@@ -94,6 +94,44 @@ protected:
 
         return most_urgent;
     }
+
+    void activateCeiling(int priority)
+    {
+        // Check if the highest priority is set to the ceiling value and the provided priority is lower than the highest priority
+        if (highest_priority == Thread::CEILING && priority < highest_priority)
+        {
+            // Update the highest priority to the new lower priority
+            highest_priority = priority;
+
+            // Get the first element in the resource waiting list
+            SyncElement *current = resource_waiting_list.head();
+
+            // Iterate through the resource waiting list
+            while (current != nullptr)
+            {
+                // Get the criterion of the thread associated with the current element
+                Thread::Criterion *thread_criterion = &current->object()->threadPointer->criterion();
+
+                // Check if the thread's priority is higher than the new highest priority
+                if (thread_criterion->_priority > highest_priority)
+                {
+                    // If the thread's priority is not locked, update its natural priority
+                    if (!thread_criterion->_locked)
+                    {
+                        current->object()->threadPointer->_natural_priority = thread_criterion->_priority;
+                    }
+
+                    // Set the thread's priority to the new highest priority and lock it
+                    thread_criterion->_priority = priority;
+                    thread_criterion->_locked = true;
+                }
+
+                // Move to the next element in the resource waiting list
+                current = current->next();
+            }
+        }
+    }
+
     void lock_for_releasing()
     {
         Thread::lock();

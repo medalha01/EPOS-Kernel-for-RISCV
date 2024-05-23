@@ -167,7 +167,8 @@ protected:
     Context *volatile _context;
 
     volatile State _state;
-    Criterion _natural_priority;
+    // Criterion _natural_priority;
+    int _natural_priority;
     SyncObject *_syncHolder = nullptr;
     SyncObject *_syncWaiter = nullptr;
     Queue *_waiting;

@@ -17,41 +17,57 @@ Mutex::~Mutex()
 void Mutex::lock()
 {
     db<Synchronizer>(TRC) << "Mutex::lock(this=" << this << ")" << endl;
-    lock_for_acquiring();
+    _lock();
     Thread *exec_thread = Thread::self();
 
     if (tsl(_locked))
+    {
+        // Get the SyncObject for the current thread, without creating a new one if it does exist
+        SyncObject *syncWatch = getSyncObject(exec_thread, false);
+
+        // Add this mutex to the list of synchronizers being watched by the SyncObject
+        syncWatch->addSynchronizer(this);
+
+        // Insert the SyncObject into the resource waiting list
+        insertSyncObject(syncWatch, &resource_waiting_list);
+
+        // Put the current thread to sleep until the mutex becomes available
         sleep();
-    unlock_for_acquiring();
 
-    Queue_Element *sync_obj = resource_holder_list.head();
-    bool thread_is_present = false;
-    while (sync_obj != nullptr)
-    {
-        if (exec_thread == sync_obj->object()->tp)
-        {
-            thread_is_present = true;
-        }
-        sync_obj = sync_obj->next();
+        // After waking up, we clean up the SyncObject
+        SyncObject *syncWatch = getSyncObject(exec_thread, false);
+        syncWatch->removeSynchronizer(this);
+        removeSyncObject(syncWatch, &resource_waiting_list);
     }
 
-    if (!thread_is_present)
-    {
-        Sync_Object resource = Sync_Object(exec_thread, this, true);
-        resource_holder_list.insert(resource.reference_pointer);
-    }
+    // Get the SyncObject for the current thread, without creating a new one if it does exist
+    SyncObject *syncWatch = getSyncObject(exec_thread, true);
+
+    // Add this mutex to the list of synchronizers being watched by the SyncObject
+    syncWatch->addSynchronizer(this);
+
+    // Insert the SyncObject into the resource holder list
+    insertSyncObject(syncWatch, &resource_holder_list);
+
+    _unlock();
 }
 
 void Mutex::unlock()
 {
     db<Synchronizer>(TRC) << "Mutex::unlock(this=" << this << ")" << endl;
 
-    lock_for_releasing();
+    _lock();
+    Thread *exec_thread = Thread::self();
+
     if (_waiting.empty())
         _locked = false;
     else
         wakeup();
-    unlock_for_releasing();
+
+    SyncObject *syncWatch = getSyncObject(exec_thread, true);
+    syncWatch->removeSynchronizer(this);
+    removeSyncObject(syncWatch, &resource_holder_list);
+    _unlock();
 }
 
 __END_SYS

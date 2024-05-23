@@ -68,6 +68,32 @@ protected:
         Thread::unlock();
     }
 
+    SyncObject *getMostUrgentInWaiting()
+    {
+        SyncElement *head_waiter = resource_waiting_list.head();
+
+        if (head_waiter == nullptr)
+        {
+            return nullptr; // Handle the case where the waiting list is empty
+        }
+
+        SyncObject *most_urgent = head_waiter->object();
+        SyncElement *current = head_waiter->next();
+
+        while (current != nullptr)
+        {
+            SyncObject *current_object = current->object();
+
+            if (current_object->getPriority() < most_urgent->getPriority())
+            {
+                most_urgent = current_object;
+            }
+
+            current = current->next();
+        }
+
+        return most_urgent;
+    }
     void lock_for_releasing()
     {
         Thread::lock();
@@ -286,6 +312,11 @@ public:
         {
             delete syncronizerLink;
         }
+    }
+
+    int getPriority()
+    {
+        return threadPointer->criterion()._priority;
     }
 
     Thread *threadPointer = nullptr;

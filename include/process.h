@@ -27,7 +27,7 @@ class Thread
     friend class Alarm;               // for lock()
     friend class System;              // for init()
     friend class IC;                  // for link() for priority ceiling
-    friend class Sync_Object;
+    friend class SyncObject;
     friend void ::_lock_heap();   // for lock()
     friend void ::_unlock_heap(); // for unlock()
 
@@ -168,8 +168,8 @@ protected:
 
     volatile State _state;
     Criterion _natural_priority;
-    Sync_Object *_sync_Holder = nullptr;
-    Sync_Object *_sync_Waiter = nullptr;
+    SyncObject *_syncHolder = nullptr;
+    SyncObject *_syncWaiter = nullptr;
     Queue *_waiting;
     Thread *volatile _joining;
     Queue::Element _link;

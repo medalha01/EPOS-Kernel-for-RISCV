@@ -95,6 +95,11 @@ protected:
         return most_urgent;
     }
 
+    int getMostUrgentPriority()
+    {
+        return getMostUrgentInWaiting()->getPriority();
+    }
+
     void activateCeiling(int priority = Thread::CEILING)
     {
         // Check if the highest priority is set to the ceiling value and the provided priority is lower than the highest priority
@@ -122,24 +127,22 @@ protected:
     void deactivateCeiling()
     {
 
-        // Update the highest priority to the new lower priority
         highest_priority = Thread::IDLE;
 
-        // Get the first element in the resource waiting list
-        SyncElement *current = resource_waiting_list.head();
+        SyncElement *current = resource_holder_list.head();
 
         // Iterate through the resource waiting list
         while (current != nullptr)
         {
             // Get the criterion of the thread associated with the current element
-            current->object()->threadPointer->restore_priority(); // TODO
-            // Move to the next element in the resource waiting list
+            resetThreadPriority(current->object()->threadPointer); // TODO
+                                                                   // Move to the next element in the resource waiting list
             current = current->next();
         }
         ceilingIsActive = false;
     }
 
-    void setThreadPriority(Thread *exec_thread)
+    void resetThreadPriority(Thread *exec_thread)
     {
         SyncObject *syncWatcher = exec_thread->_syncHolder;
         SemaphoreLink *syncLink = syncWatcher->synchronizerList.head();
@@ -147,7 +150,7 @@ protected:
 
         if (syncLink == nullptr)
         {
-            exec_thread->criterion()._locked = false; // TODO RESET THREAD UNPRIORITIZE
+            exec_thread->restore_priority();
             return;
         }
         while (syncLink != nullptr)
@@ -162,7 +165,7 @@ protected:
 
         if (starter > exec_thread->_natural_priority)
         {
-            exec_thread->criterion()._locked = false; // TODO RESET THREAD UNPRIORITIZE
+            exec_thread->restore_priority(); // TODO RESET THREAD UNPRIORITIZE
             return;
         }
 

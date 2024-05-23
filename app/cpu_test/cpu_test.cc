@@ -6,24 +6,24 @@ using namespace EPOS;
 
 OStream cout;
 
+volatile bool lock = false;     // solução preventiva, pois causa desalinhamento de memória se estiver dentro da main
 int main()
 {
     cout << "CPU test" << endl;
 
     CPU cpu;
 
-    // {
-    //     cout << "CPU::tsl(l=false)\t=> ";
+    {
+        cout << "CPU::tsl(l=false)\t=> ";
 
-    //     volatile bool lock = false;
-    //     if(cpu.tsl(lock))
-    //         cout << "failed [1]!" << endl;
-    //     else
-    //         if(cpu.tsl(lock))
-    //             cout << "passed!" << endl;
-    //         else
-    //             cout << "failed [2]!" << endl;
-    // }
+        if(cpu.tsl(lock))
+            cout << "failed [1]!" << endl;
+        else
+            if(cpu.tsl(lock))
+                cout << "passed!" << endl;
+            else
+                cout << "failed [2]!" << endl;
+    }
     {
         cout << "CPU::finc(n=100)\t=> ";
 

@@ -110,22 +110,7 @@ protected:
             while (current != nullptr)
             {
                 // Get the criterion of the thread associated with the current element
-                Thread::Criterion *thread_criterion = &current->object()->threadPointer->criterion();
-
-                // Check if the thread's priority is higher than the new highest priority
-                if (thread_criterion->_priority > highest_priority)
-                {
-                    // If the thread's priority is not locked, update its natural priority
-                    if (!thread_criterion->_locked)
-                    {
-                        current->object()->threadPointer->_natural_priority = thread_criterion->_priority;
-                    }
-
-                    // Set the thread's priority to the new highest priority and lock it
-                    thread_criterion->_priority = priority;
-                    thread_criterion->_locked = true;
-                }
-
+                current->object()->threadPointer->raise_priority(priority);
                 // Move to the next element in the resource waiting list
                 current = current->next();
             }

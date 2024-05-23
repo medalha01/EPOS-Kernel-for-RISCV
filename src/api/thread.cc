@@ -361,41 +361,53 @@ void Thread::wakeup_all(Queue *q)
     }
 }
 
-void Thread::prioritize(Queue *q)
+void Thread::raise_priority(int priority)
 {
     assert(locked()); // locking handled by caller
 
-    if (priority_inversion_protocol == 0)
-    {
-        return;
-    }
+    db<Thread>(TRC) << "Thread::prioritize(thread=" << this << ", criterion=" << criterion << ") [running=" << running() << "]" << endl;
 
-    db<Thread>(TRC) << "Thread::prioritize(q=" << q << ") [running=" << running() << "]" << endl;
+    /*Thread::Criterion *thread_criterion = &current->object()->threadPointer->criterion();
 
-    Thread *r = running();
-    for (Queue::Iterator i = q->begin(); i != q->end(); ++i)
+    // Check if the thread's priority is higher than the new highest priority
+    if (thread_criterion->_priority > highest_priority)
     {
-        if (i->object()->priority() > r->priority())
+        // If the thread's priority is not locked, update its natural priority
+        if (!thread_criterion->_locked)
         {
-            r->_natural_priority = r->criterion();
-            Criterion c = (priority_inversion_protocol == Traits<Build>::CEILING) ? CEILING : r->criterion();
+            current->object()->threadPointer->_natural_priority = thread_criterion->_priority;
+        }
 
-            if (r->_state == READY)
-            {
-                _scheduler.suspend(r); // TODO: talvez tenha que dar remove e insert aqui que nem anteriormente
-                r->_link.rank(c);
-                _scheduler.resume(r);
-            }
-            else if (r->state() == WAITING)
-            {
-                r->_waiting->remove(&r->_link);
-                r->_link.rank(c);
-                r->_waiting->insert(&r->_link);
-            }
-            else
-            {
-                r->_link.rank(c);
-            }
+        // Set the thread's priority to the new highest priority and lock it
+        thread_criterion->_priority = priority;
+        thread_criterion->_locked = true;
+    }*/
+    Thread::Criterion *thread_criterion = &this->criterion();
+
+    if (this->priority() > priority)
+    {
+        if (!thread_criterion->_locked)
+        {
+            this->_natural_priority = thread_criterion->_priority;
+        }
+        thread_criterion->_priority = priority;
+        thread_criterion->_locked = true;
+
+        if (this->_state == READY)
+        {
+            _scheduler.suspend(this);
+            this->_link.rank(*thread_criterion);
+            _scheduler.resume(this);
+        }
+        else if (this->state() == WAITING)
+        {
+            this->_waiting->remove(&this->_link);
+            this->_link.rank(*thread_criterion);
+            this->_waiting->insert(&this->_link);
+        }
+        else
+        {
+            this->_link.rank(*thread_criterion);
         }
     }
 }

@@ -104,17 +104,39 @@ protected:
             highest_priority = priority;
 
             // Get the first element in the resource waiting list
-            SyncElement *current = resource_waiting_list.head();
+            SyncElement *current = resource_holder_list.head();
 
             // Iterate through the resource waiting list
             while (current != nullptr)
             {
+
                 // Get the criterion of the thread associated with the current element
                 current->object()->threadPointer->raise_priority(highest_priority);
                 // Move to the next element in the resource waiting list
                 current = current->next();
             }
         }
+        ceilingIsActive = true;
+    }
+
+    void deactivateCeiling()
+    {
+
+        // Update the highest priority to the new lower priority
+        highest_priority = Thread::IDLE;
+
+        // Get the first element in the resource waiting list
+        SyncElement *current = resource_waiting_list.head();
+
+        // Iterate through the resource waiting list
+        while (current != nullptr)
+        {
+            // Get the criterion of the thread associated with the current element
+            current->object()->threadPointer->restore_priority(); // TODO
+            // Move to the next element in the resource waiting list
+            current = current->next();
+        }
+        ceilingIsActive = false;
     }
 
     void setThreadPriority(Thread *exec_thread)
@@ -245,6 +267,7 @@ protected:
     int highest_priority = Thread::IDLE;
     SyncInteractionList resource_holder_list;
     SyncInteractionList resource_waiting_list;
+    int amountOfZones = 0; // TODO, make a algorithm that works, because i can't deal with any optimization right now;
 };
 
 class Mutex : protected Synchronizer_Common

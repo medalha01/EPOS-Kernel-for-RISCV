@@ -1,5 +1,3 @@
-// EPOS Synchronizer Components
-
 #ifndef __synchronizer_h
 #define __synchronizer_h
 
@@ -22,9 +20,9 @@ protected:
     Synchronizer_Common() {}
     ~Synchronizer_Common()
     {
-
         Thread::lock();
 
+        // Clean up granted queue
         while (!_granted.empty())
         {
             Queue::Element *e = _granted.remove();
@@ -34,12 +32,11 @@ protected:
 
         if (!_waiting.empty())
         {
-
             db<Synchronizer>(WRN) << "~Synchronizer(this=" << this << ") called with active blocked clients!" << endl;
         }
 
+        // Wake up all waiting threads
         wakeup_all();
-
         Thread::unlock();
     }
 
@@ -71,7 +68,6 @@ protected:
     SyncObject *getMostUrgentInWaiting()
     {
         SyncElement *head_waiter = resource_waiting_list.head();
-
         if (head_waiter == nullptr)
         {
             return nullptr; // Handle the case where the waiting list is empty
@@ -83,21 +79,19 @@ protected:
         while (current != nullptr)
         {
             SyncObject *current_object = current->object();
-
             if (current_object->getPriority() < most_urgent->getPriority())
             {
                 most_urgent = current_object;
             }
-
             current = current->next();
         }
-
         return most_urgent;
     }
 
     int getMostUrgentPriority()
     {
-        return getMostUrgentInWaiting()->getPriority();
+        SyncObject *urgent = getMostUrgentInWaiting();
+        return urgent ? urgent->getPriority() : Thread::IDLE;
     }
 
     void activateCeiling(int priority = Thread::CEILING)
@@ -141,7 +135,6 @@ protected:
         }
         ceilingIsActive = false;
     }
-
     void resetThreadPriority(Thread *exec_thread)
     {
         SyncObject *syncWatcher = exec_thread->_syncHolder;
@@ -169,9 +162,8 @@ protected:
             return;
         }
 
-        return exec_thread->raise_priority(starter);
-
-    }; // TODO
+        exec_thread->raise_priority(starter);
+    }
 
     void lock_for_releasing()
     {
@@ -259,6 +251,7 @@ protected:
         }
         return resource;
     }
+
     void sleep() { Thread::sleep(&_waiting); }
     void wakeup() { Thread::wakeup(&_waiting); }
     void wakeup_all() { Thread::wakeup_all(&_waiting); }
@@ -270,9 +263,10 @@ protected:
     int highest_priority = Thread::IDLE;
     SyncInteractionList resource_holder_list;
     SyncInteractionList resource_waiting_list;
-    int amountOfZones = 0; // TODO, make a algorithm that works, because i can't deal with any optimization right now;
+    int amountOfZones = 0; // TODO: Implement an algorithm to optimize this.
 };
 
+// Mutex class
 class Mutex : protected Synchronizer_Common
 {
 public:
@@ -286,6 +280,7 @@ private:
     volatile bool _locked;
 };
 
+// Semaphore class
 class Semaphore : protected Synchronizer_Common
 {
 public:
@@ -351,6 +346,7 @@ private:
     Condition *_handler;
 };
 
+// SyncObject class
 class SyncObject
 {
     friend Synchronizer_Common;
@@ -374,7 +370,8 @@ public:
 
     ~SyncObject()
     {
-        // todo esvaziar listas e destruir objetos vazios
+        // TODO esvaziar listas e destruir objetos vazios
+
         if (selfReferencePointer)
         {
             delete selfReferencePointer;
@@ -408,4 +405,4 @@ public:
 
 __END_SYS
 
-#endif
+#endif // __synchronizer_h

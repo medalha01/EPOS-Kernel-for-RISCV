@@ -30,15 +30,16 @@ void Mutex::lock()
 
         // Insert the SyncObject into the resource waiting list
         insertSyncObject(syncWatch, &resource_waiting_list);
-
+        waitingThreadsCount++;
         // Put the current thread to sleep until the mutex becomes available
         sleep();
-
+        waitingThreadsCount--;
         // After waking up, we clean up the SyncObject
         SyncObject *syncWatch = getSyncObject(exec_thread, false);
         syncWatch->removeSynchronizer(this);
         removeSyncObject(syncWatch, &resource_waiting_list);
     }
+    exec_thread->enter_zone();
 
     // Get the SyncObject for the current thread, without creating a new one if it does exist
     SyncObject *syncWatch = getSyncObject(exec_thread, true);
@@ -63,6 +64,8 @@ void Mutex::unlock()
         _locked = false;
     else
         wakeup();
+
+    exec_thread->leave_zone();
 
     SyncObject *syncWatch = getSyncObject(exec_thread, true);
     syncWatch->removeSynchronizer(this);

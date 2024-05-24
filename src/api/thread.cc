@@ -399,7 +399,7 @@ void Thread::deprioritize(Queue *q)
         }
     }
 }
-/*
+
 void Thread::reschedule(unsigned int cpu)
 {
 
@@ -426,7 +426,7 @@ void Thread::int_rescheduler(IC::Interrupt_Id i)
     lock();
     reschedule();
     unlock();
-}*/
+}
 
 void Thread::reschedule()
 {

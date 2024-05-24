@@ -13,6 +13,8 @@ class CPU : protected CPU_Common
 
 private:
     static const bool supervisor = Traits<Machine>::supervisor;
+    static const bool multicore = (Traits<Machine>::CPUS > 1);
+    static const int number_of_cores = (Traits<Machine>::CPUS);
 
 public:
     // CPU Native Data Types
@@ -283,14 +285,14 @@ public:
     }
     static void fr(Reg r) { ASM("mv a0, %0" : : "r"(r) :); }
 
-    //    static unsigned int id() { return supervisor ? tp() : mhartid(); }
+    // static unsigned int id() { return supervisor ? tp() : mhartid(); }
     static unsigned int id() { return tp(); }
+
     static bool is_bootstrap() { return (CPU::id() == 0); }
 
-    static unsigned int cores() { return Traits<Machine>::CPUS; }
+    static unsigned int cores() { return number_of_cores; }
 
     static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
-
     using CPU_Common::bus_clock;
     using CPU_Common::clock;
     using CPU_Common::max_clock;
@@ -309,40 +311,53 @@ public:
     static void switch_context(Context **o, Context *n) __attribute__((naked));
 
     template <typename T>
-
     static T tsl(volatile T &lock)
     {
         register T old;
         register T one = 1;
-
         if (sizeof(T) == sizeof(Reg64))
-            ASM("amoswap.d %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "memory");
+            ASM("1: lr.d    %0, (%1)        \n"
+                "   sc.d    t3, %2, (%1)    \n"
+                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&lock), "r"(one) : "t3", "cc", "memory");
         else
-            ASM("amoswap.w %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "memory");
-
+            ASM("1: lr.w    %0, (%1)        \n"
+                "   sc.w    t3, %2, (%1)    \n"
+                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&lock), "r"(one) : "t3", "cc", "memory");
         return old;
     }
 
     template <typename T>
     static T finc(volatile T &value)
     {
-        T old;
+        register T old;
         if (sizeof(T) == sizeof(Reg64))
-            ASM("amoadd.d %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(1) : "memory");
+            ASM("1: lr.d    %0, (%1)        \n"
+                "   addi    %0, %0, 1       \n"
+                "   sc.d    t3, %0, (%1)    \n"
+                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
         else
-            ASM("amoadd.w %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(1) : "memory");
-        return old;
+            ASM("1: lr.w    %0, (%1)        \n"
+                "   addi    %0, %0, 1       \n"
+                "   sc.w    t3, %0, (%1)    \n"
+                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
+        return old - 1;
     }
 
     template <typename T>
     static T fdec(volatile T &value)
     {
-        T old;
+        register T old;
         if (sizeof(T) == sizeof(Reg64))
-            ASM("amoadd.d %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(-1) : "memory");
+            ASM("1: lr.d    %0, (%1)        \n"
+                "   addi    %0, %0, -1      \n"
+                "   sc.d    t3, %0, (%1)    \n"
+                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
         else
-            ASM("amoadd.w %0, %2, (%1)" : "=r"(old) : "r"(&value), "r"(-1) : "memory");
-        return old;
+            ASM("1: lr.w    %0, (%1)        \n"
+                "   addi    %0, %0, -1      \n"
+                "   sc.w    t3, %0, (%1)    \n"
+                "   bnez    t3, 1b          \n" : "=&r"(old) : "r"(&value) : "t3", "cc", "memory");
+        return old + 1;
     }
 
     template <typename T>
@@ -361,8 +376,6 @@ public:
                 "   sc.w    t3, %3, (%1)    \n"
                 "   bnez    t3, 1b          \n"
                 "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
-        // asm volatile("fence rw,rw");
-
         return old;
     }
 

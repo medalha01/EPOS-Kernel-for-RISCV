@@ -20,7 +20,6 @@ void Timer::init()
 	// Ensures that the int_vector is properly initialized to be able to handle
 	// SYS_TIMER interrupts, before we can properly reset the timer and enable them.
 	CPU::smp_barrier();
-
     reset();
     IC::enable(IC::INT_SYS_TIMER);
 }

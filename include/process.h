@@ -178,7 +178,7 @@ protected:
     static Spin _lock;
 };
 
-lass Task
+class Task
 {
     friend class Thread;           // for Task(), enroll() and dismiss()
     friend class Alarm;            // for enroll() and dismiss()

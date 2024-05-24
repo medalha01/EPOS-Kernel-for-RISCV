@@ -7,13 +7,19 @@
 #include <utility/list.h>
 #include <utility/spin.h>
 
+__BEGIN_UTIL
+
+//extern "C" {
+//	class Thread;
+//	void Thread::lock_heap();
+//	void Thread::unlock_heap();
+//}
+
 extern "C" 
 {
 	void _lock_heap();
 	void _unlock_heap();
 }
-
-__BEGIN_UTIL
 
 // Heap
 class Heap: private Grouping_List<char>
@@ -42,25 +48,38 @@ public:
 
 	unsigned long size() 
 	{
+		db<Thread>(WRN) << "@@@Heap size() --- start " << endl;
+
 		lock();
 		auto temp = Base::size();
 		unlock();
+
+		db<Thread>(WRN) << "@@@Heap size() --- end " << endl;
 		return temp;
 	}
 
 	void * alloc(unsigned long bytes) 
 	{
+		//db<Thread>(WRN) << "@@@Heap alloc bytes = " << bytes << endl;
+
 		lock();
 		auto temp = _helper_alloc(bytes);
 		unlock();
+
+		//db<Thread>(WRN) << "@@@Heap alloc --- end " << endl;
+
 		return temp;
 	}
 
 	void free(void * ptr, unsigned long bytes) 
 	{
+		//db<Thread>(WRN) << "@@@Heap free() " << endl;
+
 		lock();
 		_helper_free(ptr, bytes);
 		unlock();
+
+		//db<Thread>(WRN) << "@@@Heap free() --- end " << endl;
 	}
 
     static void typed_free(void * ptr) 
@@ -84,6 +103,8 @@ private:
 
 	//void lock()   { Thread::lock(&_spin); }
 	//void unlock() { Thread::unlock(&_spin); }
+	//void lock()   { Thread::lock_heap(); } 
+	//void unlock() { Thread::unlock_heap(); } 
 	void lock()   { _lock_heap(); }
 	void unlock() { _unlock_heap(); }
 

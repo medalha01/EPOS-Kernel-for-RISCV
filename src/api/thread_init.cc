@@ -56,6 +56,13 @@ void Thread::init()
 	
     // No more interrupts until we reach init_end
     CPU::int_disable();
+
+	if (CPU::is_bootstrap())
+	{
+		_boot_complete = true;
+	}
+
+	CPU::smp_barrier();
 }
 
 __END_SYS

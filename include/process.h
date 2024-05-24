@@ -101,15 +101,40 @@ public:
 
     static void lock(Spin * spin = &_spin) 
 	{ 
+		db<Thread>(WRN) << "@@@lock Thread::lock();" << endl;
+
 		CPU::int_disable(); 
+		//db<Thread>(WRN) << "@@@lock int disabled total i hope" << endl;
 		spin->acquire();
+		//db<Thread>(WRN) << "@@@lock spin acquired" << endl;
 	}
 
     static void unlock(Spin * spin = &_spin)
 	{
-		CPU::int_enable();
+		db<Thread>(WRN) << "@@@unlock Thread::unlock()" << endl;
+
 		spin->release();
+
+		//db<Thread>(WRN) << "@@@unlock Thread::unlock() spin release" << endl;
+
+		if (_boot_complete) 
+		{
+			//db<Thread>(WRN) << "@@@unlock Thread::unlock() int enable" << endl;
+			CPU::int_enable();
+		}
 	}
+
+	//static void lock_heap() 
+	//{
+	//	CPU::int_disable();
+	//	_lock_heap();
+	//}
+
+	//static void unlock_heap() 
+	//{
+	//	_unlock_heap();
+	//	CPU::int_enable();
+	//}
 
 protected:
     void constructor_prologue(unsigned int stack_size);
@@ -152,6 +177,7 @@ private:
 protected:
     Task * _task;
 	static Spin _spin;
+	static bool _boot_complete;
 
     char * _stack;
     Context * volatile _context;

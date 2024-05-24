@@ -17,13 +17,13 @@ volatile unsigned int Thread::_thread_count;
 Scheduler_Timer * Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_spin;
+bool Thread::_boot_complete;
 
 Thread *volatile Thread::self()
 {
-	return running();
-	// TODO: @arthur talvez fazer algo similar a isso
-	//
-	//return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
+	//return running();
+	// TODO: @arthur verificar se está certo esse id() + 1
+	return _boot_complete ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
 }
 
 void Thread::constructor_prologue(unsigned int stack_size)
@@ -505,6 +505,8 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 		db<Thread>(INF) << "Thread::dispatch:next={" << next 
 			<< ",ctx=" << *next->_context << "}" << endl;
 
+		_spin.release();
+
 		// The non-volatile pointer to volatile pointer to a non-volatile
 		// context is correct and necessary because of context switches, but
 		// here, we are locked() and passing the volatile to switch_constext
@@ -512,6 +514,8 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 		// doesn't make a difference for Intel, which already saves parameters
 		// on the stack anyway).
 		CPU::switch_context(const_cast<Context **>(&prev->_context), next->_context);
+
+		_spin.acquire();
 	}
 }
 

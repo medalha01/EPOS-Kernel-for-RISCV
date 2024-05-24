@@ -31,10 +31,10 @@ struct Traits<Build> : public Traits_Tokens
 template <>
 struct Traits<Debug> : public Traits<Build>
 {
-    static const bool error = true;
+    static const bool error = false;
     static const bool warning = true;
     static const bool info = false;
-    static const bool trace = true;
+    static const bool trace = false;
 };
 
 template <>
@@ -44,8 +44,8 @@ struct Traits<Lists> : public Traits<Build>
     static const bool debugged = false;
 	
 	static const bool error = false;
-	static const bool warning = false;
-	static const bool trace = true;
+	static const bool warning = true;
+	static const bool trace = false;
 	static const bool info = false;
 };
 
@@ -140,7 +140,7 @@ struct Traits<Thread> : public Traits<Build>
 	static const bool error = false; 
 	static const bool warning = true;
 	static const bool info = false; 
-	static const bool trace = true; 
+	static const bool trace = false; 
 
     typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
@@ -150,7 +150,7 @@ template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
     static const bool debugged = false; //Traits<Thread>::trace_idle || hysterically_debugged;
-	static const bool trace = true;
+	static const bool trace = false;
 	static const bool warning = false;
 	static const bool info = false;
 	static const bool error = false;

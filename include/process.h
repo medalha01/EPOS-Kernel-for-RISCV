@@ -9,23 +9,30 @@
 #include <utility/handler.h>
 #include <scheduler.h>
 
-extern "C" { void __exit(); }
+extern "C"
+{
+    void __exit();
+    void _lock_heap();
+    void _unlock_heap();
+}
 
 __BEGIN_SYS
 
 class Thread
 {
-    friend class Init_End;              // context->load()
-    friend class Init_System;           // for init() on CPU != 0
-    friend class Scheduler<Thread>;     // for link()
-    friend class Synchronizer_Common;   // for lock() and sleep()
-    friend class Alarm;                 // for lock()
-    friend class System;                // for init()
+    friend class Init_End;            // context->load()
+    friend class Init_System;         // for init() on CPU != 0
+    friend class Scheduler<Thread>;   // for link()
+    friend class Synchronizer_Common; // for lock() and sleep()
+    friend class Alarm;               // for lock()
+    friend class System;              // for init()
+    friend class IC;                  // for link() for priority ceiling
+    friend void ::_lock_heap();       // for lock()
+    friend void ::_unlock_heap();     // for unlock()
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
-    static const int priority_inversion_protocol = 
-		Traits<Thread>::priority_inversion_protocol;
+    static const int priority_inversion_protocol = Traits<Thread>::priority_inversion_protocol;
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
     static const unsigned int STACK_SIZE = Traits<Application>::STACK_SIZE;
 
@@ -66,6 +73,7 @@ public:
         unsigned int stack_size;
     };
 
+
 public:
     template<typename ... Tn>
     Thread(int (* entry)(Tn ...), Tn ... an);
@@ -81,13 +89,12 @@ public:
     void priority(Criterion p);
 
     Task * task() const { return _task; }
-
     int join();
     void pass();
     void suspend();
     void resume();
 
-    static Thread * volatile self();
+    static Thread *volatile self();
     static void yield();
     static void exit(int status = 0);
 
@@ -95,22 +102,44 @@ protected:
     void constructor_prologue(unsigned int stack_size);
     void constructor_epilogue(Log_Addr entry, unsigned int stack_size);
 
-    Queue::Element * link() { return &_link; }
+    Queue::Element *link() { return &_link; }
 
-    static Thread * volatile running() { return _scheduler.chosen(); }
+    static Thread *volatile running() { return _scheduler.chosen(); }
 
-    static void lock() { CPU::int_disable(); }
-    static void unlock() { CPU::int_enable(); }
-    static bool locked() { return CPU::int_disabled(); }
+    /*static void lock() { CPU::int_disable(); }
+    static void unlock() { CPU::int_enable(); }*/
+    static void lock(Spin *lock = &_lock)
+    {
+        CPU::int_disable();
+        if (Traits<Machine>::multi)
+        {
+            lock->acquire();
+        }
+    }
+    //
+    static void unlock(Spin *lock = &_lock)
+    {
+        if (Traits<Machine>::multi)
+        {
+            lock->release();
+        }
+        if (_not_booting)
+        {
+            CPU::int_enable();
+        }
+    }
+    static volatile bool locked() { return (Traits<Machine>::multi) ? _lock.taken() : CPU::int_disabled(); }
 
-    static void sleep(Queue * queue);
-    static void wakeup(Queue * queue);
-    static void wakeup_all(Queue * queue);
+    static void sleep(Queue *queue);
+    static void wakeup(Queue *queue);
+    static void wakeup_all(Queue *queue);
 
-    static void prioritize(Queue * queue);
-    static void deprioritize(Queue * queue);
+    static void prioritize(Queue *queue);
+    static void deprioritize(Queue *queue);
 
     static void reschedule();
+    static void reschedule(unsigned int cpu);
+    static void int_rescheduler(IC::Interrupt_Id i);
     static void time_slicer(IC::Interrupt_Id interrupt);
 
     static void dispatch(Thread * prev, Thread * next, bool charge = true);
@@ -126,6 +155,7 @@ protected:
 		}
     }
 
+
     static int idle();
 
 private:
@@ -133,7 +163,6 @@ private:
 
 protected:
     Task * _task;
-
     char * _stack;
     Context * volatile _context;
     volatile State _state;
@@ -142,12 +171,14 @@ protected:
     Thread * volatile _joining;
     Queue::Element _link;
 
+    static bool _not_booting;
     static volatile unsigned int _thread_count;
-    static Scheduler_Timer * _timer;
+    static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
+    static Spin _lock;
 };
 
-class Task
+lass Task
 {
     friend class Thread;           // for Task(), enroll() and dismiss()
     friend class Alarm;            // for enroll() and dismiss()
@@ -203,7 +234,6 @@ private:
 
     static Task * volatile _current;
 };
-
 template<typename ... Tn>
 inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
 : _task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
@@ -221,12 +251,11 @@ inline Thread::Thread(Configuration conf, int (* entry)(Tn ...), Tn ... an)
     _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
     constructor_epilogue(entry, conf.stack_size);
 }
-
 // A Java-like Active Object
-class Active: public Thread
+class Active : public Thread
 {
 public:
-    Active(): Thread(Configuration(Thread::SUSPENDED), &entry, this) {}
+    Active() : Thread(Configuration(Thread::SUSPENDED), &entry, this) {}
     virtual ~Active() {}
 
     virtual int run() = 0;
@@ -234,20 +263,20 @@ public:
     void start() { resume(); }
 
 private:
-    static int entry(Active * runnable) { return runnable->run(); }
+    static int entry(Active *runnable) { return runnable->run(); }
 };
 
 // An event handler that triggers a thread (see handler.h)
 class Thread_Handler : public Handler
 {
 public:
-    Thread_Handler(Thread * h) : _handler(h) {}
+    Thread_Handler(Thread *h) : _handler(h) {}
     ~Thread_Handler() {}
 
     void operator()() { _handler->resume(); }
 
 private:
-    Thread * _handler;
+    Thread *_handler;
 };
 
 __END_SYS

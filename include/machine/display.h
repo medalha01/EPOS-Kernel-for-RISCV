@@ -85,8 +85,14 @@ public:
         }
     };
 
-    static void puts(const char * s) {
-        while(*s != '\0')
+    static void puts(const char *s)
+    {
+        for (int i = 0; i < 5000000; i++)
+        {
+            __asm__ __volatile__("" : : : "memory");
+        }
+
+        while (*s != '\0')
             putc(*s++);
     }
     static void geometry(int *lines, int *columns)

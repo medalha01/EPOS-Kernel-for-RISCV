@@ -1,6 +1,6 @@
 #include <utility/ostream.h>
 #include <synchronizer.h>
-#include <machine.h>
+#include <include/machine.h>
 
 using namespace EPOS;
 
@@ -12,7 +12,7 @@ int main()
 {
     ao.lock();
     cout << "Hello world!" << endl;
-    Machine.delay(1000000);
+    Machine::delay(1000000);
     ao.unlock();
 
     return 0;

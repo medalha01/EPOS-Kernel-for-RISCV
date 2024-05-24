@@ -57,8 +57,9 @@ public:
 		}
 
 		db<Thread>(WRN) << "oi oi oio oi oi o\n\n\n" << endl;
+        _not_booting = true;
 		first->_context->load();
-	}
+    }
 };
 
 Init_End init_end;

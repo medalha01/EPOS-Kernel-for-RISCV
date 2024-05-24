@@ -1,6 +1,5 @@
 #include <utility/ostream.h>
 #include <synchronizer.h>
-#include <include/machine.h>
 
 using namespace EPOS;
 
@@ -10,10 +9,9 @@ Mutex ao;
 
 int main()
 {
-    ao.lock();
+    // ao.lock();
     cout << "Hello world!" << endl;
-    Machine::delay(1000000);
-    ao.unlock();
+    // ao.unlock();
 
     return 0;
 }

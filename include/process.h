@@ -140,6 +140,16 @@ protected:
     static void prioritize(Queue *queue);
     static void deprioritize(Queue *queue);
 
+    void enter_zone()
+    {
+        criticalZonesCount++;
+    };
+
+    void leave_zone()
+    {
+        criticalZonesCount--;
+    };
+
     static void reschedule();
     static void reschedule(unsigned int cpu);
     static void int_rescheduler(IC::Interrupt_Id i);
@@ -170,6 +180,8 @@ protected:
     volatile State _state;
     // Criterion _natural_priority;
     int _natural_priority;
+    int criticalZonesCount = 0;
+
     SyncObject *_syncHolder = nullptr;
     SyncObject *_syncWaiter = nullptr;
     Queue *_waiting;

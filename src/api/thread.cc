@@ -432,9 +432,9 @@ void Thread::reschedule()
 
     assert(locked()); // locking handled by caller
 
-	db<Thread>(WRN) << "@@@int reschedule send interrupt" << endl;
-	IC::ipi(CPU::id(), IC::INT_RESCHEDULER);
-	db<Thread>(WRN) << "@@@int reschedule already sent the interrupt" << endl;
+	//db<Thread>(WRN) << "@@@int reschedule send interrupt" << endl;
+	//IC::ipi(CPU::id(), IC::INT_RESCHEDULER);
+	//db<Thread>(WRN) << "@@@int reschedule already sent the interrupt" << endl;
 
     Thread * prev = running();
     Thread * next = _scheduler.choose();

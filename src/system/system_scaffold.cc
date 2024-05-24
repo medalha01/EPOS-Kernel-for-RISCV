@@ -46,7 +46,7 @@ extern "C" {
 			int me = CPU::id();
 			int last = CPU::cas(_print_lock, -1, me);
 			for (int i = 0, owner = last;
-				(Traits<System>::hysterically_debugged || (i < 10)) && (owner != me);
+				(Traits<System>::hysterically_debugged || (i < 100)) && (owner != me);
 				i++, owner = CPU::cas(_print_lock, -1, me))
 				;
 			if (last != me)

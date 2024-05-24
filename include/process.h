@@ -9,7 +9,15 @@
 #include <utility/handler.h>
 #include <scheduler.h>
 
-extern "C" { void __exit(); }
+extern "C" { 
+	void __exit(); 
+	void _lock_heap();
+	void _unlock_heap();
+	
+	//static Spin _heap_lock;
+	//void _lock_heap() { Thread::lock(&_heap_lock); }
+	//void _unlock_heap() { Thread::unlock(&_heap_lock); }
+}
 
 __BEGIN_SYS
 
@@ -91,6 +99,18 @@ public:
     static void yield();
     static void exit(int status = 0);
 
+    static void lock(Spin * spin = &_spin) 
+	{ 
+		CPU::int_disable(); 
+		spin->acquire();
+	}
+
+    static void unlock(Spin * spin = &_spin)
+	{
+		CPU::int_enable();
+		spin->release();
+	}
+
 protected:
     void constructor_prologue(unsigned int stack_size);
     void constructor_epilogue(Log_Addr entry, unsigned int stack_size);
@@ -99,9 +119,7 @@ protected:
 
     static Thread * volatile running() { return _scheduler.chosen(); }
 
-    static void lock() { CPU::int_disable(); }
-    static void unlock() { CPU::int_enable(); }
-    static bool locked() { return CPU::int_disabled(); }
+    static bool locked() { return _spin.taken() && CPU::int_disabled(); }
 
     static void sleep(Queue * queue);
     static void wakeup(Queue * queue);
@@ -133,6 +151,7 @@ private:
 
 protected:
     Task * _task;
+	static Spin _spin;
 
     char * _stack;
     Context * volatile _context;

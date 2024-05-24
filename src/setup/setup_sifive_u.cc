@@ -86,12 +86,12 @@ Setup::Setup()
 		Display::init(); 
 	}
 
-	db<Thread>(WRN) << "@@@SETUP passa baixo nengue... " << endl;
+	db<Thread>(WRN) << "@@@SETUP antes --START " << endl;
 	// This barrier guards against multiple allocations of the same kout and kerr variables,
 	// and also ensures that only one core initializes the display for all the others. 
 	// Usage of kout and kerr thus needs to wait until they are initialized by the bootstrap core.
 	CPU::smp_barrier();
-	db<Thread>(WRN) << "@@@SETUP foi foi foi baixo nengue... " << endl;
+	db<Thread>(WRN) << "@@@SETUP DEPOIS --START" << endl;
 
 	kout << endl;
 	kerr << endl;
@@ -116,7 +116,9 @@ Setup::Setup()
 		// This barrier stops cores other than the bootstrap one from enabling the paging,
 		// when it is not yet ready (needs to be setup by the bootstrap core). Thus no memory
 		// issues arise from memory operations that expect there to be paging when there is none yet.
+		db<Thread>(WRN) << "@@@SETUP antes do barrier final " << endl;
 		CPU::smp_barrier();
+		db<Thread>(WRN) << "@@@SETUP depois do barrier final " << endl;
 
 		// Enable paging
 		enable_paging();
@@ -268,11 +270,12 @@ void _entry() // machine mode
 		Machine::clear_bss();
 	}
 
-	db<Thread>(WRN) << "@@@ENTRY entra baixo nengue" << endl;
+	//db<Thread>(WRN) << "@@@ENTRY entra baixo nengue" << endl;
 	// This barrier blockades other cores from potentially reading uninitialized static variables
 	// that have trash in them, from previous usage.
+	db<Thread>(WRN) << "@@@ENTRY para baixo nengue" << endl;
 	CPU::smp_barrier();
-	db<Thread>(WRN) << "@@@ENTRY passa baixo nengue" << endl;
+	db<Thread>(WRN) << "@@@ENTRY PASSA baixo nengue" << endl;
 
 	if (Traits<Machine>::supervisor) {
 		// setup a machine mode interrupt handler to

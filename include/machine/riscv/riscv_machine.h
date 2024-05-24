@@ -11,6 +11,7 @@
 #include <system/memory_map.h>
 #include <system.h>
 
+
 __BEGIN_SYS
 
 class Machine: private Machine_Common
@@ -32,7 +33,12 @@ public:
     static void reboot();
     static void poweroff();
 
-    static const UUID & uuid() { return System::info()->bm.uuid; }
+	static const UUID & uuid() 
+	{
+		static const unsigned char id[8] = { '1', '2', '3', '4', '5', '6', '7', '\0' };
+		/*return System::info()->bm.uuid;*/ 
+		return id;
+	}
 
 private:
     static void pre_init(System_Info * si);

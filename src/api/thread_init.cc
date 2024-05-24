@@ -27,8 +27,10 @@ void Thread::init()
 	}
 
 	// Waits for there to be a main, otherwise initialization of the IDLE threads might be problematic.
-	// TODO: find out why
+	// TODO: @arthur find out why
+	db<Thread>(WRN) << "@@@THREADINIT antes -- medio" << endl;
 	CPU::smp_barrier();
+	//db<Thread>(WRN) << "@@@THREADINIT DEPOIS -- medio" << endl;
 
     // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
     new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
@@ -45,7 +47,9 @@ void Thread::init()
 	}
 
 	// Guarantees that the Scheduler_Timer is ready for all the cores.
+	db<Thread>(WRN) << "@@@THREADINIT antes -- final" << endl;
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@THREADINIT DEPOIS -- final" << endl;
 
 	// Allow for software interrupts (used for inter-core communication)
 	IC::enable(IC::INT_RESCHEDULER);

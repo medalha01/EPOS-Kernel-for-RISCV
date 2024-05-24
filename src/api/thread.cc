@@ -16,6 +16,7 @@ extern OStream kout;
 volatile unsigned int Thread::_thread_count;
 Scheduler_Timer * Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
+Spin Thread::_spin;
 
 Thread *volatile Thread::self()
 {
@@ -29,41 +30,58 @@ void Thread::constructor_prologue(unsigned int stack_size)
 {
     lock();
 
+	db<Thread>(WRN) << "@@@cons prologue init" << endl;
+
     _thread_count++;
     _scheduler.insert(this);
 
+	db<Thread>(WRN) << "@@@cons prologue post insert scheduler" << endl;
+
     _stack = new (SYSTEM) char[stack_size];
+
+	db<Thread>(WRN) << "@@@cons prologue post stackalloc" << endl;
 }
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(entry=" << entry
-                    << ",state=" << _state
-                    << ",priority=" << _link.rank()
-                    << ",stack={b=" << reinterpret_cast<void *>(_stack)
-                    << ",s=" << stack_size
-                    << "},context={b=" << _context
-                    << "," << *_context << "}) => " << this << endl;
+    //db<Thread>(TRC) << "Thread(entry=" << entry
+    //                << ",state=" << _state
+    //                << ",priority=" << _link.rank()
+    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
+    //                << ",s=" << stack_size
+    //                << "},context={b=" << _context
+    //                << "," << *_context << "}) => " << this << endl;
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
+	db<Thread>(WRN) << "@@@cons epilogue start" << endl;
+
     if(_link.rank() != IDLE)
 	{
+		db<Thread>(WRN) << "@@@cons epilogue enrolling task" << endl;
         _task->enroll(this);
+		db<Thread>(WRN) << "@@@cons epilogue enrolled task" << endl;
 	}
 
     if((_state != READY) && (_state != RUNNING))
 	{
+		db<Thread>(WRN) << "@@@cons epilogue suspending thread" << endl;
         _scheduler.suspend(this);
+		db<Thread>(WRN) << "@@@cons epilogue post suspended thread" << endl;
 	}
 
+	db<Thread>(WRN) << "@@@cons epilogue criterion handle" << endl;
     criterion().handle(Criterion::CREATE);
+	db<Thread>(WRN) << "@@@cons epilogue post criterion handle" << endl;
 
     if(preemptive && (_state == READY) && (_link.rank() != IDLE))
 	{
-        reschedule();
+		db<Thread>(WRN) << "@@@cons epilogue before reschedule" << endl;
+		reschedule();
+		db<Thread>(WRN) << "@@@cons epilogue post reschedule" << endl;
 	}
 
+	db<Thread>(WRN) << "@@@cons epilogue at the very end" << endl;
     unlock();
 }
 
@@ -432,9 +450,9 @@ void Thread::reschedule()
 
     assert(locked()); // locking handled by caller
 
-	db<Thread>(WRN) << "@@@int reschedule send interrupt" << endl;
-	IC::ipi(CPU::id(), IC::INT_RESCHEDULER);
-	db<Thread>(WRN) << "@@@int reschedule already sent the interrupt" << endl;
+	//db<Thread>(WRN) << "@@@int reschedule send interrupt" << endl;
+	//IC::ipi(CPU::id(), IC::INT_RESCHEDULER);
+	//db<Thread>(WRN) << "@@@int reschedule already sent the interrupt" << endl;
 
     Thread * prev = running();
     Thread * next = _scheduler.choose();
@@ -504,25 +522,37 @@ int Thread::idle()
 	// someone else besides idle
     while(_thread_count > CPU::cores()) 
 	{ 
+		db<Thread>(WRN) << "@@@IDLE INSIDE WHILE, " 
+			<< "thread_count = " << _thread_count 
+			<< ", schedulables = " << _scheduler.schedulables() << endl;
+
         if(Traits<Thread>::trace_idle)
 		{
             db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
 		}
 
-		db<Thread>(WRN) << "idle here..\n\n\n" << endl;
+		db<Thread>(WRN) << "@@@IDLE BEFORE INT ENABLE / HALT" << endl;
         CPU::int_enable();
+		db<Thread>(WRN) << "@@@IDLE after int-enabled" << endl;
         CPU::halt();
+		db<Thread>(WRN) << "@@@IDLE AFTER INT ENABLE / HALT" << endl;
 
-		if (_scheduler.schedulables() > CPU::cores() || !preemptive) 
+		//if (_scheduler.schedulables() > CPU::cores() || !preemptive) 
+		if (_scheduler.schedulables() > 0)
 		{
-			db<Thread>(WRN) << "yield da IDLE\n\n" << endl;
+			db<Thread>(WRN) << "@@@IDLE INSIDE YIELD ;)" << endl;
 			yield();
-		}
+		} else CPU::halt();
     }
 
-    kout << "\n\n*** The last thread under control of EPOS has finished." << endl;
-    kout << "*** EPOS is shutting down!" << endl;
-    Machine::reboot();
+	db<Thread>(WRN) << "@@@IDLE DEU PAU" << endl;
+
+	if (CPU::is_bootstrap())
+	{
+		kout << "\n\n*** The last thread under control of EPOS has finished." << endl;
+		kout << "*** EPOS is shutting down!" << endl;
+		Machine::reboot();
+	}
 
     return 0;
 }

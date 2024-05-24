@@ -7,6 +7,12 @@
 #include <utility/list.h>
 #include <utility/spin.h>
 
+extern "C" 
+{
+	void _lock_heap();
+	void _unlock_heap();
+}
+
 __BEGIN_UTIL
 
 // Heap
@@ -74,10 +80,12 @@ public:
 
 private:
 	//Spin _spin;
-	Simple_Spin _spin;
+	//Simple_Spin _spin;
 
-	void lock()   { _spin.acquire(); }
-	void unlock() { _spin.release(); }
+	//void lock()   { Thread::lock(&_spin); }
+	//void unlock() { Thread::unlock(&_spin); }
+	void lock()   { _lock_heap(); }
+	void unlock() { _unlock_heap(); }
 
     void out_of_memory(unsigned long bytes);
 

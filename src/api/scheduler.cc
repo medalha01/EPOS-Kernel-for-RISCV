@@ -16,7 +16,7 @@ Microsecond RT_Common::time(Tick ticks) {
 }
 
 void RT_Common::handle(Event event) {
-    db<Thread>(TRC) << "RT::handle(this=" << this << ",e=";
+    //db<Thread>(TRC) << "RT::handle(this=" << this << ",e=";
     if(event & CREATE) {
         db<Thread>(TRC) << "CREATE";
 

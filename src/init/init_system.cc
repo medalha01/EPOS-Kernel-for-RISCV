@@ -28,7 +28,9 @@ public:
 		// This barrier ensures that the bootstrap core has initialized the MMU,
 		// which, for No_MMU systems and different MMUs in general, requires allocations
 		// and/or freeing operations. Thus, it needs to be awaited by the other cores.
+		db<Thread>(WRN) << "@@@INITSYSTEM antes do barrier do começo " << endl;
 		CPU::smp_barrier();
+		db<Thread>(WRN) << "@@@INITSYSTEM DEPOIS do barrier do começo " << endl;
 
 		if (CPU::is_bootstrap()) 
 		{
@@ -54,7 +56,9 @@ public:
 
 		// This one is rather simple - the bootstrap core is initializing the heap, 
 		// and, as such, it is paramount that the other cores await for its completion.
+		db<Thread>(WRN) << "@@@INITSYSTEM antes do barrier do meio " << endl;
 		CPU::smp_barrier();
+		db<Thread>(WRN) << "@@@INITSYSTEM DEPOIS do barrier do meio " << endl;
 
         db<Init>(INF) << "Initializing the machine: " << endl;
         Machine::init();
@@ -82,7 +86,9 @@ public:
 		// Waits for the bootstrap core to properly initialize the static _seed
 		// inside the Random class. If other cores try to utilize random(), it
 		// is possible that there would be some issues without this barrier.
+		db<Thread>(WRN) << "@@@INITSYSTEM antes ---final " << endl;
 		CPU::smp_barrier();
+		db<Thread>(WRN) << "@@@INITSYSTEM DEPOIS ---final" << endl;
 
         // Initialization continues at init_end
     }

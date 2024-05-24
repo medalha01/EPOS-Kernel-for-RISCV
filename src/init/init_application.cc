@@ -24,7 +24,9 @@ public:
         db<Init>(INF) << "Initializing application's heap: ";
 
 		// TODO: @arthur possivelmente tirar esse barrier. vide comentário abaixo.
+		db<Thread>(WRN) << "@@@INITAPP antes --- start" << endl;
 		CPU::smp_barrier();
+		db<Thread>(WRN) << "@@@INITAPP DEPOIS -- start" << endl;
 
 		// TODO: @arthur ver onde que o Init_Application é chamado na hierarquia de calls.
 		if (CPU::is_bootstrap())
@@ -59,7 +61,9 @@ public:
 		// result in memory errors, as either there is no heap in the system just yet,
 		// or the heap freeing operation that unifies it into the system's heap has not 
 		// yet been completed by the bootstrap core.
+		db<Thread>(WRN) << "@@@INITAPP antes --- final" << endl;
 		CPU::smp_barrier();
+		db<Thread>(WRN) << "@@@INITAPP DEPOIS -- final" << endl;
     }
 };
 

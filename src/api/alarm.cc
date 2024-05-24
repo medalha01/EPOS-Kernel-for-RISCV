@@ -10,6 +10,7 @@ __BEGIN_SYS
 Alarm_Timer * Alarm::_timer;
 volatile Alarm::Tick Alarm::_elapsed;
 Alarm::Queue Alarm::_request;
+Spin Alarm::_spin;
 
 Alarm::Alarm(Microsecond time, Handler * handler, unsigned int times)
 : _time(time), _handler(handler), _times(times), _ticks(ticks(time)), _link(this, _ticks)
@@ -123,10 +124,12 @@ void Alarm::handler(IC::Interrupt_Id i)
 
     unlock();
 
-    if(alarm) {
-        db<Alarm>(TRC) << "Alarm::handler(this=" << alarm << ",e=" << _elapsed << ",h=" << reinterpret_cast<void*>(alarm->handler) << ")" << endl;
-        (*alarm->_handler)();
-    }
+	if (alarm) {
+		db<Alarm>(TRC) << "Alarm::handler(this=" << alarm << ",e=" << _elapsed
+			<< ",h=" << reinterpret_cast<void *>(alarm->handler) << ")"
+			<< endl;
+		(*alarm->_handler)();
+	}
 }
 
 __END_SYS

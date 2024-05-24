@@ -19,7 +19,9 @@ void Timer::init()
 
 	// Ensures that the int_vector is properly initialized to be able to handle
 	// SYS_TIMER interrupts, before we can properly reset the timer and enable them.
+	db<Thread>(WRN) << "@@@TIMERINIT antes " << endl;
 	CPU::smp_barrier();
+	db<Thread>(WRN) << "@@@TIMERINIT DEPOIS " << endl;
     reset();
     IC::enable(IC::INT_SYS_TIMER);
 }

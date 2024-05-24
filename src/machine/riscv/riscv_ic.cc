@@ -49,7 +49,7 @@ void IC::dispatch()
 
 	if (id == INT_RESCHEDULER)
 	{
-		db<Thread>(WRN) << "@@@int certo YIIIIPEEEEEEE\n\n\n\n\n\n\n" << endl;
+		//db<Thread>(WRN) << "@@@int certo YIIIIPEEEEEEE\n\n\n\n\n\n\n" << endl;
 	}
 
 	if (id == INT_SYS_TIMER) 
@@ -73,13 +73,11 @@ void IC::dispatch()
 void IC::int_software(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
-	db<Thread>(WRN) << "@@@int eh os guri pae..." << endl;
+	//db<Thread>(WRN) << "@@@int eh os guri pae..." << endl;
 
-	IC::ipi_eoi(INT_RESCHEDULER);
-	
 	if (id == INT_RESCHEDULER) 
 	{
-				
+		IC::ipi_eoi(INT_RESCHEDULER);
 	}
 }
 

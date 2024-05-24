@@ -251,7 +251,11 @@ public:
     static bool int_enabled() { return supervisor ? (sstatus() & SIE) : (mstatus() & MIE); }
     static bool int_disabled() { return !int_enabled(); }
 
-    static void halt() { ASM("wfi"); }
+    static void halt() 
+	{ 
+		//db<Thread>(WRN) << "-----------------HALTED" << endl;
+		ASM("wfi"); 
+	}
 
     static void fpu_save();
     static void fpu_restore();

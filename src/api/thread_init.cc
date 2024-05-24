@@ -7,51 +7,78 @@
 
 __BEGIN_SYS
 
-extern "C" { void __epos_app_entry(); }
+extern "C"
+{
+	void __epos_app_entry();
+}
 
 void Thread::init()
 {
-    db<Init, Thread>(TRC) << "Thread::init()" << endl;
+	db<Init, Thread>(TRC) << "Thread::init() started" << endl;
 
-    Criterion::init();
-
-	if (CPU::is_bootstrap()) 
+	if (Traits<Machine>::multi && CPU::is_bootstrap())
 	{
-		typedef int (Main)();
-
-		// If EPOS is a library, then adjust the application entry point to __epos_app_entry, which will directly call main().
-		// In this case, _init will have already been called, before Init_Application to construct MAIN's global objects.
-		Main * main = reinterpret_cast<Main *>(__epos_app_entry);
-
-		new (SYSTEM) Task(main);
+		// This is utilized only in multi queue schedulers;
+		IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
 	}
 
-	// Waits for there to be a main, otherwise initialization of the IDLE threads might be problematic.
-	// TODO: find out why
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Reached first barrier in Thread::init()" << endl;
 	CPU::smp_barrier();
 
-    // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
-    new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Passed first barrier in Thread::init()" << endl;
 
-    // The installation of the scheduler timer handler does not need to be done after the
-    // creation of threads, since the constructor won't call reschedule() which won't call
-    // dispatch that could call timer->reset()
-    // Letting reschedule() happen during thread creation is also harmless, since MAIN is
-    // created first and dispatch won't replace it nor by itself neither by IDLE (which
-    // has a lower priority)
-    if(Criterion::timed && CPU::is_bootstrap()) 
+
+
+	Criterion::init();
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Criterion initialized in Thread::init()" << endl;
+
+	typedef int(Main)();
+
+	if (CPU::is_bootstrap())
 	{
-        _timer = new (SYSTEM) Scheduler_Timer(QUANTUM, time_slicer);
+		db<Thread>(TRC) << "Bootstrap processor initializing MAIN thread" << endl;
+
+		Main *main = reinterpret_cast<Main *>(__epos_app_entry);
+
+		db<Thread>(TRC) << "Core " << CPU::id() << ": Creating MAIN thread" << endl;
+		new (SYSTEM) Task(main);		// Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
+
+		db<Thread>(TRC) << "Core " << CPU::id() << ": MAIN thread created" << endl;
 	}
 
-	// Guarantees that the Scheduler_Timer is ready for all the cores.
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Reached second barrier in Thread::init()" << endl;
 	CPU::smp_barrier();
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Passed second barrier in Thread::init()" << endl;
 
-	// Allow for software interrupts (used for inter-core communication)
-	IC::enable(IC::INT_RESCHEDULER);
-	
-    // No more interrupts until we reach init_end
-    CPU::int_disable();
+	new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
+
+	db<Thread>(TRC) << "Core " << CPU::id() << ": IDLE thread created" << endl;
+	CPU::smp_barrier();
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Passed third barrier after IDLE creation" << endl;
+	// The installation of the scheduler timer handler does not need to be done after the
+	// creation of threads, since the constructor won't call reschedule() which won't call
+	// dispatch that could call timer->reset()
+	// Letting reschedule() happen during thread creation is also harmless, since MAIN is
+	// created first and dispatch won't replace it nor by itself neither by IDLE (which
+	// has a lower priority)
+	if (Criterion::timed && CPU::is_bootstrap())
+	{
+		_timer = new (SYSTEM) Scheduler_Timer(QUANTUM, time_slicer);
+	}
+
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Reached final barrier in Thread::init()" << endl;
+	CPU::smp_barrier();
+	db<Thread>(TRC) << "Core " << CPU::id() << ": Passed final barrier in Thread::init()" << endl;
+	// No more interrupts until we reach init_end
+
+	if (Traits<Machine>::multi)
+	{
+		IC::enable(IC::INT_RESCHEDULER);
+	}
+	CPU::int_disable();
+	_not_booting = true;
+
+	db<Thread>(TRC) << "Thread::init() completed" << endl;
 }
 
 __END_SYS

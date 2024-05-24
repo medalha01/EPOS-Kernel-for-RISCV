@@ -96,6 +96,16 @@ public:
     void suspend();
     void resume();
 
+    void enter_zone()
+    {
+        criticalZonesCount++;
+    };
+
+    void leave_zone()
+    {
+        criticalZonesCount--;
+    };
+
     static Thread *volatile self();
     static void yield();
     static void exit(int status = 0);
@@ -139,16 +149,6 @@ protected:
     void raise_priority(int criterion);
     static void prioritize(Queue *queue);
     static void deprioritize(Queue *queue);
-
-    void enter_zone()
-    {
-        criticalZonesCount++;
-    };
-
-    void leave_zone()
-    {
-        criticalZonesCount--;
-    };
 
     static void reschedule();
     static void reschedule(unsigned int cpu);

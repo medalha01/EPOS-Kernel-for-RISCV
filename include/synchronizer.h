@@ -263,7 +263,8 @@ protected:
     int highest_priority = Thread::IDLE;
     SyncInteractionList resource_holder_list;
     SyncInteractionList resource_waiting_list;
-    int amountOfZones = 0; // TODO: Implement an algorithm to optimize this.
+    // int amountOfZones = 0; // TODO: Implement an algorithm to optimize this.
+    int waitingThreadsCount = 0;
 };
 
 // Mutex class

@@ -436,7 +436,6 @@ void Thread::deprioritize(Queue *q)
 
 void Thread::reschedule(unsigned int cpu)
 {
-
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
     {
         db<Thread>(TRC) << "Thread::reschedule()" << cpu << endl;
@@ -450,7 +449,6 @@ void Thread::reschedule(unsigned int cpu)
     }
     else
     {
-
         IC::ipi(cpu, IC::INT_RESCHEDULER);
     }
 }

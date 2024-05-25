@@ -72,8 +72,6 @@ public:
                 db<Init>(INF) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
         }
 
-		// TODO: fix this
-		// waits until the bootstrap CPU signalizes "machine ready"
         CPU::smp_barrier(); 
 
         // Initialization continues at init_end

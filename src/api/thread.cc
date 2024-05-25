@@ -61,32 +61,33 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
         reschedule(_link.rank().queue());
     }
 
+	// This is to be executed only by the MAIN thread when it is created.
+	// This is such that it can skip the search of new CPU cores available,
+	// since all cores will have ´nullptr´ as their executing thread,
+	// i.e. all of them will be free. As such, no IRQ is needed, we just take the first one.
 	if (CPU::is_smp() && _state != RUNNING) 
 	{
 		int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
 
-		assert(locked()); // TODO: @arthur remover isso aqui por favor
+		//db<Thread>(WRN) << "chosen = " << target_core << endl;
 
-		db<Thread>(WRN) << "chosen = " << target_core << endl;
+		_cpu_lookup_table.print_table();
 
 		if (target_core != -1) 
 		{
 			//db<Thread>(WRN) << "/////ic iria enviar int para " << target_core << endl;
 
-			db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
+			//db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
 			reschedule(target_core);
 		} 
-		// TODO: @arthur remover esse else 
-		else 
-		{
-			db<Thread>(WRN) << "n env = " << target_core << endl;
-		}
 	}
 
+	// As said previously, if MAIN is being constructed here, we can just
+	// set the CPU core in which it is in to MAIN's priority, and keep going.
 	if (CPU::is_smp() && _state == RUNNING) 
 	{
-		db<Thread>(WRN) << "running = " << endl;
 		_cpu_lookup_table.set_thread_on_cpu(running());
+		_cpu_lookup_table.print_table();
 	}
 
     unlock();
@@ -238,9 +239,9 @@ void Thread::yield()
     Thread *prev = running();
     Thread *next = _scheduler.choose_another();
 
-	db<Thread>(WRN) << "[=] set on yield() " << endl;
-	_cpu_lookup_table.set_thread_on_cpu(next);
-	_cpu_lookup_table.print_table();
+	//db<Thread>(WRN) << "[=] set on yield() " << endl;
+	//_cpu_lookup_table.set_thread_on_cpu(next);
+	//_cpu_lookup_table.print_table();
 
     dispatch(prev, next);
 
@@ -251,7 +252,8 @@ void Thread::exit(int status)
 {
     lock();
 
-    db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
+    db<Thread>(TRC) << "Thread::exit(status=" << status
+		<< ") [running=" << running() << "]" << endl;
 
     Thread *prev = running();
     _scheduler.remove(prev);
@@ -363,10 +365,13 @@ void Thread::prioritize(Queue *q)
         if (i->object()->priority() > r->priority())
         {
             r->_natural_priority = r->criterion();
-            Criterion c = (priority_inversion_protocol == Traits<Build>::CEILING) ? CEILING : r->criterion();
+            Criterion c = (priority_inversion_protocol == Traits<Build>::CEILING)
+				? CEILING : r->criterion();
             if (r->_state == READY)
             {
-                _scheduler.suspend(r); // TODO: talvez tenha que dar remove e insert aqui que nem anteriormente
+				// TODO: talvez tenha que dar remove 
+				// e insert aqui que nem anteriormente
+                _scheduler.suspend(r); 
                 r->_link.rank(c);
                 _scheduler.resume(r);
             }
@@ -439,8 +444,8 @@ void Thread::reschedule(unsigned int cpu)
 		Thread *prev = running();
 		Thread *next = _scheduler.choose();
 
-		db<Thread>(WRN) << "[=] set on dispatch" << endl;
-		_cpu_lookup_table.set_thread_on_cpu(next);
+		//db<Thread>(WRN) << "[=] set on dispatch" << endl;
+		//_cpu_lookup_table.set_thread_on_cpu(next);
 		//_cpu_lookup_table.print_table();
 
 		db<Thread>(WRN) << "t n p = " << prev << ", n = " << next << endl;
@@ -474,6 +479,10 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
 	//db<Thread>(WRN) << "t d" << endl;
 	//_cpu_lookup_table.set_thread_on_cpu(next);
+
+	db<Thread>(WRN) << "[=] set on dispatch" << endl;
+	_cpu_lookup_table.set_thread_on_cpu(next);
+	_cpu_lookup_table.print_table();
 
     if (charge && Criterion::timed)
     {

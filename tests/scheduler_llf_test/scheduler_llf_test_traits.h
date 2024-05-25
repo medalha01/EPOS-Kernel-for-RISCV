@@ -148,7 +148,8 @@ struct Traits<Thread> : public Traits<Build>
 template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
-    //static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
+    //static const bool debugged =
+	//	Traits<Thread>::trace_idle || hysterically_debugged;
     static const bool debugged = false;
 };
 

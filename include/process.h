@@ -106,6 +106,45 @@ public:
         criticalZonesCount--;
     };
 
+    void reset_protocol()
+    {
+        Criterion *c = &criterion();
+        c->_locked = false;
+        c->_priority = _natural_priority;
+        c->handle(Criterion::UPDATE);
+    };
+
+    void get_next_priority()
+    {
+        if (!_syncHolder)
+        {
+            return reset_protocol();
+        }
+        auto *helper = _syncHolder->synchronizerList.head();
+        Synchronizer_Common *current = helper->object();
+        int highest_priority = current->getMostUrgentPriority();
+
+        while (helper)
+        {
+            current = helper->object();
+            int current_priority = current->getMostUrgentPriority();
+            if (current_priority < highest_priority)
+            {
+                highest_priority = current_priority;
+            }
+            helper = helper->next();
+        }
+
+        if (highest_priority < _natural_priority)
+        {
+            criterion()._priority = highest_priority;
+        }
+        else
+        {
+            reset_protocol();
+        }
+    };
+
     static Thread *volatile self();
     static void yield();
     static void exit(int status = 0);

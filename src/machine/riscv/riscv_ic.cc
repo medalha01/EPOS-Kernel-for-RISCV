@@ -36,19 +36,15 @@ void IC::entry()
 
 void IC::dispatch()
 {
-    // Preserve handler's arguments
-    CPU::Reg a0 = CPU::a0();
-    CPU::Reg a1 = CPU::a1();
-
     Interrupt_Id id = int_id();
-
-    if (((id != INT_SYS_TIMER) && (id != INT_SYSCALL) && ((id == CPU::EXC_IPF) && (CPU::epc() != CPU::Log_Addr(&__exit)))) || Traits<IC>::hysterically_debugged)
-        db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [cpu=" << CPU::id() << ", sp=" << CPU::sp() << ", a0=" << a0 << ", a1=" << a1 << "]" << endl;
 
     if (supervisor)
     {
         if (id == INT_RESCHEDULER)
-            CPU::sipc(CPU::SSI); // IPI EOI was already issued by _int_m2s, so we only clear SSI
+		{
+			// IPI EOI was already issued by _int_m2s, so we only clear SSI
+            CPU::sipc(CPU::SSI); 
+		}
         else if (id == INT_SYS_TIMER)
             CPU::ecall(); // we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
     }
@@ -57,11 +53,13 @@ void IC::dispatch()
         if (id == INT_RESCHEDULER)
             IC::ipi_eoi(id & CLINT::INT_MASK);
         else if (id == INT_SYS_TIMER)
-            Timer::reset(); // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer seems to be the only way to clear it
+		{
+			// MIP.MTI is a direct logic on (MTIME == MTIMECMP)
+			// and reseting the Timer seems to be the only way to clear it
+            Timer::reset(); 
+		}
     }
 
-    CPU::gp(a0); // ensure exit() gets the correct return code in gp (a0 will be used to pass id)
-    CPU::a1(a1); // ensure syscalled() gets the correct message in a1
     _int_vector[id](id);
 
     if (id > HARD_INT)
@@ -76,10 +74,12 @@ void IC::dispatch()
 void IC::int_not(Interrupt_Id id)
 {
     db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
-    if (Traits<Build>::hysterically_debugged) 
+	if (id == INT_RESCHEDULER) 
 	{
-        Machine::panic(__FILE__, __LINE__);
+		// TODO: @arthur 
+		Thread::reschedule();	
 	}
+	//Machine::panic(__FILE__, __LINE__);
 }
 
 void IC::exception(Interrupt_Id id)

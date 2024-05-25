@@ -70,6 +70,9 @@ void Mutex::unlock()
     SyncObject *syncWatch = getSyncObject(exec_thread, true);
     syncWatch->removeSynchronizer(this);
     removeSyncObject(syncWatch, &resource_holder_list);
+
+    shiftProtocol(exec_thread);
+
     _unlock();
 }
 

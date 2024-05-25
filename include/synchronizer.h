@@ -88,12 +88,6 @@ protected:
         return most_urgent;
     }
 
-    int getMostUrgentPriority()
-    {
-        SyncObject *urgent = getMostUrgentInWaiting();
-        return urgent ? urgent->getPriority() : Thread::IDLE;
-    }
-
     void activateCeiling(int priority = Thread::CEILING)
     {
         // Check if the highest priority is set to the ceiling value and the provided priority is lower than the highest priority
@@ -117,7 +111,17 @@ protected:
         }
         ceilingIsActive = true;
     }
-
+    void shiftProtocol(Thread *exec_thread)
+    {
+        if (exec_thread->criticalZonesCount < 1)
+        {
+            exec_thread->reset_protocol();
+        }
+        else
+        {
+            exec_thread->get_next_priority();
+        }
+    }
     void deactivateCeiling()
     {
 
@@ -255,6 +259,13 @@ protected:
     void sleep() { Thread::sleep(&_waiting); }
     void wakeup() { Thread::wakeup(&_waiting); }
     void wakeup_all() { Thread::wakeup_all(&_waiting); }
+
+public:
+    int getMostUrgentPriority()
+    {
+        SyncObject *urgent = getMostUrgentInWaiting();
+        return urgent ? urgent->getPriority() : Thread::IDLE;
+    }
 
 protected:
     Queue _waiting;

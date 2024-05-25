@@ -137,7 +137,7 @@ struct Traits<Thread> : public Traits<Build>
 
     typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
-    static const int priority_inversion_protocol = Traits<Build>::CEILING;
+    //static const int priority_inversion_protocol = Traits<Build>::CEILING;
 };
 
 template <>

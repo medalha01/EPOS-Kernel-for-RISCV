@@ -109,6 +109,38 @@ protected:
             db<Synchronizer>(WRN) << "~Synchronizer(this=" << this << ") called with active blocked clients!" << endl;
         }
 
+        while (!resource_holder_list.empty())
+        {
+            SyncElement *e = resource_holder_list.remove();
+            if (e)
+            {
+                if (e->object()->synchronizerList.empty())
+                {
+                    delete e->object();
+                }
+                else
+                {
+                    e->object()->removeSynchronizer(this);
+                }
+            }
+        }
+
+        while (!resource_waiting_list.empty())
+        {
+            SyncElement *e = resource_holder_list.remove();
+            if (e)
+            {
+                if (e->object()->synchronizerList.empty())
+                {
+                    delete e->object();
+                }
+                else
+                {
+                    e->object()->removeSynchronizer(this);
+                }
+            }
+        }
+
         // Wake up all waiting threads
         wakeup_all();
         Thread::unlock();

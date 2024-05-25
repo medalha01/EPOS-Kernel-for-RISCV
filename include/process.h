@@ -18,6 +18,8 @@ extern "C"
 
 __BEGIN_SYS
 
+class CpuLookTable;
+
 class Thread
 {
     friend class Init_End;            // context->load()
@@ -177,6 +179,7 @@ protected:
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
     static Spin _lock;
+	static CpuLookTable _cpu_lookup_table;
 };
 
 template <typename... Tn>
@@ -265,12 +268,13 @@ public:
         return threads_criterion_on_execution[cpu_id];
     }
 
-    void set_thread_on_cpu_table(Thread *running, unsigned int id)
-    {
-        assert(id < Traits<Build>::CPUS); // Ensure valid cpu_id
-        running_thread_by_core[id] = running;
-        threads_criterion_on_execution[id] = &running->criterion();
-    }
+    //void set_thread_on_cpu_table(Thread *running, unsigned int id)
+    //{
+    //    assert(id < Traits<Build>::CPUS); // Ensure valid cpu_id
+    //    running_thread_by_core[id] = running;
+    //    threads_criterion_on_execution[id] = &running->criterion();
+    //}
+
     void set_thread_on_cpu_table(Thread *running)
     {
         unsigned int id = CPU::id();
@@ -278,6 +282,8 @@ public:
         running_thread_by_core[id] = running;
         threads_criterion_on_execution[id] = &running->criterion();
     }
+
+	//unsigned int 
 
     unsigned int get_cpu_with_lowest_priority()
     {
@@ -313,6 +319,7 @@ public:
         running_thread_by_core[cpu_id] = nullptr;
         threads_criterion_on_execution[cpu_id] = nullptr;
     }
+
     // Check if a specific CPU is idle
     bool is_cpu_idle(unsigned int cpu_id)
     {

@@ -18,7 +18,7 @@ extern "C"
 
 __BEGIN_SYS
 
-class CpuLookTable;
+class CpuLookupTable;
 
 class Thread
 {
@@ -31,7 +31,7 @@ class Thread
     friend class IC;                  // for link() for priority ceiling
     friend void ::_lock_heap();       // for lock()
     friend void ::_unlock_heap();     // for unlock()
-    friend class CpuLookTable;
+    friend class CpuLookupTable;
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
@@ -91,8 +91,6 @@ public:
     volatile Criterion::Statistics &statistics() { return criterion().statistics(); }
 
     const volatile Criterion &priority() const { return _link.rank(); }
-    void priority(Criterion p);
-
 
     int join();
     void pass();
@@ -121,7 +119,7 @@ protected:
             lock->acquire();
         }
     }
-    //
+    
     static void unlock(Spin *lock = &_lock)
     {
         if (Traits<Machine>::multi)
@@ -133,6 +131,7 @@ protected:
             CPU::int_enable();
         }
     }
+
     static volatile bool locked() { return (Traits<Machine>::multi) ? _lock.taken() : CPU::int_disabled(); }
 
     static void sleep(Queue *queue);
@@ -179,7 +178,7 @@ protected:
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
     static Spin _lock;
-	static CpuLookTable _cpu_lookup_table;
+	static CpuLookupTable _cpu_lookup_table;
 };
 
 template <typename... Tn>
@@ -230,7 +229,7 @@ private:
     Thread *_handler;
 };
 
-class CpuLookTable
+class CpuLookupTable 
 {
     friend class Thread;
     friend class Alarm;
@@ -246,15 +245,45 @@ private:
     Thread *running_thread_by_core[Traits<Build>::CPUS];
 
 public:
-    CpuLookTable()
+    CpuLookupTable()
     {
         // Initialize arrays
-        for (unsigned int i = 0; i < Traits<Build>::CPUS; ++i)
+        for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
         {
             running_thread_by_core[i] = nullptr;
             threads_criterion_on_execution[i] = nullptr;
         }
     }
+
+	void print_cpu_lookup_table()
+	{
+		bool tmp_locked = false;
+
+		if (!Thread::locked())
+		{
+			Thread::lock();
+			tmp_locked = true;
+		}
+
+		db<Thread>(WRN) << "Printing CPU lookup table..." << endl;
+
+		for (unsigned int i = 0; i < CPU::cores(); i++)
+		{
+			Thread * thread      = running_thread_by_core[i];
+			Criterion * priority = threads_criterion_on_execution[i];
+
+			db<Thread>(WRN) << "[" << i << "] -> {Thread = " 
+							<< thread << ", Priority = " 
+							<< priority << "}" << endl;
+		}
+
+		db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
+
+		if (tmp_locked) 
+		{
+			Thread::unlock();
+		}
+	}
 
     Thread *get_thread_on_cpu(unsigned int cpu_id)
     {
@@ -275,7 +304,17 @@ public:
     //    threads_criterion_on_execution[id] = &running->criterion();
     //}
 
-    void set_thread_on_cpu_table(Thread *running)
+	int get_interruptible_core(unsigned int current_priority)
+	{
+		int id = get_idle_cpu();	
+		if (id == -1)
+		{
+			id = get_cpu_with_lowest_priority();	
+		}
+		return id;
+	}
+
+    void set_thread_on_cpu(Thread *running)
     {
         unsigned int id = CPU::id();
 
@@ -285,7 +324,7 @@ public:
 
 	//unsigned int 
 
-    unsigned int get_cpu_with_lowest_priority()
+    int get_cpu_with_lowest_priority()
     {
         int min = Thread::IDLE;
         unsigned int lowest_priority_cpu = 0;
@@ -301,7 +340,7 @@ public:
         return lowest_priority_cpu;
     }
 
-    unsigned int get_idle_cpu()
+    int get_idle_cpu()
     {
         for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
         {
@@ -326,12 +365,6 @@ public:
         assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
         return (running_thread_by_core[cpu_id] == nullptr) ||
                (threads_criterion_on_execution[cpu_id] && *threads_criterion_on_execution[cpu_id] == Thread::IDLE);
-    }
-
-    // Get the total number of CPUs
-    unsigned int get_total_cpus()
-    {
-        return Traits<Build>::CPUS;
     }
 
     // Check if all CPUs are idle

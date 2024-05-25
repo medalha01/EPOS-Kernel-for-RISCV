@@ -31,6 +31,7 @@ void Thread::init()
 	if (CPU::is_bootstrap())
 	{
 		// TODO: aqui
+		Thread::_cpu_lookup_table = CpuLookupTable();
 
 		Main *main = reinterpret_cast<Main *>(__epos_app_entry);
 		new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), main);

@@ -140,8 +140,8 @@ protected:
     static void prioritize(Queue *queue);
     static void deprioritize(Queue *queue);
 
-    static void reschedule();
-    static void reschedule(unsigned int cpu);
+    //static void reschedule();
+    static void reschedule(unsigned int cpu = CPU::id());
     static void int_rescheduler(IC::Interrupt_Id i);
     static void time_slicer(IC::Interrupt_Id interrupt);
 

@@ -283,7 +283,7 @@ public:
 			
 			Criterion * priority = &thread->criterion();
 
-			db<Thread>(WRN) << priority << endl;
+			db<Thread>(WRN) << *priority << endl;
 		}
 
 		//db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
@@ -294,41 +294,12 @@ public:
 		}
 	}
 
-    //Thread * get_thread_on_cpu(unsigned int cpu_id)
-    //{
-    //    assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
-    //    return running_thread_by_core[cpu_id];
-    //}
-
-	// WARN: deprecated...
-    //Criterion * get_priority_on_cpu(unsigned int cpu_id)
-    //{
-    //    assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
-    //    return threads_criterion_on_execution[cpu_id];
-    //}
-
-	// Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
-	// if there is a core running a lower priority thread, of if there is a core running idle.
-	
-	// NOTE: possibly deprecated...
-	//int get_interruptible_core(unsigned int current_priority) // <-- TODO: @arthur 
-	//int get_interruptible_core()
-	//{
-	//	int id = get_idle_cpu();	
-	//	if (id == -1)
-	//	{
-	//		//id = get_cpu_with_lowest_priority();	
-	//		id = get_lowest_priority_cpu();
-	//	}
-	//	return id;
-	//}
-
     void set_thread_on_cpu(Thread *running)
     {
         unsigned int id = CPU::id();
 
-		db<Thread>(WRN) << "__clt updated thread = " << running 
-						<< " at cpu = " << id << endl;
+		db<Thread>(WRN) << "------>clt set t = " << running 
+						<< ", c = " << id << endl;
 
         running_thread_by_core[id] = running;
     }
@@ -349,7 +320,8 @@ public:
     //    return lowest_priority_cpu;
     //}
 
-	// TODO: @arthur take in current priority and find out 
+	// Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
+	// if there is a core running a lower priority thread, of if there is a core running idle.
 	int get_lowest_priority_core(int current_priority) 
 	{
 		print_table();
@@ -359,14 +331,13 @@ public:
 		int min = (1 << 31); 
 		int chosen = -1;
 
-		db<Thread>(WRN) << "min = " << min << endl;
-		db<Thread>(WRN) << "current priority = " << current_priority << endl;
+		db<Thread>(WRN) << "------>clt start current priority = " << current_priority << endl;
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{
 			if (running_thread_by_core[i] == nullptr)
 			{
-				db<Thread>(WRN) << "__clt returning idle core = " << i << endl; 
+				db<Thread>(WRN) << "------>clt idle return = " << i << endl; 
 				return i;
 			}
 
@@ -377,57 +348,23 @@ public:
 				min = *criterion;
 				chosen = i;
 
-				db<Thread>(WRN) << "__clt new min core = " << i
-					<< ", with priority = " << min << endl; 
+				db<Thread>(WRN) << "------>clt iter c = " << i
+					<< ", p = " << min << endl; 
 			}
 		}
+
+		print_table();
 
 		return chosen;
 	}
 
     void clear_cpu(unsigned int cpu_id)
     {
-		db<Thread>(WRN) << "__clt clear cpu = " << cpu_id << endl;
+		db<Thread>(WRN) << "------>clt clear cpu = " << cpu_id << endl;
 
         assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
         running_thread_by_core[cpu_id] = nullptr;
     }
-
-	// WARN: @arthur deprecated...
-    //int get_idle_cpu()
-    //{
-    //    for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
-    //    {
-    //        if ((running_thread_by_core[i] == nullptr) or (*threads_criterion_on_execution[i] == Thread::IDLE))
-    //        {
-    //            return i;
-    //        }
-    //    }
-    //    return -1;
-    //}
-
-	// WARN: @arthur deprecated...
-    // Check if a specific CPU is idle
-    //bool is_cpu_idle(unsigned int cpu_id)
-    //{
-    //    assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
-    //    return (running_thread_by_core[cpu_id] == nullptr) ||
-    //           (threads_criterion_on_execution[cpu_id] && *threads_criterion_on_execution[cpu_id] == Thread::IDLE);
-    //}
-
-	// WARN: @arthur deprecated...
-    // Check if all CPUs are idle
-    //bool are_all_cpus_idle()
-    //{
-    //    for (unsigned int i = 0; i < Traits<Build>::CPUS; ++i)
-    //    {
-    //        if (!is_cpu_idle(i))
-    //        {
-    //            return false;
-    //        }
-    //    }
-    //    return true;
-    //}
 };
 
 __END_SYS

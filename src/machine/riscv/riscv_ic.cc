@@ -57,8 +57,7 @@ void IC::dispatch()
     {
         if (id == INT_RESCHEDULER)
 		{
-			db<Thread>(WRN) << "@@@ic recebendo int = " << id << endl;
-			db<Thread>(WRN) << "@@@ic dando eoi em = " << (id & CLINT::INT_MASK) << endl;
+			db<Thread>(WRN) << "ic receive " << id << endl;
             IC::ipi_eoi(id & CLINT::INT_MASK);
 		}
         else if (id == INT_SYS_TIMER)
@@ -86,11 +85,11 @@ void IC::dispatch()
 
 void IC::int_not(Interrupt_Id id)
 {
-    db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
+    //db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
 	if (id == INT_RESCHEDULER) 
 	{
 		// TODO: @arthur 
-		db<Thread>(WRN) << "----recebendo int, dando reschedule" << endl;
+		db<Thread>(WRN) << "int_not resch" << endl;
 		Thread::reschedule();	
 	}
 	//Machine::panic(__FILE__, __LINE__);
@@ -171,7 +170,7 @@ void IC::exception(Interrupt_Id id)
     db<IC, System>(WRN) << endl;
 
     //    if(Traits<Build>::hysterically_debugged)
-    db<IC, System>(ERR) << "Exception stopped execution due to hysterically debugging!" << endl;
+    //db<IC, System>(ERR) << "Exception stopped execution due to hysterically debugging!" << endl;
     //    else {
     //        db<IC, Machine>(WRN) << "The running thread will now be terminated!" << endl;
     //        Thread::exit(-1);
@@ -182,9 +181,12 @@ void IC::exception(Interrupt_Id id)
 
 __END_SYS
 
-static void print_context(bool push)
-{
-    __USING_SYS
-    db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx=" << *static_cast<CPU::Context *>(CPU::sp() + 3 * sizeof(CPU::Reg) + (push ? sizeof(CPU::Context) : 0)) << endl; // 3 words for function's stack frame
-    CPU::fr(0);
+static void print_context(bool push) {
+	__USING_SYS
+		//db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx="
+		//<< *static_cast<CPU::Context *>(
+		//		CPU::sp() + 3 * sizeof(CPU::Reg) +
+		//		(push ? sizeof(CPU::Context) : 0))
+		//<< endl; // 3 words for function's stack frame
+	CPU::fr(0);
 }

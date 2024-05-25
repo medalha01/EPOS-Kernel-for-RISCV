@@ -19,7 +19,7 @@ void Thread::init()
 	if (Traits<Machine>::multi && CPU::is_bootstrap())
 	{
 		// This is utilized only in multi queue schedulers;
-		//IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
+		IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
 	}
 
 	CPU::smp_barrier();

@@ -244,7 +244,9 @@ class CpuLookupTable
 
 private:
     //Criterion *threads_criterion_on_execution[Traits<Build>::CPUS];
-    Thread *running_thread_by_core[Traits<Build>::CPUS];
+    Thread * _running_thread_by_core[Traits<Build>::CPUS];
+	//int _already_dispatched; 
+	bool _already_dispatched[Traits<Build>::CPUS];
 
 public:
     CpuLookupTable()
@@ -252,9 +254,11 @@ public:
         // Initialize arrays
         for (unsigned int i = 0; i < CPU::cores(); i++)
         {
-            running_thread_by_core[i] = nullptr;
+            _running_thread_by_core[i] = nullptr;
+			_already_dispatched[i] = false;
             //threads_criterion_on_execution[i] = nullptr;
         }
+		//_already_dispatch = 0;
     }
 
 	void print_table()
@@ -271,19 +275,19 @@ public:
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{
-			Thread * thread      = running_thread_by_core[i];
+			Thread * thread = _running_thread_by_core[i];
 
 			db<Thread>(WRN) << "[" << i << "] -> ";
 
 			if (thread == nullptr) 
 			{
-				db<Thread>(WRN) << "nullptr" << endl;
+				db<Thread>(WRN) << "nullptr / " << _already_dispatched[i] << endl;
 				continue;
 			}
 			
 			Criterion * priority = &thread->criterion();
 
-			db<Thread>(WRN) << *priority << endl;
+			db<Thread>(WRN) << *priority << " / " << _already_dispatched[i] << endl;
 		}
 
 		//db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
@@ -298,11 +302,18 @@ public:
     {
         unsigned int id = CPU::id();
 
-		db<Thread>(WRN) << "------>clt set t = " << running 
+		db<Thread>(WRN) << "clt set t = " << running 
 						<< ", c = " << id << endl;
 
-        running_thread_by_core[id] = running;
+		_already_dispatched[id] = false;
+        _running_thread_by_core[id] = running;
     }
+
+	void already_dispatched(unsigned int cpu)
+	{
+		assert(Thread::locked());
+		_already_dispatched[cpu] = true;
+	}
 
     //int get_cpu_with_lowest_priority()
     //{
@@ -324,32 +335,33 @@ public:
 	// if there is a core running a lower priority thread, of if there is a core running idle.
 	int get_lowest_priority_core(int current_priority) 
 	{
-		print_table();
+		//print_table();
 
 		if (current_priority == Thread::IDLE) return -1;
 
 		int min = (1 << 31); 
 		int chosen = -1;
 
-		db<Thread>(WRN) << "------>clt start current priority = " << current_priority << endl;
+		//db<Thread>(WRN) << "clt start current priority = " << current_priority << endl;
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{
-			if (running_thread_by_core[i] == nullptr)
+			if (_running_thread_by_core[i] == nullptr)
 			{
-				db<Thread>(WRN) << "------>clt idle return = " << i << endl; 
+				//db<Thread>(WRN) << "clt idle return = " << i << endl; 
 				return i;
 			}
 
-			Criterion * criterion = &running_thread_by_core[i]->criterion();
+			Criterion * criterion = &_running_thread_by_core[i]->criterion();
 
-			if (*criterion > min)
+			//if (*criterion > min && !(_already_dispatched & (1 << id)))
+			if (*criterion > min && !_already_dispatched[i])
 			{
 				min = *criterion;
 				chosen = i;
 
-				db<Thread>(WRN) << "------>clt iter c = " << i
-					<< ", p = " << min << endl; 
+				//db<Thread>(WRN) << "clt iter c = " << i
+				//	<< ", p = " << min << endl; 
 			}
 		}
 
@@ -360,10 +372,10 @@ public:
 
     void clear_cpu(unsigned int cpu_id)
     {
-		db<Thread>(WRN) << "------>clt clear cpu = " << cpu_id << endl;
+		db<Thread>(WRN) << "clt clear cpu = " << cpu_id << endl;
 
         assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
-        running_thread_by_core[cpu_id] = nullptr;
+        _running_thread_by_core[cpu_id] = nullptr;
     }
 };
 

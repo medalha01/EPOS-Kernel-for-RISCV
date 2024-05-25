@@ -360,6 +360,7 @@ void Thread::wakeup_all(Queue *q)
         }
     }
 }
+
 void Thread::reset_protocol()
 {
     Criterion *c = &criterion();
@@ -388,8 +389,6 @@ void Thread::reset_protocol()
 void Thread::raise_priority(int priority)
 {
     assert(locked()); // locking handled by caller
-
-    db<Thread>(TRC) << "Thread::prioritize(thread=" << this << ", criterion=" << criterion << ") [running=" << running() << "]" << endl;
 
     /*Thread::Criterion *thread_criterion = &current->object()->threadPointer->criterion();
 

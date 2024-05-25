@@ -7,10 +7,84 @@
 
 __BEGIN_SYS
 
+class Synchronizer_Common;
+
+// SyncObject class
+class SyncObject
+{
+    friend Synchronizer_Common;
+    friend Thread;
+
+public:
+    typedef Thread::Queue ThreadQueue;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::SyncObject> SyncElement;
+    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> SynchronizerList;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> SemaphoreLink;
+
+    SyncObject(Thread *thread, bool holding)
+        : threadPointer(thread), isHolding(holding)
+    {
+        selfReferencePointer = new (SYSTEM) SyncElement(this);
+        if (selfReferencePointer)
+        {
+            if (holding)
+                threadPointer->_syncHolder = this;
+            else
+                threadPointer->_syncWaiter = this;
+        }
+    }
+
+    ~SyncObject()
+    {
+        // TODO esvaziar listas e destruir objetos vazios
+
+        if (selfReferencePointer)
+        {
+            delete selfReferencePointer;
+        }
+    }
+
+    void addSynchronizer(Synchronizer_Common *syncObj)
+    {
+        if (syncObj)
+        {
+            SemaphoreLink *syncronizerLink = new (SYSTEM) SemaphoreLink(syncObj);
+            if (syncronizerLink)
+                synchronizerList.insert(syncronizerLink);
+        }
+    }
+    void removeSynchronizer(Synchronizer_Common *syncObj)
+    {
+        if (syncObj)
+        {
+            SemaphoreLink *syncronizerLink = synchronizerList.remove(syncObj);
+            if (syncronizerLink)
+            {
+                delete syncronizerLink;
+            }
+        }
+    }
+
+    int getPriority()
+    {
+        return threadPointer ? threadPointer->criterion()._priority : Thread::IDLE;
+    }
+
+    Thread *threadPointer = nullptr;
+    SyncElement *selfReferencePointer = nullptr;
+    bool isHolding = false;
+    SynchronizerList synchronizerList;
+};
+
 class Synchronizer_Common
 {
+    friend class Thread;
+    friend class SyncObject;
+
 protected:
     typedef Thread::Queue Queue;
+
+public:
     typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::SyncObject> SyncElement;
     typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> SynchronizerList;
     typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> SemaphoreLink;
@@ -123,7 +197,43 @@ protected:
         }
         else if (exec_thread)
         {
-            exec_thread->get_next_priority();
+            get_next_priority(exec_thread);
+        }
+    }
+
+    void get_next_priority(Thread *exec_thread)
+    {
+        if (!exec_thread->_syncHolder)
+        {
+            return exec_thread->reset_protocol();
+        }
+        SemaphoreLink *helper = exec_thread->_syncHolder->synchronizerList.head();
+        Synchronizer_Common *current = helper->object();
+        int highest_priority = current->getMostUrgentPriority();
+
+        while (helper)
+        {
+            current = helper->object();
+            if (!current->areThreadsWaiting())
+            {
+                helper = helper->next();
+                continue;
+            }
+            int current_priority = current->getMostUrgentPriority();
+            if (current_priority < highest_priority)
+            {
+                highest_priority = current_priority;
+            }
+            helper = helper->next();
+        }
+
+        if (highest_priority < exec_thread->_natural_priority)
+        {
+            exec_thread->raise_priority(highest_priority);
+        }
+        else
+        {
+            exec_thread->reset_protocol();
         }
     }
 
@@ -132,7 +242,7 @@ protected:
         if (waitingThreadsCount < 1)
         {
             deactivateCeiling();
-        }
+        } // TODO LEAVING THREAD MUST ENTER PROTOCOL
     }
 
     void deactivateCeiling()
@@ -147,7 +257,7 @@ protected:
             SyncObject *current_object = current->object();
             if (current_object && current_object->threadPointer)
             {
-                current_object->threadPointer->get_next_priority();
+                get_next_priority(current_object->threadPointer);
                 // resetThreadPriority(current_object->threadPointer); // TODO
             }
             // Move to the next element in the resource waiting list
@@ -310,7 +420,7 @@ public:
 
     bool areThreadsWaiting()
     {
-        return !(_waiting.empty());
+        return !(resource_waiting_list.empty());
     }
 
 protected:
@@ -414,73 +524,6 @@ public:
 
 private:
     Condition *_handler;
-};
-
-// SyncObject class
-class SyncObject
-{
-    friend Synchronizer_Common;
-    friend Thread;
-
-public:
-    typedef Thread::Queue ThreadQueue;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::SyncObject> SyncElement;
-    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> SynchronizerList;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> SemaphoreLink;
-
-    SyncObject(Thread *thread, bool holding)
-        : threadPointer(thread), isHolding(holding)
-    {
-        selfReferencePointer = new (SYSTEM) SyncElement(this);
-        if (selfReferencePointer)
-        {
-            if (holding)
-                threadPointer->_syncHolder = this;
-            else
-                threadPointer->_syncWaiter = this;
-        }
-    }
-
-    ~SyncObject()
-    {
-        // TODO esvaziar listas e destruir objetos vazios
-
-        if (selfReferencePointer)
-        {
-            delete selfReferencePointer;
-        }
-    }
-
-    void addSynchronizer(Synchronizer_Common *syncObj)
-    {
-        if (syncObj)
-        {
-            SemaphoreLink *syncronizerLink = new (SYSTEM) SemaphoreLink(syncObj);
-            if (syncronizerLink)
-                synchronizerList.insert(syncronizerLink);
-        }
-    }
-    void removeSynchronizer(Synchronizer_Common *syncObj)
-    {
-        if (syncObj)
-        {
-            SemaphoreLink *syncronizerLink = synchronizerList.remove(syncObj);
-            if (syncronizerLink)
-            {
-                delete syncronizerLink;
-            }
-        }
-    }
-
-    int getPriority()
-    {
-        return threadPointer ? threadPointer->criterion()._priority : Thread::IDLE;
-    }
-
-    Thread *threadPointer = nullptr;
-    SyncElement *selfReferencePointer = nullptr;
-    bool isHolding = false;
-    SynchronizerList synchronizerList;
 };
 
 __END_SYS

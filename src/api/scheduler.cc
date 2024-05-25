@@ -83,20 +83,30 @@ FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : RT_Common::elapsed
 
 EDF::EDF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
 
-void EDF::handle(Event event) {
+void EDF::handle(Event event) 
+{
     RT_Common::handle(event);
 
-    // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-    if(event & JOB_RELEASE)
-        _priority = elapsed() + _deadline;
+    // Update the priority of the thread at job releases, before _alarm->v(), so
+    // it enters the queue in the right order (called from
+    // Periodic_Thread::Xxx_Handler)
+    if (event & JOB_RELEASE)
+      _priority = elapsed() + _deadline;
 }
 
-
 LLF::LLF(Microsecond p, Microsecond d, Microsecond c): 
-	RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}
+	RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
+{
+	db<Thread>(WRN) << "LLF, elapsed = " << elapsed() 
+		<< ", ticks = " << ticks((d ? d : p) - c) << endl;
+	//_priority = 5;
+	//_priority = Thread::MAIN;	
+}
 
-void LLF::handle(Event event) {
-    if((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH)) {
+void LLF::handle(Event event) 
+{
+    if((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH)) 
+	{
         _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
     }
     RT_Common::handle(event);

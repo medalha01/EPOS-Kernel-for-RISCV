@@ -29,6 +29,9 @@ void Thread::constructor_prologue(unsigned int stack_size)
 {
     lock();
 
+	db<Thread>(WRN) << "@@@CONS -- _link.rank() at the very beginning = " 
+		<< _link.rank() << endl;
+
     _thread_count++;
     _scheduler.insert(this);
 
@@ -37,26 +40,37 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(entry=" << entry
-                    << ",state=" << _state
-                    << ",priority=" << _link.rank()
-                    << ",stack={b=" << reinterpret_cast<void *>(_stack)
-                    << ",s=" << stack_size
-                    << "},context={b=" << _context
-                    << "," << *_context << "}) => " << this << endl;
+    //db<Thread>(TRC) << "Thread(entry=" << entry
+    //                << ",state=" << _state
+    //                << ",priority=" << _link.rank()
+    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
+    //                << ",s=" << stack_size
+    //                << "},context={b=" << _context
+    //                << "," << *_context << "}) => " << this << endl;
+
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     if ((_state != READY) && (_state != RUNNING))
     {
+		db<Thread>(WRN) << "@@@CONS ANTES DO SCHEDULER SUSPEND" << endl;
         _scheduler.suspend(this);
     }
+	db<Thread>(WRN) << "@@@CONS DEPOIS DO SCHEDULER SUSPEND" << endl;
 
+	db<Thread>(WRN) << "_link.rank acc = " << _link.rank() << endl;
     criterion().handle(Criterion::CREATE);
+	db<Thread>(WRN) << "_link.rank dcc = " << _link.rank() << endl;
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
+		db<Thread>(WRN) << "@@@CONS _link.rank no construtor = " 
+						<< _link.rank() << " CONS@@@" << endl;
+
         assert(locked());
+
+		//int target_core = _cpu_lookup_table.get_interruptible_core();
+		
         reschedule(_link.rank().queue());
     }
 
@@ -398,19 +412,17 @@ void Thread::reschedule(unsigned int cpu)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
 
     assert(locked()); // locking handled by caller
-	db<Thread>(WRN) << "@@@INT reschedule" << endl;
 
 	if (!Traits<Machine>::multi || CPU::id() == cpu)
 	{
 		Thread *prev = running();
 		Thread *next = _scheduler.choose();
 
-		db<Thread>(WRN) << "@@@INT DISPTACH reschedule" << endl;
 		dispatch(prev, next);
 	}
 	else 
 	{
-		db<Thread>(WRN) << "@@@INT INT_RESCHEDULER IPI RESCHEDULE" << endl;
+		//db<Thread>(WRN) << "@@@INT INT_RESCHEDULER IPI RESCHEDULE" << endl;
 		IC::ipi(cpu, IC::INT_RESCHEDULER);			
 	}
 }

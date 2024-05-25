@@ -198,12 +198,16 @@ void _entry() // machine mode
 		CPU::halt();
 	}
 
-    CPU::mstatusc(CPU::MIE); // disable interrupts (they will be reenabled at Init_End)
+	// disable interrupts (they will be reenabled at Init_End)
+    CPU::mstatusc(CPU::MIE);
 
-	// tp will be CPU::id() for supervisor mode; we won't count core 0, which is an heterogeneous E51
+	// tp will be CPU::id() for supervisor mode; 
+	// we won't count core 0, which is an heterogeneous E51
     CPU::tp(CPU::mhartid() - 1);                                                                    
 	// set the stack pointer, thus creating a stack for SETUP)
-    CPU::sp(Memory_Map::BOOT_STACK + Traits<Machine>::STACK_SIZE * (CPU::id() + 1) - sizeof(long)); 
+    CPU::sp(Memory_Map::BOOT_STACK 
+			+ Traits<Machine>::STACK_SIZE * (CPU::id() + 1)
+			- sizeof(long)); 
 
     if (CPU::is_bootstrap())
     {

@@ -61,8 +61,8 @@ public:
 
     // Default Sizes and Quantities
     static const unsigned int MAX_THREADS = 15;
-    static const unsigned int STACK_SIZE = 8 * 1024;
-    static const unsigned int HEAP_SIZE = 4 * 1024 * 1024;
+    static const unsigned int STACK_SIZE = 32 * 1024;
+    static const unsigned int HEAP_SIZE = 32 * 1024 * 1024;
 };
 
 template <>

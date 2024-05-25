@@ -61,7 +61,9 @@ protected:
     }
     void unlock_for_acquiring()
     {
-        _granted.insert(new (SYSTEM) Queue::Element(Thread::running()));
+        Queue::Element *e = new (SYSTEM) Queue::Element(Thread::running());
+        if (e)
+            _granted.insert(e);
         Thread::unlock();
     }
 
@@ -102,9 +104,11 @@ protected:
             // Iterate through the resource waiting list
             while (current != nullptr)
             {
-
-                // Get the criterion of the thread associated with the current element
-                current->object()->threadPointer->raise_priority(highest_priority);
+                SyncObject *current_object = current->object();
+                if (current_object && current_object->threadPointer)
+                {
+                    current_object->threadPointer->raise_priority(highest_priority);
+                }
                 // Move to the next element in the resource waiting list
                 current = current->next();
             }
@@ -113,18 +117,17 @@ protected:
     }
     void shiftProtocol(Thread *exec_thread)
     {
-        if (exec_thread->criticalZonesCount < 1)
+        if (exec_thread && exec_thread->criticalZonesCount < 1)
         {
             exec_thread->reset_protocol();
         }
-        else
+        else if (exec_thread)
         {
             exec_thread->get_next_priority();
         }
     }
     void deactivateCeiling()
     {
-
         highest_priority = Thread::IDLE;
 
         SyncElement *current = resource_holder_list.head();
@@ -132,16 +135,28 @@ protected:
         // Iterate through the resource waiting list
         while (current != nullptr)
         {
-            // Get the criterion of the thread associated with the current element
-            resetThreadPriority(current->object()->threadPointer); // TODO
-                                                                   // Move to the next element in the resource waiting list
+            SyncObject *current_object = current->object();
+            if (current_object && current_object->threadPointer)
+            {
+                resetThreadPriority(current_object->threadPointer); // TODO
+            }
+            // Move to the next element in the resource waiting list
             current = current->next();
         }
         ceilingIsActive = false;
     }
     void resetThreadPriority(Thread *exec_thread)
     {
+        if (!exec_thread)
+            return;
+
         SyncObject *syncWatcher = exec_thread->_syncHolder;
+        if (!syncWatcher)
+        {
+            exec_thread->restore_priority();
+            return;
+        }
+
         SemaphoreLink *syncLink = syncWatcher->synchronizerList.head();
         int starter = Thread::IDLE;
 
@@ -153,7 +168,7 @@ protected:
         while (syncLink != nullptr)
         {
             Synchronizer_Common *current = syncLink->object();
-            if (current->ceilingIsActive && current->highest_priority < starter)
+            if (current && current->ceilingIsActive && current->highest_priority < starter)
             {
                 starter = current->highest_priority;
             }
@@ -186,33 +201,45 @@ protected:
 
     void insertSyncObject(SyncObject *resource, SyncInteractionList *list)
     {
-        list->insert(new (SYSTEM) SyncElement(resource));
+        if (resource && list)
+        {
+            SyncElement *e = new (SYSTEM) SyncElement(resource);
+            if (e)
+                list->insert(e);
+        }
     }
 
     void removeSyncObject(SyncObject *resource, SyncInteractionList *list)
     {
-        SyncElement *removedObject = list->remove(resource);
-
-        if (resource->synchronizerList.empty())
+        if (resource && list)
         {
-            if (resource->isHolding)
-            {
-                resource->threadPointer->_syncHolder = nullptr;
-            }
-            else
-            {
-                resource->threadPointer->_syncWaiter = nullptr;
-            }
-            if (resource)
-                delete resource;
-        }
+            SyncElement *removedObject = list->remove(resource);
 
-        if (removedObject)
-            delete removedObject;
+            if (resource->synchronizerList.empty())
+            {
+                if (resource->isHolding)
+                {
+                    if (resource->threadPointer)
+                        resource->threadPointer->_syncHolder = nullptr;
+                }
+                else
+                {
+                    if (resource->threadPointer)
+                        resource->threadPointer->_syncWaiter = nullptr;
+                }
+                delete resource;
+            }
+
+            if (removedObject)
+                delete removedObject;
+        }
     }
 
     bool isThreadPresent(Thread *execThread, SyncInteractionList *targetList)
     {
+        if (!execThread || !targetList)
+            return false;
+
         SyncElement *syncObject = targetList->head();
         while (syncObject != nullptr)
         {
@@ -227,13 +254,16 @@ protected:
 
     SyncObject *getSyncObject(Thread *execThread, bool isHolder)
     {
+        if (!execThread)
+            return nullptr;
+
         SyncObject *resource = nullptr;
 
         if (isHolder)
         {
             if (execThread->_syncHolder == nullptr)
             {
-                resource = new SyncObject(execThread, isHolder);
+                resource = new (SYSTEM) SyncObject(execThread, isHolder);
                 execThread->_syncHolder = resource;
             }
             else
@@ -245,7 +275,7 @@ protected:
         {
             if (execThread->_syncWaiter == nullptr)
             {
-                resource = new SyncObject(execThread, isHolder);
+                resource = new (SYSTEM) SyncObject(execThread, isHolder);
                 execThread->_syncWaiter = resource;
             }
             else
@@ -331,7 +361,11 @@ public:
     Mutex_Handler(Mutex *h) : _handler(h) {}
     ~Mutex_Handler() {}
 
-    void operator()() { _handler->unlock(); }
+    void operator()()
+    {
+        if (_handler)
+            _handler->unlock();
+    }
 
 private:
     Mutex *_handler;
@@ -344,7 +378,11 @@ public:
     Semaphore_Handler(Semaphore *h) : _handler(h) {}
     ~Semaphore_Handler() {}
 
-    void operator()() { _handler->v(); }
+    void operator()()
+    {
+        if (_handler)
+            _handler->v();
+    }
 
 private:
     Semaphore *_handler;
@@ -357,7 +395,11 @@ public:
     Condition_Handler(Condition *h) : _handler(h) {}
     ~Condition_Handler() {}
 
-    void operator()() { _handler->signal(); }
+    void operator()()
+    {
+        if (_handler)
+            _handler->signal();
+    }
 
 private:
     Condition *_handler;
@@ -379,10 +421,13 @@ public:
         : threadPointer(thread), isHolding(holding)
     {
         selfReferencePointer = new (SYSTEM) SyncElement(this);
-        if (holding)
-            threadPointer->_syncHolder = this;
-        else
-            threadPointer->_syncWaiter = this;
+        if (selfReferencePointer)
+        {
+            if (holding)
+                threadPointer->_syncHolder = this;
+            else
+                threadPointer->_syncWaiter = this;
+        }
     }
 
     ~SyncObject()
@@ -397,21 +442,28 @@ public:
 
     void addSynchronizer(Synchronizer_Common *syncObj)
     {
-        SemaphoreLink *syncronizerLink = new (SYSTEM) SemaphoreLink(syncObj);
-        synchronizerList.insert(syncronizerLink);
+        if (syncObj)
+        {
+            SemaphoreLink *syncronizerLink = new (SYSTEM) SemaphoreLink(syncObj);
+            if (syncronizerLink)
+                synchronizerList.insert(syncronizerLink);
+        }
     }
     void removeSynchronizer(Synchronizer_Common *syncObj)
     {
-        SemaphoreLink *syncronizerLink = synchronizerList.remove(syncObj);
-        if (syncronizerLink)
+        if (syncObj)
         {
-            delete syncronizerLink;
+            SemaphoreLink *syncronizerLink = synchronizerList.remove(syncObj);
+            if (syncronizerLink)
+            {
+                delete syncronizerLink;
+            }
         }
     }
 
     int getPriority()
     {
-        return threadPointer->criterion()._priority;
+        return threadPointer ? threadPointer->criterion()._priority : Thread::IDLE;
     }
 
     Thread *threadPointer = nullptr;

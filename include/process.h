@@ -108,42 +108,6 @@ public:
 
     void reset_protocol();
 
-    void get_next_priority()
-    {
-        if (!_syncHolder)
-        {
-            return reset_protocol();
-        }
-        auto *helper = _syncHolder->synchronizerList.head();
-        Synchronizer_Common *current = helper->object();
-        int highest_priority = current->getMostUrgentPriority();
-
-        while (helper)
-        {
-            current = helper->object();
-            if (!current->areThreadsWaiting())
-            {
-                helper = helper->next();
-                continue;
-            }
-            int current_priority = current->getMostUrgentPriority();
-            if (current_priority < highest_priority)
-            {
-                highest_priority = current_priority;
-            }
-            helper = helper->next();
-        }
-
-        if (highest_priority < _natural_priority)
-        {
-            raise_priority(highest_priority);
-        }
-        else
-        {
-            reset_protocol();
-        }
-    };
-
     static Thread *volatile self();
     static void yield();
     static void exit(int status = 0);
@@ -222,6 +186,7 @@ protected:
 
     SyncObject *_syncHolder = nullptr;
     SyncObject *_syncWaiter = nullptr;
+
     Queue *_waiting;
     Thread *volatile _joining;
     Queue::Element _link;

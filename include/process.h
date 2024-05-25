@@ -227,6 +227,10 @@ private:
     Thread *_handler;
 };
 
+/* A lookup table that maps cores and their currently running threads.
+ *
+ * This is so we can know what cores should be interrupted:
+ * those whose running threads have a lower priority than the current one being scheduled. */
 class CpuLookupTable 
 {
     friend class Thread;
@@ -239,17 +243,17 @@ class CpuLookupTable
     typedef Traits<Thread>::Criterion Criterion;
 
 private:
-    Criterion *threads_criterion_on_execution[Traits<Build>::CPUS];
+    //Criterion *threads_criterion_on_execution[Traits<Build>::CPUS];
     Thread *running_thread_by_core[Traits<Build>::CPUS];
 
 public:
     CpuLookupTable()
     {
         // Initialize arrays
-        for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
+        for (unsigned int i = 0; i < CPU::cores(); i++)
         {
             running_thread_by_core[i] = nullptr;
-            threads_criterion_on_execution[i] = nullptr;
+            //threads_criterion_on_execution[i] = nullptr;
         }
     }
 
@@ -268,7 +272,7 @@ public:
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{
 			Thread * thread      = running_thread_by_core[i];
-			Criterion * priority = threads_criterion_on_execution[i];
+			Criterion * priority = &thread->criterion();
 
 			db<Thread>(WRN) << "[" << i << "] -> {Thread = " 
 							<< thread << ", Priority = " 
@@ -289,35 +293,34 @@ public:
         return running_thread_by_core[cpu_id];
     }
 
-    Criterion * get_priority_on_cpu(unsigned int cpu_id)
-    {
-        assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
-        return threads_criterion_on_execution[cpu_id];
-    }
-
-    //void set_thread_on_cpu_table(Thread *running, unsigned int id)
+	// WARN: deprecated...
+    //Criterion * get_priority_on_cpu(unsigned int cpu_id)
     //{
-    //    assert(id < Traits<Build>::CPUS); // Ensure valid cpu_id
-    //    running_thread_by_core[id] = running;
-    //    threads_criterion_on_execution[id] = &running->criterion();
+    //    assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
+    //    return threads_criterion_on_execution[cpu_id];
     //}
 
-	int get_interruptible_core(unsigned int current_priority)
-	{
-		int id = get_idle_cpu();	
-		if (id == -1)
-		{
-			id = get_cpu_with_lowest_priority();	
-		}
-		return id;
-	}
+	// Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
+	// if there is a core running a lower priority thread, of if there is a core running idle.
+	
+	// NOTE: possibly deprecated...
+	//int get_interruptible_core(unsigned int current_priority) // <-- TODO: @arthur 
+	//int get_interruptible_core()
+	//{
+	//	int id = get_idle_cpu();	
+	//	if (id == -1)
+	//	{
+	//		//id = get_cpu_with_lowest_priority();	
+	//		id = get_lowest_priority_cpu();
+	//	}
+	//	return id;
+	//}
 
     void set_thread_on_cpu(Thread *running)
     {
         unsigned int id = CPU::id();
 
         running_thread_by_core[id] = running;
-        threads_criterion_on_execution[id] = &running->criterion();
 
 		db<Thread>(WRN) << "updated thread = " << running 
 						<< " at cpu = " << id << endl;
@@ -325,61 +328,89 @@ public:
 
 	//unsigned int 
 
-    int get_cpu_with_lowest_priority()
-    {
-        int min = Thread::IDLE;
-        unsigned int lowest_priority_cpu = 0;
-        for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
-        {
-            if (min > *threads_criterion_on_execution[i])
-            {
-                min = *threads_criterion_on_execution[i];
-                lowest_priority_cpu = i;
-            }
-        }
+    //int get_cpu_with_lowest_priority()
+    //{
+    //    int min = Thread::IDLE;
+    //    unsigned int lowest_priority_cpu = 0;
+    //    for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
+    //    {
+    //        if (min > *threads_criterion_on_execution[i])
+    //        {
+    //            min = *threads_criterion_on_execution[i];
+    //            lowest_priority_cpu = i;
+    //        }
+    //    }
 
-        return lowest_priority_cpu;
-    }
+    //    return lowest_priority_cpu;
+    //}
 
-    int get_idle_cpu()
-    {
-        for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
-        {
-            if ((running_thread_by_core[i] == nullptr) or (*threads_criterion_on_execution[i] == Thread::IDLE))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
+	int get_lowest_priority_cpu() 
+	{
+		int min = (1 << 31); 
+		int chosen = -1;
+
+		db<Thread>(WRN) << "min = " << min << endl;
+
+		for (unsigned int i = 0; i < CPU::cores(); i++)
+		{
+			if (thread_executing_criterion[i] == nullptr)
+			{
+				return i;
+			}
+
+			Criterion * criterion = &thread_executing_criterion[i]->criterion();
+
+			if (*criterion > min)
+			{
+				min = *criterion;
+				chosen = i;
+			}
+		}
+
+		return chosen;
+	}
 
     void clear_cpu(unsigned int cpu_id)
     {
-        assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
+        assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
         running_thread_by_core[cpu_id] = nullptr;
-        threads_criterion_on_execution[cpu_id] = nullptr;
     }
 
+	// WARN: @arthur deprecated...
+    //int get_idle_cpu()
+    //{
+    //    for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
+    //    {
+    //        if ((running_thread_by_core[i] == nullptr) or (*threads_criterion_on_execution[i] == Thread::IDLE))
+    //        {
+    //            return i;
+    //        }
+    //    }
+    //    return -1;
+    //}
+
+	// WARN: @arthur deprecated...
     // Check if a specific CPU is idle
-    bool is_cpu_idle(unsigned int cpu_id)
-    {
-        assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
-        return (running_thread_by_core[cpu_id] == nullptr) ||
-               (threads_criterion_on_execution[cpu_id] && *threads_criterion_on_execution[cpu_id] == Thread::IDLE);
-    }
+    //bool is_cpu_idle(unsigned int cpu_id)
+    //{
+    //    assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
+    //    return (running_thread_by_core[cpu_id] == nullptr) ||
+    //           (threads_criterion_on_execution[cpu_id] && *threads_criterion_on_execution[cpu_id] == Thread::IDLE);
+    //}
 
+	// WARN: @arthur deprecated...
     // Check if all CPUs are idle
-    bool are_all_cpus_idle()
-    {
-        for (unsigned int i = 0; i < Traits<Build>::CPUS; ++i)
-        {
-            if (!is_cpu_idle(i))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
+    //bool are_all_cpus_idle()
+    //{
+    //    for (unsigned int i = 0; i < Traits<Build>::CPUS; ++i)
+    //    {
+    //        if (!is_cpu_idle(i))
+    //        {
+    //            return false;
+    //        }
+    //    }
+    //    return true;
+    //}
 };
 
 __END_SYS

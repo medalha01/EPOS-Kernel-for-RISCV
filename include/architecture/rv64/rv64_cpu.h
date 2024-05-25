@@ -291,8 +291,10 @@ public:
     static bool is_bootstrap() { return (CPU::id() == 0); }
 
     static unsigned int cores() { return number_of_cores; }
+	static bool is_smp() { return Traits<Machine>::multi; } 
 
     static void smp_barrier(unsigned long cores = CPU::cores()) { CPU_Common::smp_barrier<&finc>(cores, id()); }
+
     using CPU_Common::bus_clock;
     using CPU_Common::clock;
     using CPU_Common::max_clock;
@@ -423,12 +425,12 @@ public:
     //        ASM("1: amoswap.d      %0, %2, (%1)        \n"
     //            "   bne            %0, %2, 2f          \n"
     //            "   amoswap.d      %0, %3, (%1)        \n"
-    //            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "cc", "memory");
+    //            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
     //    else
     //        ASM("1: amoswap.w    %0, %2, (%1)        \n"
     //            "   bne          %0, %2, 2f          \n"
     //            "   amoswap.w    %0, %3, (%1)        \n"
-    //            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "cc", "memory");
+    //            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
     //    // asm volatile("fence rw,rw");
 
     //    return old;

@@ -42,16 +42,25 @@ void IC::dispatch()
     {
         if (id == INT_RESCHEDULER)
 		{
-			// IPI EOI was already issued by _int_m2s, so we only clear SSI
+			// IPI EOI was already issued by _int_m2s, 
+			// so we only clear SSI
             CPU::sipc(CPU::SSI); 
 		}
         else if (id == INT_SYS_TIMER)
-            CPU::ecall(); // we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
+		{
+			// we can't clear CPU::sipc(CPU::STI) in supervisor mode, 
+			// so let's ecall int_m2s to do it for us
+            CPU::ecall(); 
+		}
     }
     else
     {
         if (id == INT_RESCHEDULER)
+		{
+			db<Thread>(WRN) << "@@@ic recebendo int = " << id << endl;
+			db<Thread>(WRN) << "@@@ic dando eoi em = " << (id & CLINT::INT_MASK) << endl;
             IC::ipi_eoi(id & CLINT::INT_MASK);
+		}
         else if (id == INT_SYS_TIMER)
 		{
 			// MIP.MTI is a direct logic on (MTIME == MTIMECMP)
@@ -62,13 +71,17 @@ void IC::dispatch()
 
     _int_vector[id](id);
 
-    if (id > HARD_INT)
-    {
-        complete(int2irq(id));
-    }
+    //if (id > HARD_INT)
+    //{
+    //    complete(int2irq(id));
+    //}
 
     if (id >= EXCS)
-        CPU::fr(0); // tell CPU::Context::pop(true) not to increment PC since it is automatically incremented for hardware interrupts
+	{
+		// tell CPU::Context::pop(true) not to increment PC,
+		// since it is automatically incremented for hardware interrupts
+        CPU::fr(0); 
+	}
 }
 
 void IC::int_not(Interrupt_Id id)
@@ -77,6 +90,7 @@ void IC::int_not(Interrupt_Id id)
 	if (id == INT_RESCHEDULER) 
 	{
 		// TODO: @arthur 
+		db<Thread>(WRN) << "----recebendo int, dando reschedule" << endl;
 		Thread::reschedule();	
 	}
 	//Machine::panic(__FILE__, __LINE__);
@@ -91,13 +105,18 @@ void IC::exception(Interrupt_Id id)
     CPU::Log_Addr tval = CPU::tval();
     Thread *thread = Thread::self();
 
-    if ((id == CPU::EXC_IPF) && (epc == CPU::Log_Addr(&__exit)))
-    { // a page fault on __exit is triggered by MAIN after returing to CRT0
-        db<IC, Thread>(TRC) << " => Thread::exit()";
-        Thread::exit(CPU::gp());
-        return;
-    }
-    db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
+	if ((id == CPU::EXC_IPF) && (epc == CPU::Log_Addr(&__exit))) 
+	{ // a page fault on __exit is triggered by
+	  // MAIN after returing to CRT0
+		db<IC, Thread>(TRC) << " => Thread::exit()";
+		Thread::exit(CPU::gp());
+		return;
+	}
+
+	db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex
+		<< "thread=" << thread << ",sp=" << sp
+		<< ",status=" << status << ",cause=" << cause
+		<< ",epc=" << epc << ",tval=" << tval << "}" << dec;
 
     switch (id)
     {

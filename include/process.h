@@ -267,19 +267,26 @@ public:
 			tmp_locked = true;
 		}
 
-		db<Thread>(WRN) << "Printing CPU lookup table..." << endl;
+		//db<Thread>(WRN) << "Printing CPU lookup table..." << endl;
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{
 			Thread * thread      = running_thread_by_core[i];
+
+			db<Thread>(WRN) << "[" << i << "] -> ";
+
+			if (thread == nullptr) 
+			{
+				db<Thread>(WRN) << "nullptr" << endl;
+				continue;
+			}
+			
 			Criterion * priority = &thread->criterion();
 
-			db<Thread>(WRN) << "[" << i << "] -> {Thread = " 
-							<< thread << ", Priority = " 
-							<< *priority << "}" << endl;
+			db<Thread>(WRN) << priority << endl;
 		}
 
-		db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
+		//db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
 
 		if (tmp_locked) 
 		{
@@ -287,11 +294,11 @@ public:
 		}
 	}
 
-    Thread * get_thread_on_cpu(unsigned int cpu_id)
-    {
-        assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
-        return running_thread_by_core[cpu_id];
-    }
+    //Thread * get_thread_on_cpu(unsigned int cpu_id)
+    //{
+    //    assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
+    //    return running_thread_by_core[cpu_id];
+    //}
 
 	// WARN: deprecated...
     //Criterion * get_priority_on_cpu(unsigned int cpu_id)
@@ -320,13 +327,11 @@ public:
     {
         unsigned int id = CPU::id();
 
-        running_thread_by_core[id] = running;
-
-		db<Thread>(WRN) << "updated thread = " << running 
+		db<Thread>(WRN) << "__clt updated thread = " << running 
 						<< " at cpu = " << id << endl;
-    }
 
-	//unsigned int 
+        running_thread_by_core[id] = running;
+    }
 
     //int get_cpu_with_lowest_priority()
     //{
@@ -344,26 +349,36 @@ public:
     //    return lowest_priority_cpu;
     //}
 
-	int get_lowest_priority_cpu() 
+	// TODO: @arthur take in current priority and find out 
+	int get_lowest_priority_core(int current_priority) 
 	{
+		print_table();
+
+		if (current_priority == Thread::IDLE) return -1;
+
 		int min = (1 << 31); 
 		int chosen = -1;
 
 		db<Thread>(WRN) << "min = " << min << endl;
+		db<Thread>(WRN) << "current priority = " << current_priority << endl;
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{
-			if (thread_executing_criterion[i] == nullptr)
+			if (running_thread_by_core[i] == nullptr)
 			{
+				db<Thread>(WRN) << "__clt returning idle core = " << i << endl; 
 				return i;
 			}
 
-			Criterion * criterion = &thread_executing_criterion[i]->criterion();
+			Criterion * criterion = &running_thread_by_core[i]->criterion();
 
 			if (*criterion > min)
 			{
 				min = *criterion;
 				chosen = i;
+
+				db<Thread>(WRN) << "__clt new min core = " << i
+					<< ", with priority = " << min << endl; 
 			}
 		}
 
@@ -372,6 +387,8 @@ public:
 
     void clear_cpu(unsigned int cpu_id)
     {
+		db<Thread>(WRN) << "__clt clear cpu = " << cpu_id << endl;
+
         assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
         running_thread_by_core[cpu_id] = nullptr;
     }

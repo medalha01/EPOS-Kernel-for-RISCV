@@ -50,13 +50,13 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
     if ((_state != READY) && (_state != RUNNING))
     {
-		db<Thread>(WRN) << "@@@CONS ANTES DO SCHEDULER SUSPEND" << endl;
+		//db<Thread>(WRN) << "@@@CONS ANTES DO SCHEDULER SUSPEND" << endl;
 		// TODO: @arthur verificar se esse scheduler.suspend está correto aqui
 		// (talvez pode dar problemas com o IPI se este for mais para frente,
 		// por conta de remover da lista de scheduling... mas acho que não...)
         _scheduler.suspend(this);
     }
-	db<Thread>(WRN) << "@@@CONS DEPOIS DO SCHEDULER SUSPEND" << endl;
+	//db<Thread>(WRN) << "@@@CONS DEPOIS DO SCHEDULER SUSPEND" << endl;
 
     criterion().handle(Criterion::CREATE);
 
@@ -64,14 +64,18 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
     {
         assert(locked());
 
+		db<Thread>(WRN) << "-------------main reschedule cons " << endl;
+
         reschedule(_link.rank().queue());
     }
 
-	if (CPU::is_smp()) 
+	if (CPU::is_smp() && _state != RUNNING) 
 	{
-		int target_core = _cpu_lookup_table.get_interruptible_core();
+		int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
 
-		if (target_core != 1) 
+		db<Thread>(WRN) << "@@@ic chosen = " << target_core << endl;
+
+		if (target_core != -1) 
 		{
 			db<Thread>(WRN) << "@@@ic enviando int = " << IC::INT_RESCHEDULER << endl;
 			reschedule(target_core);

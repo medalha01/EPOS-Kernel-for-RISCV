@@ -360,6 +360,30 @@ void Thread::wakeup_all(Queue *q)
         }
     }
 }
+void Thread::reset_protocol()
+{
+    Criterion *c = &criterion();
+    c->_locked = false;
+    c->_priority = _natural_priority;
+    c->handle(Criterion::UPDATE);
+
+    if (this->_state == READY)
+    {
+        _scheduler.suspend(this);
+        this->_link.rank(*c);
+        _scheduler.resume(this);
+    }
+    else if (this->state() == WAITING)
+    {
+        this->_waiting->remove(&this->_link);
+        this->_link.rank(*c);
+        this->_waiting->insert(&this->_link);
+    }
+    else
+    {
+        this->_link.rank(*c);
+    }
+}
 
 void Thread::raise_priority(int priority)
 {
@@ -382,6 +406,7 @@ void Thread::raise_priority(int priority)
         thread_criterion->_priority = priority;
         thread_criterion->_locked = true;
     }*/
+
     Thread::Criterion *thread_criterion = &this->criterion();
 
     if (this->priority() > priority)

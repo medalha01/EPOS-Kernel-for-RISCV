@@ -106,13 +106,7 @@ public:
         criticalZonesCount--;
     };
 
-    void reset_protocol()
-    {
-        Criterion *c = &criterion();
-        c->_locked = false;
-        c->_priority = _natural_priority;
-        c->handle(Criterion::UPDATE);
-    };
+    void reset_protocol();
 
     void get_next_priority()
     {
@@ -142,7 +136,7 @@ public:
 
         if (highest_priority < _natural_priority)
         {
-            criterion()._priority = highest_priority;
+            raise_priority(highest_priority);
         }
         else
         {

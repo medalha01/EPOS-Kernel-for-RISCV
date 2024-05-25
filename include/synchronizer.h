@@ -305,7 +305,7 @@ public:
     int getMostUrgentPriority()
     {
         SyncObject *urgent = getMostUrgentInWaiting();
-        return urgent ? urgent->getPriority() : Thread::IDLE;
+        return Traits<Synchronizer>::INHERITANCE ? (urgent ? urgent->getPriority() : Thread::IDLE) : Thread::CEILING;
     }
 
     bool areThreadsWaiting()

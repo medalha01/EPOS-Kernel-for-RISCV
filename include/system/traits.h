@@ -207,7 +207,7 @@ struct Traits_Tokens
     enum :unsigned char {NONE, LVP, DBP};
 
     // Priority inversion protocols
-    enum {CEILING, INHERITANCE};
+    //enum {CEILING, INHERITANCE};
 
     // Default aspects
     typedef ALIST<> ASPECTS;

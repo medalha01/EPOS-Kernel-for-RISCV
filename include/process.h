@@ -71,7 +71,8 @@ public:
     // Thread Configuration
     struct Configuration
     {
-        Configuration(State s = READY, Criterion c = NORMAL, unsigned int ss = STACK_SIZE)
+        Configuration(State s = READY, Criterion c = NORMAL, 
+				unsigned int ss = STACK_SIZE)
             : state(s), criterion(c), stack_size(ss) {}
 
         State state;
@@ -109,8 +110,6 @@ protected:
 
     static Thread *volatile running() { return _scheduler.chosen(); }
 
-    /*static void lock() { CPU::int_disable(); }
-    static void unlock() { CPU::int_enable(); }*/
     static void lock(Spin *lock = &_lock)
     {
         CPU::int_disable();
@@ -132,7 +131,11 @@ protected:
         }
     }
 
-    static volatile bool locked() { return (Traits<Machine>::multi) ? _lock.taken() : CPU::int_disabled(); }
+    static volatile bool locked() 
+	{
+		return (Traits<Machine>::multi)
+			? _lock.taken() : CPU::int_disabled(); 
+	}
 
     static void sleep(Queue *queue);
     static void wakeup(Queue *queue);
@@ -230,7 +233,8 @@ private:
 /* A lookup table that maps cores and their currently running threads.
  *
  * This is so we can know what cores should be interrupted:
- * those whose running threads have a lower priority than the current one being scheduled. */
+ * those whose running threads have a lower priority than 
+ * the current one being scheduled. */
 class CpuLookupTable 
 {
     friend class Thread;
@@ -315,34 +319,22 @@ public:
 		_already_dispatched[cpu] = true;
 	}
 
-    //int get_cpu_with_lowest_priority()
-    //{
-    //    int min = Thread::IDLE;
-    //    unsigned int lowest_priority_cpu = 0;
-    //    for (unsigned int i = 0; i < Traits<Build>::CPUS; i++)
-    //    {
-    //        if (min > *threads_criterion_on_execution[i])
-    //        {
-    //            min = *threads_criterion_on_execution[i];
-    //            lowest_priority_cpu = i;
-    //        }
-    //    }
-
-    //    return lowest_priority_cpu;
-    //}
-
 	// Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
-	// if there is a core running a lower priority thread, of if there is a core running idle.
-	int get_lowest_priority_core(int current_priority) 
+	// if there is a core running a lower priority thread,
+	// of if there is a core running idle.
+	int get_lowest_priority_core(int current_priority = (1 << 31)) 
 	{
 		//print_table();
 
 		if (current_priority == Thread::IDLE) return -1;
 
-		int min = (1 << 31); 
+		int min = current_priority;
 		int chosen = -1;
 
-		//db<Thread>(WRN) << "clt start current priority = " << current_priority << endl;
+		db<Thread>(WRN) << "min = " << current_priority << endl;
+
+		//db<Thread>(WRN) << "clt start current priority = " 
+		//<< current_priority << endl;
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
 		{

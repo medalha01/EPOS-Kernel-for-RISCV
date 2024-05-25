@@ -29,9 +29,6 @@ void Thread::constructor_prologue(unsigned int stack_size)
 {
     lock();
 
-	db<Thread>(WRN) << "@@@CONS -- _link.rank() at the very beginning = " 
-		<< _link.rank() << endl;
-
     _thread_count++;
     _scheduler.insert(this);
 
@@ -54,25 +51,32 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
     if ((_state != READY) && (_state != RUNNING))
     {
 		db<Thread>(WRN) << "@@@CONS ANTES DO SCHEDULER SUSPEND" << endl;
+		// TODO: @arthur verificar se esse scheduler.suspend está correto aqui
+		// (talvez pode dar problemas com o IPI se este for mais para frente,
+		// por conta de remover da lista de scheduling... mas acho que não...)
         _scheduler.suspend(this);
     }
 	db<Thread>(WRN) << "@@@CONS DEPOIS DO SCHEDULER SUSPEND" << endl;
 
-	db<Thread>(WRN) << "_link.rank acc = " << _link.rank() << endl;
     criterion().handle(Criterion::CREATE);
-	db<Thread>(WRN) << "_link.rank dcc = " << _link.rank() << endl;
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
-		db<Thread>(WRN) << "@@@CONS _link.rank no construtor = " 
-						<< _link.rank() << " CONS@@@" << endl;
-
         assert(locked());
 
-		//int target_core = _cpu_lookup_table.get_interruptible_core();
-		
         reschedule(_link.rank().queue());
     }
+
+	if (CPU::is_smp()) 
+	{
+		int target_core = _cpu_lookup_table.get_interruptible_core();
+
+		if (target_core != 1) 
+		{
+			db<Thread>(WRN) << "@@@ic enviando int = " << IC::INT_RESCHEDULER << endl;
+			reschedule(target_core);
+		}
+	}
 
     unlock();
 }
@@ -422,7 +426,8 @@ void Thread::reschedule(unsigned int cpu)
 	}
 	else 
 	{
-		//db<Thread>(WRN) << "@@@INT INT_RESCHEDULER IPI RESCHEDULE" << endl;
+		db<Thread>(WRN) << "----env from = " << CPU::id()
+						<< ", to = " << cpu << endl;
 		IC::ipi(cpu, IC::INT_RESCHEDULER);			
 	}
 }
@@ -492,7 +497,7 @@ int Thread::idle()
 
 	// Resets the value in the lookup table, effectively saying that this is IDLE.
 	// By convention of our own, nullptr = idle in the lookup table.
-	_cpu_lookup_table.set_thread_on_cpu(nullptr);
+	_cpu_lookup_table.clear_cpu(CPU::id());
 
     while (_thread_count > CPU::cores())
     { // someone else besides idle

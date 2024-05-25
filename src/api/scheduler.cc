@@ -96,12 +96,7 @@ void EDF::handle(Event event)
 
 LLF::LLF(Microsecond p, Microsecond d, Microsecond c): 
 	RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
-{
-	db<Thread>(WRN) << "LLF, elapsed = " << elapsed() 
-		<< ", ticks = " << ticks((d ? d : p) - c) << endl;
-	//_priority = 5;
-	//_priority = Thread::MAIN;	
-}
+{ }
 
 void LLF::handle(Event event) 
 {

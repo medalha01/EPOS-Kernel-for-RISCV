@@ -64,7 +64,7 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
     {
         assert(locked());
 
-		db<Thread>(WRN) << "-------------main reschedule cons " << endl;
+		//db<Thread>(WRN) << "-------------main reschedule cons " << endl;
 
         reschedule(_link.rank().queue());
     }
@@ -73,13 +73,21 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 	{
 		int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
 
-		db<Thread>(WRN) << "@@@ic chosen = " << target_core << endl;
+		db<Thread>(WRN) << "-->cons chosen = " << target_core << endl;
 
 		if (target_core != -1) 
 		{
-			db<Thread>(WRN) << "@@@ic enviando int = " << IC::INT_RESCHEDULER << endl;
+			//db<Thread>(WRN) << "/////ic iria enviar int para " << target_core << endl;
+
+			db<Thread>(WRN) << "-->cons enviando int = " << IC::INT_RESCHEDULER << endl;
 			reschedule(target_core);
 		}
+	}
+
+	if (CPU::is_smp() && _state == RUNNING) 
+	{
+		db<Thread>(WRN) << "-->cons running = " << endl;
+		_cpu_lookup_table.set_thread_on_cpu(running());
 	}
 
     unlock();
@@ -378,7 +386,7 @@ void Thread::deprioritize(Queue *q)
     if (priority_inversion_protocol == Traits<Build>::NONE)
         return;
 
-    db<Thread>(TRC) << "Thread::deprioritize(q=" << q << ") [running=" << running() << "]" << endl;
+    //db<Thread>(TRC) << "Thread::deprioritize(q=" << q << ") [running=" << running() << "]" << endl;
 
     Thread *r = running();
     Criterion c = r->_natural_priority;
@@ -408,7 +416,7 @@ void Thread::deprioritize(Queue *q)
 
 void Thread::int_rescheduler(IC::Interrupt_Id i)
 {
-	db<Thread>(WRN) << "int rescheduler "<< endl;
+	db<Thread>(WRN) << "------->int rescheduler<-------" << endl;
     lock();
     reschedule();
     unlock();
@@ -426,6 +434,9 @@ void Thread::reschedule(unsigned int cpu)
 		Thread *prev = running();
 		Thread *next = _scheduler.choose();
 
+		db<Thread>(WRN) << "------>t n p = " << prev
+			<< ", n = " << next << endl;
+
 		dispatch(prev, next);
 	}
 	else 
@@ -438,6 +449,7 @@ void Thread::reschedule(unsigned int cpu)
 
 void Thread::time_slicer(IC::Interrupt_Id i)
 {
+	//db<Thread>(WRN) << "------->int time slicer<-------" << endl;
     lock();
     reschedule();
     unlock();
@@ -447,6 +459,9 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 {
     // "next" is not in the scheduler's queue anymore. It's already "chosen"
 
+	db<Thread>(WRN) << "------>t d" << endl;
+	_cpu_lookup_table.set_thread_on_cpu(next);
+
     if (charge && Criterion::timed)
     {
         _timer->restart(); // scheduler_timer
@@ -454,7 +469,7 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
     if (prev != next)
     {
-		_cpu_lookup_table.set_thread_on_cpu(next);
+		db<Thread>(WRN) << "+-------------------------------------------------+" << endl;
 
         if (Criterion::dynamic)
         {
@@ -466,15 +481,6 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         if (prev->_state == RUNNING)
             prev->_state = READY;
         next->_state = RUNNING;
-
-        if (Traits<Thread>::debugged && Traits<Debug>::info)
-        {
-            CPU::Context tmp;
-            tmp.save();
-            db<Thread>(INF) << "Thread::dispatch:prev={" << prev << ",ctx=" << tmp << "}" << endl;
-        }
-
-        db<Thread>(INF) << "Thread::dispatch:next={" << next << ",ctx=" << *next->_context << "}" << endl;
 
         if (Traits<Machine>::multi)
         {
@@ -497,19 +503,13 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
 int Thread::idle()
 {
-    db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
-
 	// Resets the value in the lookup table, effectively saying that this is IDLE.
 	// By convention of our own, nullptr = idle in the lookup table.
 	_cpu_lookup_table.clear_cpu(CPU::id());
 
+	// someone else besides idle
     while (_thread_count > CPU::cores())
-    { // someone else besides idle
-        if (Traits<Thread>::trace_idle)
-        {
-            db<Thread>(TRC) << "Thread::idle(cpu=" << CPU::id() << ",this=" << running() << ")" << endl;
-        }
-
+    { 
         db<Thread>(WRN) << "Halting the machine ..." << endl;
         CPU::int_enable();
         CPU::halt();
@@ -517,12 +517,10 @@ int Thread::idle()
         // a thread might have been woken up by another CPU
         if (_scheduler.schedulables() > 0)
         {
-			//_cpu_lookup_table.print_table();
             yield();
         }
 		else 
 		{
-			//_cpu_lookup_table.print_table();
 			CPU::halt();
 		}
     }
@@ -536,8 +534,7 @@ int Thread::idle()
         Machine::reboot();
     }
 
-    for (;;)
-        ;
+    //for (;;) ;
 
     return 0;
 }

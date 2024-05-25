@@ -414,6 +414,7 @@ void Thread::raise_priority(int priority)
         {
             this->_natural_priority = thread_criterion->_priority;
         }
+        kout << "New Priority is: " << priority << endl;
         thread_criterion->_priority = priority;
         thread_criterion->_locked = true;
 

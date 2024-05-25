@@ -267,6 +267,11 @@ public:
         return urgent ? urgent->getPriority() : Thread::IDLE;
     }
 
+    bool areThreadsWaiting()
+    {
+        return !(_waiting.empty());
+    }
+
 protected:
     Queue _waiting;
     Queue _granted;

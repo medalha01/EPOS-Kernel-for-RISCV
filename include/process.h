@@ -127,6 +127,11 @@ public:
         while (helper)
         {
             current = helper->object();
+            if (!current->areThreadsWaiting())
+            {
+                helper = helper->next();
+                continue;
+            }
             int current_priority = current->getMostUrgentPriority();
             if (current_priority < highest_priority)
             {

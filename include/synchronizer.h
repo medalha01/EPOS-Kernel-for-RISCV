@@ -242,10 +242,7 @@ protected:
         SemaphoreLink *helper = exec_thread->_syncHolder->synchronizerList.head();
         Synchronizer_Common *current = helper->object();
         int highest__t_priority = current->getMostUrgentPriority();
-        if (highest__t_priority == Thread::CEILING && ceilingIsActive)
-        {
-            exec_thread->raise_priority(highest__t_priority);
-        }
+
         while (helper)
         {
             current = helper->object();
@@ -258,6 +255,10 @@ protected:
             if (current_priority < highest__t_priority)
             {
                 highest__t_priority = current_priority;
+            }
+            if (highest__t_priority == Thread::CEILING && current->ceilingIsActive)
+            {
+                return exec_thread->raise_priority(highest__t_priority);
             }
             helper = helper->next();
         }

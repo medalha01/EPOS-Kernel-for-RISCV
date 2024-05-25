@@ -44,6 +44,7 @@ inline void exec(char c, unsigned int time = 0) // in miliseconds
 
     cout << "\n"
          << elapsed << "\t" << c
+		 << " - core = " << CPU::id() << " - "
          << "\t[p(A)=" << thread_a->priority()
          << ", p(B)=" << thread_b->priority()
          << ", p(C)=" << thread_c->priority() << "]";
@@ -55,6 +56,7 @@ inline void exec(char c, unsigned int time = 0) // in miliseconds
             {
                 cout << "\n"
                      << elapsed << "\t" << c
+					 << " - core = " << CPU::id() << " - "
                      << "\t[p(A)=" << thread_a->priority()
                      << ", p(B)=" << thread_b->priority()
                      << ", p(C)=" << thread_c->priority() << "]";

@@ -415,6 +415,25 @@ public:
         return old;
     }
 
+	//template <typename T>
+    //static T cas(volatile T &value, T compare, T replacement)
+    //{
+    //    register T old;
+    //    if (sizeof(T) == sizeof(Reg64))
+    //        ASM("1: amoswap.d      %0, %2, (%1)        \n"
+    //            "   bne            %0, %2, 2f          \n"
+    //            "   amoswap.d      %0, %3, (%1)        \n"
+    //            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "cc", "memory");
+    //    else
+    //        ASM("1: amoswap.w    %0, %2, (%1)        \n"
+    //            "   bne          %0, %2, 2f          \n"
+    //            "   amoswap.w    %0, %3, (%1)        \n"
+    //            "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "cc", "memory");
+    //    // asm volatile("fence rw,rw");
+
+    //    return old;
+    //}
+
     static void flush_tlb() { ASM("sfence.vma" : : : "memory"); }
     static void flush_tlb(Reg addr) { ASM("sfence.vma %0" : : "r"(addr) : "memory"); }
 

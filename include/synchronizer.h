@@ -243,6 +243,10 @@ protected:
         {
             deactivateCeiling();
         } // TODO LEAVING THREAD MUST ENTER PROTOCOL
+        else
+        {
+            shiftProtocol(exec_thread);
+        }
     }
 
     void deactivateCeiling()

@@ -126,25 +126,36 @@ protected:
             exec_thread->get_next_priority();
         }
     }
+
+    void checkForProtocol(Thread *exec_thread)
+    {
+        if (waitingThreadsCount < 1)
+        {
+            deactivateCeiling();
+        }
+    }
+
     void deactivateCeiling()
     {
         highest_priority = Thread::IDLE;
 
         SyncElement *current = resource_holder_list.head();
 
-        // Iterate through the resource waiting list
+        // Iterate through the resource holder list
         while (current != nullptr)
         {
             SyncObject *current_object = current->object();
             if (current_object && current_object->threadPointer)
             {
-                resetThreadPriority(current_object->threadPointer); // TODO
+                current_object->threadPointer->get_next_priority();
+                // resetThreadPriority(current_object->threadPointer); // TODO
             }
             // Move to the next element in the resource waiting list
             current = current->next();
         }
         ceilingIsActive = false;
     }
+    /*
     void resetThreadPriority(Thread *exec_thread)
     {
         if (!exec_thread)
@@ -182,7 +193,7 @@ protected:
         }
 
         exec_thread->raise_priority(starter);
-    }
+    }*/
 
     void lock_for_releasing()
     {

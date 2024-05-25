@@ -50,7 +50,7 @@ void Mutex::lock()
     // Insert the SyncObject into the resource holder list
     insertSyncObject(syncWatchHolder, &resource_holder_list);
     // check for new priority is the thread is leaving the waiting zone, and to see if they mustlock
-    checkForProtocol();
+    checkForProtocol(exec_thread);
 
     _unlock();
 }

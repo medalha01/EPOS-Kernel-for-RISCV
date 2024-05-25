@@ -241,8 +241,11 @@ protected:
         }
         SemaphoreLink *helper = exec_thread->_syncHolder->synchronizerList.head();
         Synchronizer_Common *current = helper->object();
-        int highest_priority = current->getMostUrgentPriority();
-
+        int highest__t_priority = current->getMostUrgentPriority();
+        if (highest__t_priority == Thread::CEILING && ceilingIsActive)
+        {
+            exec_thread->raise_priority(highest__t_priority);
+        }
         while (helper)
         {
             current = helper->object();
@@ -252,16 +255,16 @@ protected:
                 continue;
             }
             int current_priority = current->getMostUrgentPriority();
-            if (current_priority < highest_priority)
+            if (current_priority < highest__t_priority)
             {
-                highest_priority = current_priority;
+                highest__t_priority = current_priority;
             }
             helper = helper->next();
         }
 
-        if (highest_priority < exec_thread->_natural_priority)
+        if (highest__t_priority < exec_thread->_natural_priority)
         {
-            exec_thread->raise_priority(highest_priority);
+            exec_thread->raise_priority(highest__t_priority);
         }
         else
         {
@@ -284,6 +287,7 @@ protected:
     void deactivateCeiling()
     {
         highest_priority = Thread::IDLE;
+        ceilingIsActive = false;
 
         SyncElement *current = resource_holder_list.head();
 
@@ -299,7 +303,6 @@ protected:
             // Move to the next element in the resource waiting list
             current = current->next();
         }
-        ceilingIsActive = false;
     }
     /*
     void resetThreadPriority(Thread *exec_thread)
@@ -451,6 +454,7 @@ public:
     int getMostUrgentPriority()
     {
         SyncObject *urgent = getMostUrgentInWaiting();
+        highest_priority = urgent ? urgent->getPriority() : Thread::IDLE;
         return Traits<Synchronizer>::INHERITANCE ? (urgent ? urgent->getPriority() : Thread::IDLE) : Thread::CEILING;
     }
 

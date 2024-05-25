@@ -24,31 +24,33 @@ void Mutex::lock()
     {
         // Get the SyncObject for the current thread, without creating a new one if it does exist
         SyncObject *syncWatch = getSyncObject(exec_thread, false);
-
         // Add this mutex to the list of synchronizers being watched by the SyncObject
         syncWatch->addSynchronizer(this);
-
         // Insert the SyncObject into the resource waiting list
         insertSyncObject(syncWatch, &resource_waiting_list);
         waitingThreadsCount++;
+        activateCeiling(getMostUrgentPriority());
         // Put the current thread to sleep until the mutex becomes available
         sleep();
+
         waitingThreadsCount--;
         // After waking up, we clean up the SyncObject
-        SyncObject *syncWatch = getSyncObject(exec_thread, false);
+        // SyncObject *syncWatch = getSyncObject(exec_thread, false);
         syncWatch->removeSynchronizer(this);
         removeSyncObject(syncWatch, &resource_waiting_list);
+
+        // TODO NOW WE HOLD THE RESOURCE
     }
     exec_thread->enter_zone();
 
     // Get the SyncObject for the current thread, without creating a new one if it does exist
-    SyncObject *syncWatch = getSyncObject(exec_thread, true);
-
+    SyncObject *syncWatchHolder = getSyncObject(exec_thread, true);
     // Add this mutex to the list of synchronizers being watched by the SyncObject
-    syncWatch->addSynchronizer(this);
-
+    syncWatchHolder->addSynchronizer(this);
     // Insert the SyncObject into the resource holder list
-    insertSyncObject(syncWatch, &resource_holder_list);
+    insertSyncObject(syncWatchHolder, &resource_holder_list);
+    // check for new priority is the thread is leaving the waiting zone, and to see if they mustlock
+    checkForProtocol();
 
     _unlock();
 }

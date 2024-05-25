@@ -73,10 +73,10 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
 		_cpu_lookup_table.print_table();
 
+		// If there is a suitable core (whether by lower priority, or running IDLE),
+		// then target_core should be different then -1, and we send an interrupt to that core.
 		if (target_core != -1) 
 		{
-			//db<Thread>(WRN) << "/////ic iria enviar int para " << target_core << endl;
-
 			//db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
 			reschedule(target_core);
 		} 
@@ -238,10 +238,6 @@ void Thread::yield()
 
     Thread *prev = running();
     Thread *next = _scheduler.choose_another();
-
-	//db<Thread>(WRN) << "[=] set on yield() " << endl;
-	//_cpu_lookup_table.set_thread_on_cpu(next);
-	//_cpu_lookup_table.print_table();
 
     dispatch(prev, next);
 
@@ -443,10 +439,6 @@ void Thread::reschedule(unsigned int cpu)
 	{
 		Thread *prev = running();
 		Thread *next = _scheduler.choose();
-
-		//db<Thread>(WRN) << "[=] set on dispatch" << endl;
-		//_cpu_lookup_table.set_thread_on_cpu(next);
-		//_cpu_lookup_table.print_table();
 
 		db<Thread>(WRN) << "t n p = " << prev << ", n = " << next << endl;
 

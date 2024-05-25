@@ -18,7 +18,7 @@ Scheduler_Timer *Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 bool Thread::_not_booting;
-CpuLookTable Thread::_cpu_lookup_table;
+CpuLookupTable Thread::_cpu_lookup_table;
 
 Thread *volatile Thread::self()
 {
@@ -109,46 +109,6 @@ Thread::~Thread()
     unlock();
 
     delete _stack;
-}
-
-void Thread::priority(Criterion c)
-{
-    lock();
-
-    db<Thread>(TRC) << "Thread::priority(this=" << this << ",prio=" << c << ")" << endl;
-
-    unsigned long old_cpu = _link.rank().queue();
-    unsigned long new_cpu = c.queue();
-
-    if (_state != RUNNING)
-    { // reorder the scheduling queue
-        _scheduler.remove(this);
-        _link.rank(c);
-        _scheduler.insert(this);
-    }
-    else
-        _link.rank(c);
-
-    if (preemptive)
-    {
-        if (Traits<Machine>::multi)
-        {
-            assert(locked());
-
-            if (old_cpu != CPU::id())
-                reschedule(old_cpu);
-            if (new_cpu != CPU::id())
-                reschedule(new_cpu);
-        }
-        else
-        {
-            assert(locked());
-
-            reschedule();
-        }
-    }
-
-    unlock();
 }
 
 int Thread::join()

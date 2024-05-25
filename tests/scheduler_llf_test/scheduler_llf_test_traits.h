@@ -14,7 +14,7 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = RV64;
     static const unsigned int MACHINE = RISCV;
     static const unsigned int MODEL = SiFive_U;
-    static const unsigned int CPUS = 2;
+    static const unsigned int CPUS = 4;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
@@ -134,10 +134,10 @@ struct Traits<Thread> : public Traits<Build>
     static const int priority_inversion_protocol = INHERITANCE;
 
 	static const bool debugged = true;
-	static const bool error = false;
+	static const bool error = true;
     static const bool warning = true;
     static const bool info = false;
-    static const bool trace = false;
+    static const bool trace = true;
 
     typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us

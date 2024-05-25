@@ -77,6 +77,8 @@ Thread::~Thread()
     // The running thread cannot delete itself!
     assert(_state != RUNNING);
 
+	// TODO: @arthur remover thread da lookup table do core se estiver lá
+
     switch (_state)
     {
     case RUNNING: // For switch completion only: the running thread would have deleted itself! Stack wouldn't have been released!
@@ -403,6 +405,7 @@ void Thread::reschedule(unsigned int cpu)
 		Thread *prev = running();
 		Thread *next = _scheduler.choose();
 
+		db<Thread>(WRN) << "@@@INT DISPTACH reschedule" << endl;
 		dispatch(prev, next);
 	}
 	else 
@@ -430,6 +433,8 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
     if (prev != next)
     {
+		_cpu_lookup_table.set_thread_on_cpu(next);
+
         if (Criterion::dynamic)
         {
             prev->criterion().handle(Criterion::CHARGE | Criterion::LEAVE);
@@ -473,6 +478,10 @@ int Thread::idle()
 {
     db<Thread>(TRC) << "Thread::idle(this=" << running() << ")" << endl;
 
+	// Resets the value in the lookup table, effectively saying that this is IDLE.
+	// By convention of our own, nullptr = idle in the lookup table.
+	_cpu_lookup_table.set_thread_on_cpu(nullptr);
+
     while (_thread_count > CPU::cores())
     { // someone else besides idle
         if (Traits<Thread>::trace_idle)
@@ -487,10 +496,12 @@ int Thread::idle()
         // a thread might have been woken up by another CPU
         if (_scheduler.schedulables() > 0)
         {
+			//_cpu_lookup_table.print_table();
             yield();
         }
 		else 
 		{
+			//_cpu_lookup_table.print_table();
 			CPU::halt();
 		}
     }

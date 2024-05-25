@@ -41,7 +41,7 @@ public:
     void *alloc(unsigned long bytes)
     {
         enter_heap();
-        db<Heaps, Thread>(WRN) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
+        db<Heaps>(TRC) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
 
         if (!bytes)
         {

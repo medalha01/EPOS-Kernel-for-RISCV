@@ -185,7 +185,6 @@ template <typename... Tn>
 inline Thread::Thread(int (*entry)(Tn...), Tn... an)
     : _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
-    db<Thread>(WRN) << "construtor da Thread\n" << endl;
     constructor_prologue(STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an...);
     constructor_epilogue(entry, STACK_SIZE);
@@ -195,7 +194,6 @@ template <typename... Tn>
 inline Thread::Thread(Configuration conf, int (*entry)(Tn...), Tn... an)
     : _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
-    db<Thread>(WRN) << "construtor da Thread\n" << endl;
     constructor_prologue(conf.stack_size);
     _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an...);
     constructor_epilogue(entry, conf.stack_size);
@@ -255,7 +253,7 @@ public:
         }
     }
 
-	void print_cpu_lookup_table()
+	void print_table()
 	{
 		bool tmp_locked = false;
 
@@ -274,7 +272,7 @@ public:
 
 			db<Thread>(WRN) << "[" << i << "] -> {Thread = " 
 							<< thread << ", Priority = " 
-							<< priority << "}" << endl;
+							<< *priority << "}" << endl;
 		}
 
 		db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
@@ -285,15 +283,15 @@ public:
 		}
 	}
 
-    Thread *get_thread_on_cpu(unsigned int cpu_id)
+    Thread * get_thread_on_cpu(unsigned int cpu_id)
     {
-        assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
+        assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
         return running_thread_by_core[cpu_id];
     }
 
-    Criterion *get_priority_on_cpu(unsigned int cpu_id)
+    Criterion * get_priority_on_cpu(unsigned int cpu_id)
     {
-        assert(cpu_id < Traits<Build>::CPUS); // Ensure valid cpu_id
+        assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
         return threads_criterion_on_execution[cpu_id];
     }
 
@@ -320,6 +318,9 @@ public:
 
         running_thread_by_core[id] = running;
         threads_criterion_on_execution[id] = &running->criterion();
+
+		db<Thread>(WRN) << "updated thread = " << running 
+						<< " at cpu = " << id << endl;
     }
 
 	//unsigned int 

@@ -25,22 +25,15 @@ Thread *volatile Thread::self()
         return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
     }
 }
+
 void Thread::constructor_prologue(unsigned int stack_size)
 {
-    db<Thread>(WRN) << "CONS init" << endl;
-
     lock();
-
-    db<Thread>(WRN) << "CONS post lock" << endl;
 
     _thread_count++;
     _scheduler.insert(this);
 
-    db<Thread>(WRN) << "CONS post scheduler insert" << endl;
-
     _stack = new (SYSTEM) char[stack_size];
-
-    db<Thread>(WRN) << "constructor_prologue post-stack insert" << endl;
 }
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
@@ -53,13 +46,10 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
                     << "},context={b=" << _context
                     << "," << *_context << "}) => " << this << endl;
 
-    db<Thread>(WRN) << "constructor_epilogue start" << endl;
-
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     if ((_state != READY) && (_state != RUNNING))
     {
-        db<Thread>(WRN) << "--segundo if do epilogue = " << CPU::id() << endl;
         _scheduler.suspend(this);
     }
 
@@ -67,14 +57,11 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
     if (preemptive && (_state == READY) && (_link.rank() != IDLE))
     {
-        db<Thread>(WRN) << "---terceiro if do epilogue = " << CPU::id() << endl;
         assert(locked());
         reschedule(_link.rank().queue());
-        db<Thread>(WRN) << "---terceiro if, depois do reschedule" << endl;
     }
 
     unlock();
-    db<Thread>(WRN) << "-------constructor_epilogue post-unlock" << endl;
 }
 
 Thread::~Thread()
@@ -434,24 +421,24 @@ void Thread::deprioritize(Queue *q)
     }
 }
 
-void Thread::reschedule(unsigned int cpu)
-{
-    if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
-    {
-        db<Thread>(TRC) << "Thread::reschedule()" << cpu << endl;
-    }
-
-    assert(locked()); // locking handled by caller
-
-    if (!Traits<Machine>::multi || CPU::id() == cpu)
-    {
-        reschedule();
-    }
-    else
-    {
-        IC::ipi(cpu, IC::INT_RESCHEDULER);
-    }
-}
+//void Thread::reschedule(unsigned int cpu)
+//{
+//    if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
+//    {
+//        db<Thread>(TRC) << "Thread::reschedule()" << cpu << endl;
+//    }
+//
+//    assert(locked()); // locking handled by caller
+//
+//    if (!Traits<Machine>::multi || CPU::id() == cpu)
+//    {
+//        reschedule();
+//    }
+//    else
+//    {
+//        IC::ipi(cpu, IC::INT_RESCHEDULER);
+//    }
+//}
 
 void Thread::int_rescheduler(IC::Interrupt_Id i)
 {
@@ -460,18 +447,24 @@ void Thread::int_rescheduler(IC::Interrupt_Id i)
     unlock();
 }
 
-void Thread::reschedule()
+void Thread::reschedule(unsigned int cpu)
 {
-
     if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
 
     assert(locked()); // locking handled by caller
 
-    Thread *prev = running();
-    Thread *next = _scheduler.choose();
+	if (!Traits<Machine>::multi || CPU::id() == cpu)
+	{
+		Thread *prev = running();
+		Thread *next = _scheduler.choose();
 
-    dispatch(prev, next);
+		dispatch(prev, next);
+	}
+	else 
+	{
+		IC::ipi(cpu, IC::INT_RESCHEDULER);			
+	}
 }
 
 void Thread::time_slicer(IC::Interrupt_Id i)

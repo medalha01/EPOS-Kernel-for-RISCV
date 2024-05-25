@@ -18,12 +18,11 @@ Scheduler_Timer *Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 bool Thread::_not_booting;
+CpuLookTable Thread::_cpu_lookup_table;
 
 Thread *volatile Thread::self()
 {
-    {
-        return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
-    }
+	return _not_booting ? running() : reinterpret_cast<Thread *volatile>(CPU::id() + 1);
 }
 
 void Thread::constructor_prologue(unsigned int stack_size)
@@ -111,6 +110,7 @@ Thread::~Thread()
 
     delete _stack;
 }
+
 void Thread::priority(Criterion c)
 {
     lock();
@@ -297,7 +297,8 @@ void Thread::sleep(Queue *q)
 
 void Thread::wakeup(Queue *q)
 {
-    db<Thread>(TRC) << "Thread::wakeup(running=" << running() << ",q=" << q << ")" << endl;
+    db<Thread>(TRC) << "Thread::wakeup(running="
+		<< running() << ",q=" << q << ")" << endl;
 
     assert(locked()); // locking handled by caller
 
@@ -421,27 +422,9 @@ void Thread::deprioritize(Queue *q)
     }
 }
 
-//void Thread::reschedule(unsigned int cpu)
-//{
-//    if (!Criterion::timed || Traits<Thread>::hysterically_debugged)
-//    {
-//        db<Thread>(TRC) << "Thread::reschedule()" << cpu << endl;
-//    }
-//
-//    assert(locked()); // locking handled by caller
-//
-//    if (!Traits<Machine>::multi || CPU::id() == cpu)
-//    {
-//        reschedule();
-//    }
-//    else
-//    {
-//        IC::ipi(cpu, IC::INT_RESCHEDULER);
-//    }
-//}
-
 void Thread::int_rescheduler(IC::Interrupt_Id i)
 {
+	db<Thread>(WRN) << "int rescheduler "<< endl;
     lock();
     reschedule();
     unlock();
@@ -453,6 +436,7 @@ void Thread::reschedule(unsigned int cpu)
         db<Thread>(TRC) << "Thread::reschedule()" << endl;
 
     assert(locked()); // locking handled by caller
+	db<Thread>(WRN) << "@@@INT reschedule" << endl;
 
 	if (!Traits<Machine>::multi || CPU::id() == cpu)
 	{
@@ -463,6 +447,7 @@ void Thread::reschedule(unsigned int cpu)
 	}
 	else 
 	{
+		db<Thread>(WRN) << "@@@INT INT_RESCHEDULER IPI RESCHEDULE" << endl;
 		IC::ipi(cpu, IC::INT_RESCHEDULER);			
 	}
 }
@@ -544,6 +529,10 @@ int Thread::idle()
         {
             yield();
         }
+		else 
+		{
+			CPU::halt();
+		}
     }
 
     CPU::int_disable();

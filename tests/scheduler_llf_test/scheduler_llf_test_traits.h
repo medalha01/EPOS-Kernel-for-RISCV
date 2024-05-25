@@ -122,7 +122,9 @@ struct Traits<System> : public Traits<Build>
     static const bool reboot = true;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE =
+        (Traits<Application>::MAX_THREADS + 1) *
+        Traits<Application>::STACK_SIZE;
 };
 
 template <>
@@ -134,10 +136,10 @@ struct Traits<Thread> : public Traits<Build>
     static const int priority_inversion_protocol = INHERITANCE;
 
 	static const bool debugged = true;
-	static const bool error = true;
+	static const bool error = false;
     static const bool warning = true;
     static const bool info = false;
-    static const bool trace = true;
+    static const bool trace = false;
 
     typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us

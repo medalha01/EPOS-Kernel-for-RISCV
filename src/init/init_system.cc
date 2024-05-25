@@ -45,7 +45,7 @@ public:
             Machine::init();
             CPU::smp_barrier();
         }
-        else
+        else // TODO: @arthur fix this initsystem (tudo cagado)
         {
             CPU::smp_barrier();
 
@@ -57,10 +57,9 @@ public:
 
             // Machine::init()
         }
+
         db<Init>(INF) << "Initializing system abstractions: " << endl;
         System::init();
-
-		db<Thread>(WRN) << "SYSTEMINITSYSTEMINITSYSTEMINITSYSTEMINITSYSTEMINITSYSTEMINIT" << endl;
 
         // Randomize the Random Numbers Generator's seed
         if (Traits<Random>::enabled)

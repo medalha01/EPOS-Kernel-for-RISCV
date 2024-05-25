@@ -86,7 +86,9 @@ void Semaphore::v()
     }
     else
     {
-        wakeup();
+        if (finc(_value) < 0)
+
+            wakeup();
     }
     _unlock();
 }

@@ -157,7 +157,9 @@ protected:
         {
             if (i->object()->criterion() != IDLE)
             {
+				db<Thread>(WRN) << "updating " << i->object()->criterion() << ", ";
                 i->object()->criterion().handle(event);
+				db<Thread>(WRN) << "now = " << i->object()->criterion() << endl;
             }
         }
     }
@@ -267,13 +269,13 @@ public:
 
 	void print_table()
 	{
-		bool tmp_locked = false;
+		//bool tmp_locked = false;
 
-		if (!Thread::locked())
-		{
-			Thread::lock();
-			tmp_locked = true;
-		}
+		//if (!Thread::locked())
+		//{
+		//	Thread::lock();
+		//	tmp_locked = true;
+		//}
 
 		//db<Thread>(WRN) << "Printing CPU lookup table..." << endl;
 
@@ -296,17 +298,17 @@ public:
 
 		//db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
 
-		if (tmp_locked) 
-		{
-			Thread::unlock();
-		}
+		//if (tmp_locked) 
+		//{
+		//	Thread::unlock();
+		//}
 	}
 
     void set_thread_on_cpu(Thread *running)
     {
         unsigned int id = CPU::id();
 
-		db<Thread>(WRN) << "clt set t = " << running 
+		db<Thread>(WRN) << "set t = " << running->criterion() 
 						<< ", c = " << id << endl;
 
 		_already_dispatched[id] = false;
@@ -331,7 +333,7 @@ public:
 		int min = current_priority;
 		int chosen = -1;
 
-		db<Thread>(WRN) << "min = " << current_priority << endl;
+		//db<Thread>(WRN) << "min = " << current_priority << endl;
 
 		//db<Thread>(WRN) << "clt start current priority = " 
 		//<< current_priority << endl;
@@ -357,7 +359,7 @@ public:
 			}
 		}
 
-		print_table();
+		//print_table();
 
 		return chosen;
 	}

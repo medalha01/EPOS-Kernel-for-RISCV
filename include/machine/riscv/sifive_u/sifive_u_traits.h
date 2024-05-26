@@ -102,6 +102,7 @@ struct Traits<Timer> : public Traits<Machine_Common>
     // Meaningful values for the timer frequency range from 100 to 10000 Hz. The
     // choice must respect the scheduler time-slice, i. e., it must be higher
     // than the scheduler invocation frequency.
+    //static const long FREQUENCY = 100; // Hz
     static const long FREQUENCY = 100; // Hz
 };
 

@@ -36,50 +36,64 @@ void IC::entry()
 
 void IC::dispatch()
 {
-    // Preserve handler's arguments
-    CPU::Reg a0 = CPU::a0();
-    CPU::Reg a1 = CPU::a1();
-
     Interrupt_Id id = int_id();
-
-    if (((id != INT_SYS_TIMER) && (id != INT_SYSCALL) && ((id == CPU::EXC_IPF) && (CPU::epc() != CPU::Log_Addr(&__exit)))) || Traits<IC>::hysterically_debugged)
-        db<IC, System>(TRC) << "IC::dispatch(i=" << id << ") [cpu=" << CPU::id() << ", sp=" << CPU::sp() << ", a0=" << a0 << ", a1=" << a1 << "]" << endl;
 
     if (supervisor)
     {
         if (id == INT_RESCHEDULER)
-            CPU::sipc(CPU::SSI); // IPI EOI was already issued by _int_m2s, so we only clear SSI
+		{
+			// IPI EOI was already issued by _int_m2s, 
+			// so we only clear SSI
+            CPU::sipc(CPU::SSI); 
+		}
         else if (id == INT_SYS_TIMER)
-            CPU::ecall(); // we can't clear CPU::sipc(CPU::STI) in supervisor mode, so let's ecall int_m2s to do it for us
+		{
+			// we can't clear CPU::sipc(CPU::STI) in supervisor mode, 
+			// so let's ecall int_m2s to do it for us
+            CPU::ecall(); 
+		}
     }
     else
     {
         if (id == INT_RESCHEDULER)
+		{
+			db<Thread>(WRN) << "ic receive " << id << endl;
             IC::ipi_eoi(id & CLINT::INT_MASK);
+		}
         else if (id == INT_SYS_TIMER)
-            Timer::reset(); // MIP.MTI is a direct logic on (MTIME == MTIMECMP) and reseting the Timer seems to be the only way to clear it
+		{
+			// MIP.MTI is a direct logic on (MTIME == MTIMECMP)
+			// and reseting the Timer seems to be the only way to clear it
+            Timer::reset(); 
+		}
     }
 
-    CPU::gp(a0); // ensure exit() gets the correct return code in gp (a0 will be used to pass id)
-    CPU::a1(a1); // ensure syscalled() gets the correct message in a1
     _int_vector[id](id);
 
-    if (id > HARD_INT)
-    {
-        complete(int2irq(id));
-    }
+	// NOTE: wtf is this
+    //if (id > HARD_INT)
+    //{
+    //    complete(int2irq(id));
+    //}
 
     if (id >= EXCS)
-        CPU::fr(0); // tell CPU::Context::pop(true) not to increment PC since it is automatically incremented for hardware interrupts
+	{
+		// tell CPU::Context::pop(true) not to increment PC,
+		// since it is automatically incremented for hardware interrupts
+        CPU::fr(0); 
+	}
 }
 
 void IC::int_not(Interrupt_Id id)
 {
-    db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
-    if (Traits<Build>::hysterically_debugged) 
+    //db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
+	if (id == INT_RESCHEDULER) 
 	{
-        Machine::panic(__FILE__, __LINE__);
+		// TODO: @arthur 
+		db<Thread>(WRN) << "int_not resch" << endl;
+		Thread::reschedule();	
 	}
+	//Machine::panic(__FILE__, __LINE__);
 }
 
 void IC::exception(Interrupt_Id id)
@@ -91,13 +105,18 @@ void IC::exception(Interrupt_Id id)
     CPU::Log_Addr tval = CPU::tval();
     Thread *thread = Thread::self();
 
-    if ((id == CPU::EXC_IPF) && (epc == CPU::Log_Addr(&__exit)))
-    { // a page fault on __exit is triggered by MAIN after returing to CRT0
-        db<IC, Thread>(TRC) << " => Thread::exit()";
-        Thread::exit(CPU::gp());
-        return;
-    }
-    db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex << "thread=" << thread << ",sp=" << sp << ",status=" << status << ",cause=" << cause << ",epc=" << epc << ",tval=" << tval << "}" << dec;
+	if ((id == CPU::EXC_IPF) && (epc == CPU::Log_Addr(&__exit))) 
+	{ // a page fault on __exit is triggered by
+	  // MAIN after returing to CRT0
+		db<IC, Thread>(TRC) << " => Thread::exit()";
+		Thread::exit(CPU::gp());
+		return;
+	}
+
+	db<IC, System>(WRN) << "IC::Exception(" << id << ") => {" << hex
+		<< "thread=" << thread << ",sp=" << sp
+		<< ",status=" << status << ",cause=" << cause
+		<< ",epc=" << epc << ",tval=" << tval << "}" << dec;
 
     switch (id)
     {
@@ -152,7 +171,7 @@ void IC::exception(Interrupt_Id id)
     db<IC, System>(WRN) << endl;
 
     //    if(Traits<Build>::hysterically_debugged)
-    db<IC, System>(ERR) << "Exception stopped execution due to hysterically debugging!" << endl;
+    //db<IC, System>(ERR) << "Exception stopped execution due to hysterically debugging!" << endl;
     //    else {
     //        db<IC, Machine>(WRN) << "The running thread will now be terminated!" << endl;
     //        Thread::exit(-1);
@@ -163,9 +182,12 @@ void IC::exception(Interrupt_Id id)
 
 __END_SYS
 
-static void print_context(bool push)
-{
-    __USING_SYS
-    db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx=" << *static_cast<CPU::Context *>(CPU::sp() + 3 * sizeof(CPU::Reg) + (push ? sizeof(CPU::Context) : 0)) << endl; // 3 words for function's stack frame
-    CPU::fr(0);
+static void print_context(bool push) {
+	__USING_SYS
+		//db<IC, System>(TRC) << "IC::entry:" << (push ? "push" : "pop") << ":ctx="
+		//<< *static_cast<CPU::Context *>(
+		//		CPU::sp() + 3 * sizeof(CPU::Reg) +
+		//		(push ? sizeof(CPU::Context) : 0))
+		//<< endl; // 3 words for function's stack frame
+	CPU::fr(0);
 }

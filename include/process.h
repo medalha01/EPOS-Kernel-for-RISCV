@@ -19,6 +19,8 @@ extern "C"
 __BEGIN_SYS
 
 class Synchronizer_Common;
+class CpuLookupTable;
+
 class Thread
 {
     friend class Init_End;            // context->load()
@@ -31,6 +33,7 @@ class Thread
     friend class SyncObject;
     friend void ::_lock_heap();   // for lock()
     friend void ::_unlock_heap(); // for unlock()
+    friend class CpuLookupTable;
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
@@ -73,7 +76,8 @@ public:
     // Thread Configuration
     struct Configuration
     {
-        Configuration(State s = READY, Criterion c = NORMAL, unsigned int ss = STACK_SIZE)
+        Configuration(State s = READY, Criterion c = NORMAL,
+                      unsigned int ss = STACK_SIZE)
             : state(s), criterion(c), stack_size(ss) {}
 
         State state;
@@ -121,7 +125,7 @@ public:
             if (syncronizerLink)
                 synchronizerList.insert(syncronizerLink);
         }
-    }
+    };
 
     void removeSynchronizer(Synchronizer_Common *syncObj)
     {
@@ -149,8 +153,6 @@ protected:
 
     static Thread *volatile running() { return _scheduler.chosen(); }
 
-    /*static void lock() { CPU::int_disable(); }
-    static void unlock() { CPU::int_enable(); }*/
     static void lock(Spin *lock = &_lock)
     {
         CPU::int_disable();
@@ -159,7 +161,7 @@ protected:
             lock->acquire();
         }
     }
-    //
+
     static void unlock(Spin *lock = &_lock)
     {
         if (Traits<Machine>::multi)
@@ -171,7 +173,13 @@ protected:
             CPU::int_enable();
         }
     }
-    static volatile bool locked() { return (Traits<Machine>::multi) ? _lock.taken() : CPU::int_disabled(); }
+
+    static volatile bool locked()
+    {
+        return (Traits<Machine>::multi)
+                   ? _lock.taken()
+                   : CPU::int_disabled();
+    }
 
     static void sleep(Queue *queue);
     static void wakeup(Queue *queue);
@@ -181,8 +189,8 @@ protected:
     static void prioritize(Queue *queue);
     static void deprioritize(Queue *queue);
 
-    static void reschedule();
-    static void reschedule(unsigned int cpu);
+    // static void reschedule();
+    static void reschedule(unsigned int cpu = CPU::id());
     static void int_rescheduler(IC::Interrupt_Id i);
     static void time_slicer(IC::Interrupt_Id interrupt);
 
@@ -194,7 +202,9 @@ protected:
         {
             if (i->object()->criterion() != IDLE)
             {
+                db<Thread>(WRN) << "updating " << i->object()->criterion() << ", ";
                 i->object()->criterion().handle(event);
+                db<Thread>(WRN) << "now = " << i->object()->criterion() << endl;
             }
         }
     }
@@ -228,6 +238,7 @@ protected:
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;
     static Spin _lock;
+    static CpuLookupTable _cpu_lookup_table;
 };
 
 template <typename... Tn>
@@ -278,6 +289,155 @@ public:
 
 private:
     Thread *_handler;
+};
+
+/* A lookup table that maps cores and their currently running threads.
+ *
+ * This is so we can know what cores should be interrupted:
+ * those whose running threads have a lower priority than
+ * the current one being scheduled. */
+class CpuLookupTable
+{
+    friend class Thread;
+    friend class Alarm;
+    friend class Mutex;
+    friend class Condition;
+    friend class Semaphore;
+    friend class Segment;
+
+    typedef Traits<Thread>::Criterion Criterion;
+
+private:
+    // Criterion *threads_criterion_on_execution[Traits<Build>::CPUS];
+    Thread *_running_thread_by_core[Traits<Build>::CPUS];
+    // int _already_dispatched;
+    bool _already_dispatched[Traits<Build>::CPUS];
+
+public:
+    CpuLookupTable()
+    {
+        // Initialize arrays
+        for (unsigned int i = 0; i < CPU::cores(); i++)
+        {
+            _running_thread_by_core[i] = nullptr;
+            _already_dispatched[i] = false;
+            // threads_criterion_on_execution[i] = nullptr;
+        }
+        //_already_dispatch = 0;
+    }
+
+    /* Helper method for printing the values of the CPU lookup table, for debugging purposes. */
+    void print_table()
+    {
+        // db<Thread>(WRN) << "Printing CPU lookup table..." << endl;
+
+        for (unsigned int i = 0; i < CPU::cores(); i++)
+        {
+            Thread *thread = _running_thread_by_core[i];
+
+            db<Thread>(WRN) << "[" << i << "] -> ";
+
+            if (thread == nullptr)
+            {
+                db<Thread>(WRN) << "nullptr / " << _already_dispatched[i] << endl;
+                continue;
+            }
+
+            Criterion *priority = &thread->criterion();
+
+            db<Thread>(WRN) << *priority << " / " << _already_dispatched[i] << endl;
+        }
+
+        // db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
+    }
+
+    /* Updates the lookup table with currently running thread.
+     * This method is meant to be used whenever we change contexts in a given core,
+     * so as to always keep an updated list of possible interrupt targets.
+     *
+     * This also resets the _already_dispatched[id] flag.
+     * See the next method for more details. */
+    void set_thread_on_cpu(Thread *running)
+    {
+        unsigned int id = CPU::id();
+
+        db<Thread>(WRN) << "set t = " << running->criterion()
+                        << ", c = " << id << endl;
+
+        _already_dispatched[id] = false;
+        _running_thread_by_core[id] = running;
+    }
+
+    /* Assigns a temporary flag to an array in the position corresponding to the CPU id.
+     * This is done to prevent the rare, but perhaps possible event of two cores finding out
+     * about the same core that runs a thread with a lower priority, since the two would send
+     * an interrupt to that core.
+     *
+     * Note that the window for this to happen in effectively so minimal that it is near impossible,
+     * because it spans from receiving the interrupt, going to the dispatch method, int_rescheduler (int_not)
+     * and then into the Thread::reschedule() method, which finally would put a lock in place.
+     *
+     * Unlikely for most cases, but possible. So we set the flag as `true` when a core already picked this target,
+     * and we reset it to `false` during the set_thread_on_cpu() method, usually during Thread::dispatch() */
+    void already_dispatched(unsigned int cpu)
+    {
+        assert(Thread::locked());
+        _already_dispatched[cpu] = true;
+    }
+
+    /* Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
+     * if there is a core running a lower priority thread, or if there is a core running idle. */
+    int get_lowest_priority_core(int current_priority = (1 << 31))
+    {
+        // print_table();
+
+        if (current_priority == Thread::IDLE)
+            return -1;
+
+        int min = current_priority;
+        int chosen = -1;
+
+        // db<Thread>(WRN) << "min = " << current_priority << endl;
+
+        // db<Thread>(WRN) << "clt start current priority = "
+        //<< current_priority << endl;
+
+        for (unsigned int i = 0; i < CPU::cores(); i++)
+        {
+            if (_running_thread_by_core[i] == nullptr)
+            {
+                // db<Thread>(WRN) << "clt idle return = " << i << endl;
+                return i;
+            }
+
+            Criterion *criterion = &_running_thread_by_core[i]->criterion();
+
+            // if (*criterion > min && !(_already_dispatched & (1 << id)))
+            if (*criterion > min && !_already_dispatched[i])
+            {
+                min = *criterion;
+                chosen = i;
+
+                // db<Thread>(WRN) << "clt iter c = " << i
+                //	<< ", p = " << min << endl;
+            }
+        }
+
+        // print_table();
+
+        return chosen;
+    }
+
+    /* Just resets the entry corresponting to the `cpu_id` by setting it to nullptr.
+     * This ensures that this core will easily be picked as a target for interrupt,
+     * when it enters Thread::idle(). */
+    void clear_cpu(unsigned int cpu_id)
+    {
+        db<Thread>(WRN) << "clt clear cpu = " << cpu_id << endl;
+
+        assert(cpu_id < CPU::cores()); // Ensure valid cpu_id
+        _running_thread_by_core[cpu_id] = nullptr;
+    }
 };
 
 __END_SYS

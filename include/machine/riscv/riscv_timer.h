@@ -44,7 +44,6 @@ protected:
 		  _retrigger(retrigger),
 		  _handler(handler)
 	{
-
 		db<Thread>(WRN) << "--Timer(f=" << frequency
 			<< ",h=" << reinterpret_cast<void *>(handler)
 			<< ",ch=" << channel << ") => {count=" << _initial << "}"
@@ -128,8 +127,7 @@ class Scheduler_Timer : public Timer
 {
 public:
     Scheduler_Timer(Microsecond quantum, Handler handler) : Timer(SCHEDULER, 1000000 / quantum, handler) 
-	{
-		}
+		{ }
 };
 
 // Timer used by Alarm

@@ -94,31 +94,32 @@ FCFS::FCFS(int p, Tn &...an) : Priority((p == IDLE) ? IDLE : RT_Common::elapsed(
 
 EDF::EDF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
 
+EDF::EDF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
+
 void EDF::handle(Event event)
 {
-        // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-    if (!_locked && (periodic() && (event & JOB_RELEASE)))
-        _priority = elapsed() + _deadline;
     RT_Common::handle(event);
 
-
+    // Update the priority of the thread at job releases, before _alarm->v(), so
+    // it enters the queue in the right order (called from
+    // Periodic_Thread::Xxx_Handler)
+    if (event & JOB_RELEASE)
+        _priority = elapsed() + _deadline;
 }
 
-LLF::LLF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}
+LLF::LLF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
+{
+}
 
 void LLF::handle(Event event)
 {
-    if (!_locked && (periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))))
+    if ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))
     {
         _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
     }
     RT_Common::handle(event);
-
-    // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-    //    if((_priority >= PERIODIC) && (_priority < APERIODIC) && ((event & JOB_FINISH) || (event & UPDATE_ALL)))
 }
 
-// Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
 template FCFS::FCFS<>(int p);
 
 __END_SYS

@@ -24,7 +24,8 @@ public:
     static const unsigned long NOT_USED = -1UL;
 
     // RISC-V mode for library
-    static const bool supervisor = false; // Run EPOS library in machine mode (works in supervisor as well)
+	// Run EPOS library in machine mode (works in supervisor as well)
+    static const bool supervisor = false; 
 
     // CPU numbering
     // static const unsigned long CPU_OFFSET       = supervisor ? 1 : 0;                           // We skip core zero, which is a E CPU without MMU

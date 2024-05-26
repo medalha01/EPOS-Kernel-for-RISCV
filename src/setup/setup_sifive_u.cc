@@ -215,11 +215,21 @@ void _entry() // machine mode
     }
 
 	// TODO: @arthur comments here
-	//CPU::smp_barrier();
+	kout << "[=] antes da barreira aqui" << endl;
+
+	// This barrier guarantees that all cores do not perform operations when the BSS section
+	// of memory has not yet been cleaned. This is important because improper clearing of the BSS
+	// might cause other cores to access it and read junk rather than any meaning stuff. Additionally,
+	// it could be the case that write-buffering or out-of-order execution optimizations make the clear
+	// operation appear at different times... I don't think that would affect us here, but this barrier
+	// grats enough time to other cores so they can see the clearing properly.
+	CPU::smp_barrier();
 
 	CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
 
-	if (Traits<Machine>::supervisor) {
+	if (Traits<Machine>::supervisor) 
+	{
+		kout << "supervisor if" << endl;
 		// setup a machine mode interrupt handler
 		// to forward timer interrupts (which
 		// cannot be delegated via mideleg)
@@ -239,22 +249,29 @@ void _entry() // machine mode
 		// allows User Memory access in supervisor mode
 		CPU::sstatuss(CPU::SUM); 
 
-		if (CPU::is_bootstrap()) {
+		kout << "before supervisor if nested bootstrap" << endl;
+
+		if (CPU::is_bootstrap()) 
+		{
 			// configure PMP region 0 as (L=unlocked [0], [00],
 			// A = NAPOT [11], X [1], W [1], R [1])            		
 			CPU::pmpcfg0(0b11111); 
 			// comprising the whole memory space
 			CPU::pmpaddr0((1ULL << MMU::LA_BITS) - 1);
 		}
-	} else {
+	}
+	else
+	{
 		// disable interrupts at CLINT (each device will enable the
 		// necessary ones)
 		CPU::mie(0); 
 		CPU::mstatus(CPU::MPP_M);
 	}
 
-	// TODO: @arthur comment here 
-	//CPU::smp_barrier();
+	// This barrier ensures other cores wait for the bootstrap CPU to properly initialize 
+	// the PMP regions, for memory protection. It would be risky to keep them running before
+	// memory protection is properly set up.
+	CPU::smp_barrier();
 
 	CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
 	CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)

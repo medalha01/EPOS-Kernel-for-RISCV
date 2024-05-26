@@ -71,7 +71,7 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
 		//db<Thread>(WRN) << "chosen = " << target_core << endl;
 
-		_cpu_lookup_table.print_table();
+		//_cpu_lookup_table.print_table();
 
 		// If there is a suitable core (whether by lower priority, or running IDLE),
 		// then target_core should be different then -1, and we send an interrupt to that core.
@@ -196,8 +196,6 @@ void Thread::suspend()
 {
     lock();
 
-    //db<Thread>(TRC) << "Thread::suspend(this=" << this << ")" << endl;
-
     Thread *prev = running();
 
     _state = SUSPENDED;
@@ -214,16 +212,29 @@ void Thread::resume()
 {
     lock();
 
-	db<Thread>(WRN) << "<_> reeeeeeeeeeeeeeesume" << endl;
-    //db<Thread>(TRC) << "Thread::resume(this=" << this << ")" << endl;
-
     if (_state == SUSPENDED)
     {
         _state = READY;
         _scheduler.resume(this);
 
         if (preemptive)
-            reschedule(_link.rank().queue());
+		{
+			int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
+			//_cpu_lookup_table.print_table();
+
+			if (target_core != -1)
+			{
+				db<Thread>(WRN) << "[=] rs to c = " << target_core << endl;
+				reschedule(target_core);
+			}
+			else 
+			{
+			  db<Thread>(WRN) << "[=] rs to same = " << CPU::id() << endl;
+			  //db<Thread>(WRN) << ">wr p = " << _link.rank() << endl;
+			  //_cpu_lookup_table.print_table();
+			  reschedule();
+			}
+		}
     }
     //else
     //    db<Thread>(WRN) << "Resume called for unsuspended object!" << endl;
@@ -235,7 +246,7 @@ void Thread::yield()
 {
     lock();
 
-    db<Thread>(TRC) << "Thread::yield(running=" << running() << ")" << endl;
+    //db<Thread>(TRC) << "Thread::yield(running=" << running() << ")" << endl;
 
     Thread *prev = running();
     Thread *next = _scheduler.choose_another();
@@ -296,7 +307,7 @@ void Thread::wakeup(Queue *q)
     //db<Thread>(TRC) << "Thread::wakeup(running="
 	//	<< running() << ",q=" << q << ")" << endl;
 
-	db<Thread>(WRN) << "wake up :)" << endl;
+	//db<Thread>(WRN) << "wu:)" << endl;
 
     assert(locked()); // locking handled by caller
 
@@ -314,12 +325,12 @@ void Thread::wakeup(Queue *q)
 
 			if (target_core != -1) 
 			{
-				db<Thread>(WRN) << "[=] wakeup to core = " << target_core << endl;
+				//db<Thread>(WRN) << "[=] wu to c = " << target_core << endl;
 				reschedule(target_core);
 			}
 			else 
 			{
-				db<Thread>(WRN) << "[=] wakeup to same core = " << CPU::id() << endl;
+				//db<Thread>(WRN) << "[=] wu to same = " << CPU::id() << endl;
 				reschedule();
 			}
         }
@@ -437,7 +448,7 @@ void Thread::deprioritize(Queue *q)
 
 void Thread::int_rescheduler(IC::Interrupt_Id i)
 {
-	//db<Thread>(WRN) << "int_resch" << endl;
+	db<Thread>(WRN) << "int_resch" << endl;
     lock();
     reschedule();
     unlock();
@@ -455,18 +466,20 @@ void Thread::reschedule(unsigned int cpu)
 		Thread *prev = running();
 		Thread *next = _scheduler.choose();
 
-		db<Thread>(WRN) << "t n p = " << prev << ", n = " << next << endl;
+		db<Thread>(WRN) << "tr p = " << prev->criterion()
+			<< " n = " << next->criterion() << endl;
 
 		dispatch(prev, next);
 	}
 	else 
 	{
-		db<Thread>(WRN) << "env p = " << CPU::id() << ", n = " << cpu << endl;
+		db<Thread>(WRN) << "env " << CPU::id() << " n = " << cpu << endl;
 
 		// Ensures that no two cores send interrupts to the very same CPU,
 		// from both seeing that it is running a lower priority thread than
 		// the current one. This might happen, albeit rarely, so this is needed.
 		_cpu_lookup_table.already_dispatched(cpu);
+		//_cpu_lookup_table.print_table();
 
 		IC::ipi(cpu, IC::INT_RESCHEDULER);			
 	}
@@ -489,7 +502,6 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
 	db<Thread>(WRN) << "[=] set on dispatch" << endl;
 	_cpu_lookup_table.set_thread_on_cpu(next);
-	_cpu_lookup_table.print_table();
 
     if (charge && Criterion::timed)
     {
@@ -498,6 +510,9 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 
     if (prev != next)
     {
+		// This print is enough to cause lots of problems.
+		//_cpu_lookup_table.print_table();
+
         if (Criterion::dynamic)
         {
             prev->criterion().handle(Criterion::CHARGE | Criterion::LEAVE);
@@ -538,6 +553,7 @@ int Thread::idle()
     while (_thread_count > CPU::cores())
     { 
         db<Thread>(WRN) << "Halting the machine ..." << endl;
+		_cpu_lookup_table.clear_cpu(CPU::id());
         CPU::int_enable();
         CPU::halt();
 
@@ -546,10 +562,6 @@ int Thread::idle()
         {
             yield();
         }
-		//else 
-		//{
-		//	CPU::halt();
-		//}
     }
 
     CPU::int_disable();

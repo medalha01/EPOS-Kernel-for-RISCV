@@ -94,8 +94,6 @@ FCFS::FCFS(int p, Tn &...an) : Priority((p == IDLE) ? IDLE : RT_Common::elapsed(
 
 EDF::EDF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
 
-EDF::EDF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
-
 void EDF::handle(Event event)
 {
     RT_Common::handle(event);

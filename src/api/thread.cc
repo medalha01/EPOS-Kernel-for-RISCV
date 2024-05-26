@@ -408,36 +408,33 @@ void Thread::raise_priority(int priority)
         return reset_protocol();
     }
 
-    //db<Thread>(TRC) << "Thread::prioritize(q=" << q << ") [running=" << running() << "]" << endl;
-
-    Thread *r = running();
-    for (Queue::Iterator i = q->begin(); i != q->end(); ++i)
+    if (priority < thread_criterion->_priority)
     {
         kout << "New Priority is:" << priority << endl;
 
         if (!thread_criterion->_locked)
         {
-            r->_natural_priority = r->criterion();
-            Criterion c = (priority_inversion_protocol == Traits<Build>::CEILING)
-				? CEILING : r->criterion();
-            if (r->_state == READY)
-            {
-				// TODO: talvez tenha que dar remove 
-				// e insert aqui que nem anteriormente
-                _scheduler.suspend(r); 
-                r->_link.rank(c);
-                _scheduler.resume(r);
-            }
-            else if (r->state() == WAITING)
-            {
-                r->_waiting->remove(&r->_link);
-                r->_link.rank(c);
-                r->_waiting->insert(&r->_link);
-            }
-            else
-            {
-                r->_link.rank(c);
-            }
+            this->_natural_priority = thread_criterion->_priority;
+        }
+
+        thread_criterion->_priority = priority;
+        thread_criterion->_locked = true;
+
+        if (this->_state == READY)
+        {
+            _scheduler.suspend(this);
+            this->_link.rank(*thread_criterion);
+            _scheduler.resume(this);
+        }
+        else if (this->state() == WAITING)
+        {
+            this->_waiting->remove(&this->_link);
+            this->_link.rank(*thread_criterion);
+            this->_waiting->insert(&this->_link);
+        }
+        else
+        {
+            this->_link.rank(*thread_criterion);
         }
     }
 }

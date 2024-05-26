@@ -70,6 +70,7 @@ void IC::dispatch()
 
     _int_vector[id](id);
 
+	// NOTE: wtf is this
     //if (id > HARD_INT)
     //{
     //    complete(int2irq(id));

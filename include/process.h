@@ -267,16 +267,9 @@ public:
 		//_already_dispatch = 0;
     }
 
+	/* Helper method for printing the values of the CPU lookup table, for debugging purposes. */
 	void print_table()
 	{
-		//bool tmp_locked = false;
-
-		//if (!Thread::locked())
-		//{
-		//	Thread::lock();
-		//	tmp_locked = true;
-		//}
-
 		//db<Thread>(WRN) << "Printing CPU lookup table..." << endl;
 
 		for (unsigned int i = 0; i < CPU::cores(); i++)
@@ -297,13 +290,14 @@ public:
 		}
 
 		//db<Thread>(WRN) << "End printing CPU lookup table..." << endl;
-
-		//if (tmp_locked) 
-		//{
-		//	Thread::unlock();
-		//}
 	}
 
+	/* Updates the lookup table with currently running thread. 
+	 * This method is meant to be used whenever we change contexts in a given core,
+	 * so as to always keep an updated list of possible interrupt targets.
+	 *
+	 * This also resets the _already_dispatched[id] flag. 
+	 * See the next method for more details. */
     void set_thread_on_cpu(Thread *running)
     {
         unsigned int id = CPU::id();
@@ -315,15 +309,25 @@ public:
         _running_thread_by_core[id] = running;
     }
 
+	/* Assigns a temporary flag to an array in the position corresponding to the CPU id.
+	 * This is done to prevent the rare, but perhaps possible event of two cores finding out
+	 * about the same core that runs a thread with a lower priority, since the two would send
+	 * an interrupt to that core. 
+	 *
+	 * Note that the window for this to happen in effectively so minimal that it is near impossible,
+	 * because it spans from receiving the interrupt, going to the dispatch method, int_rescheduler (int_not)
+	 * and then into the Thread::reschedule() method, which finally would put a lock in place. 
+	 *
+	 * Unlikely for most cases, but possible. So we set the flag as `true` when a core already picked this target,
+	 * and we reset it to `false` during the set_thread_on_cpu() method, usually during Thread::dispatch() */
 	void already_dispatched(unsigned int cpu)
 	{
 		assert(Thread::locked());
 		_already_dispatched[cpu] = true;
 	}
 
-	// Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
-	// if there is a core running a lower priority thread,
-	// of if there is a core running idle.
+	/* Finds out if there is a valid target for an INT_RESCHEDULER interrupt:
+	 * if there is a core running a lower priority thread, or if there is a core running idle. */
 	int get_lowest_priority_core(int current_priority = (1 << 31)) 
 	{
 		//print_table();
@@ -364,6 +368,9 @@ public:
 		return chosen;
 	}
 
+	/* Just resets the entry corresponting to the `cpu_id` by setting it to nullptr.
+	 * This ensures that this core will easily be picked as a target for interrupt,
+	 * when it enters Thread::idle(). */
     void clear_cpu(unsigned int cpu_id)
     {
 		db<Thread>(WRN) << "clt clear cpu = " << cpu_id << endl;

@@ -14,14 +14,14 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = RV64;
     static const unsigned int MACHINE = RISCV;
     static const unsigned int MODEL = SiFive_U;
-    static const unsigned int CPUS = 1;
+    static const unsigned int CPUS = 2;
     static const unsigned int NETWORKING = STANDALONE;
-    static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
+    static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)  
 
     // Default flags
     static const bool monitored = true;
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
 };
 
@@ -29,8 +29,9 @@ struct Traits<Build> : public Traits_Tokens
 template <>
 struct Traits<Debug> : public Traits<Build>
 {
-    static const bool error = true;
-    static const bool warning = true;
+    static const bool debugged = false;
+    static const bool error = false;
+    static const bool warning = false;
     static const bool info = false;
     static const bool trace = false;
 };
@@ -105,11 +106,12 @@ struct Traits<Application> : public Traits<Build>
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
 };
 
+
 template <>
 struct Traits<System> : public Traits<Build>
 {
     static const bool debugged = false;
-    static const bool trace = true;
+    static const bool trace = false;
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
     static const bool multiheap = Traits<Scratchpad>::enabled;
 
@@ -122,13 +124,14 @@ struct Traits<System> : public Traits<Build>
     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
 };
 
+
 template <>
 struct Traits<Thread> : public Traits<Build>
 
 {
     static const bool debugged = false; // Enable debugging for MyClass
-    static const bool error = true;     // Enable error level debugging for MyClass
-    static const bool warning = true;   // Enable warning level debugging for MyClass
+    static const bool error = false;     // Enable error level debugging for MyClass
+    static const bool warning = false;   // Enable warning level debugging for MyClass
     static const bool info = false;     // Enable info level debugging for MyClass
     static const bool trace = false;    // Enable trace level debugging for MyClass
     static const bool enabled = Traits<System>::multithread;
@@ -144,10 +147,10 @@ template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
     static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
-    static const bool error = true;   // Enable error level debugging for MyClass
-    static const bool warning = true; // Enable warning level debugging for MyClass
-    static const bool info = true;    // Enable info level debugging for MyClass
-    static const bool trace = true;   // Enable trace level debugging for MyClass
+    static const bool error = false;   // Enable error level debugging for MyClass
+    static const bool warning = false; // Enable warning level debugging for MyClass
+    static const bool info = false;    // Enable info level debugging for MyClass
+    static const bool trace = false;   // Enable trace level debugging for MyClass
 };
 
 template <>
@@ -156,6 +159,13 @@ struct Traits<Synchronizer> : public Traits<Build>
     static const bool enabled = Traits<System>::multithread;
     static const bool INHERITANCE = false;
     static const bool CEILING_PROTOCOL = true;
+};
+
+template <>
+struct Traits<Semaphore> : public Traits<Build>
+{
+    static const bool debugged = true;
+    static const bool trace = true;
 };
 
 template <>

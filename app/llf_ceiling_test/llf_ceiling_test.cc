@@ -6,14 +6,14 @@
 
 using namespace EPOS;
 
-Semaphore matrix_semaphore(1); // Semaphore to control matrix access, allows 2 threads concurrently
+Semaphore matrix_semaphore(1, false); // Semaphore to control matrix access, allows 2 threads concurrently
 
 long max(unsigned int a, unsigned int b, unsigned int c) { return ((a >= b) && (a >= c)) ? a : ((b >= a) && (b >= c) ? b : c); }
 
 // Global configuration constants
 const unsigned int iterations = 4;
 const unsigned int periods[] = {4000, 4000, 4000};   // ms for threads A, B, C
-const unsigned int wcets[] = {1000, 1000, 1000};     // ms for threads A, B, C
+const unsigned int wcets[] = {1000, 2000, 1000};     // ms for threads A, B, C
 const unsigned int deadlines[] = {4000, 4000, 4000}; // ms for threads A, B, C
 const unsigned int period_w = 100;                   // ms for watcher thread
 const unsigned int wcet_w = 10;                      // ms for watcher thread
@@ -171,6 +171,7 @@ void matrix_multiply(int index_a, int index_b, int index_c, int index_d, int ind
             }
         }
     }
+    Machine::delay(1000000);
     matrix_semaphore.v(); // Release the semaphore
 
     cout << "Ending Matrix Multiplication " << chrono.read() / 1000 << endl;

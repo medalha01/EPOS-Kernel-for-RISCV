@@ -96,11 +96,12 @@ EDF::EDF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() 
 
 void EDF::handle(Event event)
 {
-    RT_Common::handle(event);
-
-    // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
+        // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
     if (!_locked && (periodic() && (event & JOB_RELEASE)))
         _priority = elapsed() + _deadline;
+    RT_Common::handle(event);
+
+
 }
 
 LLF::LLF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}

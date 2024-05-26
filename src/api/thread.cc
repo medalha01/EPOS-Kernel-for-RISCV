@@ -367,6 +367,7 @@ void Thread::reset_protocol()
     c->_locked = false;
     c->_priority = _natural_priority;
     c->handle(Criterion::UPDATE);
+    _natural_priority = c->_priority;
 
     if (this->_state == READY)
     {
@@ -388,33 +389,22 @@ void Thread::reset_protocol()
 
 void Thread::raise_priority(int priority)
 {
-    assert(locked()); // locking handled by caller
-
-    /*Thread::Criterion *thread_criterion = &current->object()->threadPointer->criterion();
-
-    // Check if the thread's priority is higher than the new highest priority
-    if (thread_criterion->_priority > highest_priority)
-    {
-        // If the thread's priority is not locked, update its natural priority
-        if (!thread_criterion->_locked)
-        {
-            current->object()->threadPointer->_natural_priority = thread_criterion->_priority;
-        }
-
-        // Set the thread's priority to the new highest priority and lock it
-        thread_criterion->_priority = priority;
-        thread_criterion->_locked = true;
-    }*/
+    assert(locked());
 
     Thread::Criterion *thread_criterion = &this->criterion();
-
-    if (this->priority() > priority)
+    if (criticalZonesCount < 1)
     {
+        return reset_protocol();
+    }
+
+    if (priority < thread_criterion->_priority)
+    {
+
         if (!thread_criterion->_locked)
         {
             this->_natural_priority = thread_criterion->_priority;
         }
-        kout << "New Priority is: " << priority << endl;
+
         thread_criterion->_priority = priority;
         thread_criterion->_locked = true;
 

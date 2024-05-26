@@ -390,15 +390,18 @@ void Thread::reset_protocol()
 void Thread::raise_priority(int priority)
 {
     assert(locked());
-
+    //_print("\n Raising!\n");
     Thread::Criterion *thread_criterion = &this->criterion();
     if (criticalZonesCount < 1)
     {
+        _print("\n Reseting!\n");
+
         return reset_protocol();
     }
 
     if (priority < thread_criterion->_priority)
     {
+        kout << "New Priority is:" << priority << endl;
 
         if (!thread_criterion->_locked)
         {

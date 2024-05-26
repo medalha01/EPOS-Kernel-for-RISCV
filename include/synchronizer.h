@@ -76,9 +76,21 @@ protected:
     }
 
     // Atomic operations
-    bool tsl(volatile bool &lock) { return CPU::tsl(lock); }
-    long finc(volatile long &number) { return CPU::finc(number); }
-    long fdec(volatile long &number) { return CPU::fdec(number); }
+    bool tsl(volatile bool &lock)
+    {
+        //_print("Atomic tsl called");
+        return CPU::tsl(lock);
+    }
+    long finc(volatile long &number)
+    {
+        //_print("Atomic finc called");
+        return CPU::finc(number);
+    }
+    long fdec(volatile long &number)
+    {
+        //_print("Atomic fdec called");
+        return CPU::fdec(number);
+    }
 
     // Thread operations
     void lock_for_acquiring()
@@ -123,32 +135,31 @@ protected:
         return most_urgent;
     }
 
-    void activateCeiling(int priority = Thread::CEILING)
+    void activateCeiling(int priority)
     {
         ceilingIsActive = true;
 
-        // Check if the highest priority is set to the ceiling value and the provided priority is lower than the highest priority
-        if ((highest_priority) == Thread::CEILING || (priority < highest_priority))
+        if ((priority < highest_priority))
         {
             // Update the highest priority to the new lower priority
             highest_priority = priority;
+        }
 
-            // Get the first element in the resource waiting list
-            T_Sync_Element *current = resource_holder_list.head();
+        // Get the first element in the resource waiting list
+        T_Sync_Element *current = resource_holder_list.head();
 
-            // Iterate through the resource waiting list
-            while (current != nullptr)
+        // Iterate through the resource waiting list
+        while (current != nullptr)
+        {
+            Thread *current_object = current->object();
+
+            if (current_object)
             {
-                Thread *current_object = current->object();
-
-                if (current_object)
-                {
-                    current_object->raise_priority(highest_priority);
-                }
-
-                // Move to the next element in the resource waiting list
-                current = current->next();
+                current_object->raise_priority(highest_priority);
             }
+
+            // Move to the next element in the resource waiting list
+            current = current->next();
         }
     }
 
@@ -226,7 +237,7 @@ protected:
 
     void recalculatePriorities()
     {
-        if (!areThreadsWaiting())
+        if (waitingThreadsCount < 1)
         {
             deactivateCeiling();
         }
@@ -288,13 +299,27 @@ protected:
         return false;
     }
 
-    void sleep() { Thread::sleep(&_waiting); }
-    void wakeup() { Thread::wakeup(&_waiting); }
-    void wakeup_all() { Thread::wakeup_all(&_waiting); }
+    void sleep()
+    {
+        Thread::sleep(&_waiting);
+    }
+    void wakeup()
+    {
+        Thread::wakeup(&_waiting);
+    }
+    void wakeup_all()
+    {
+        Thread::wakeup_all(&_waiting);
+    }
 
 public:
     int getMostUrgentPriority()
     {
+        if (!Traits<Synchronizer>::INHERITANCE)
+        {
+            return Thread::CEILING;
+        }
+        //_print("getMostUrgentPriority called");
         Thread *urgent = getMostUrgentInWaiting();
         if (urgent)
         {
@@ -304,7 +329,7 @@ public:
         {
             highest_priority = Thread::IDLE;
         }
-        return Traits<Synchronizer>::INHERITANCE ? (highest_priority) : Thread::CEILING;
+        return (highest_priority);
     }
 
     bool areThreadsWaiting()
@@ -343,7 +368,7 @@ private:
 class Semaphore : protected Synchronizer_Common
 {
 public:
-    Semaphore(long v = 1);
+    Semaphore(long v = 1, bool is_producer = true);
     ~Semaphore();
 
     void p();
@@ -351,6 +376,7 @@ public:
 
 private:
     volatile long _value;
+    bool producer;
 };
 
 // This is actually no Condition Variable

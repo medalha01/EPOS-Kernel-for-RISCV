@@ -248,8 +248,8 @@ void Thread::exit(int status)
 {
     lock();
 
-    db<Thread>(TRC) << "Thread::exit(status=" << status
-		<< ") [running=" << running() << "]" << endl;
+    //db<Thread>(TRC) << "Thread::exit(status=" << status
+	//	<< ") [running=" << running() << "]" << endl;
 
     Thread *prev = running();
     _scheduler.remove(prev);
@@ -275,7 +275,7 @@ void Thread::exit(int status)
 
 void Thread::sleep(Queue *q)
 {
-    db<Thread>(TRC) << "Thread::sleep(running=" << running() << ",q=" << q << ")" << endl;
+    //db<Thread>(TRC) << "Thread::sleep(running=" << running() << ",q=" << q << ")" << endl;
 
     assert(locked()); // locking handled by caller
 
@@ -295,6 +295,8 @@ void Thread::wakeup(Queue *q)
     //db<Thread>(TRC) << "Thread::wakeup(running="
 	//	<< running() << ",q=" << q << ")" << endl;
 
+	db<Thread>(WRN) << "wake up :)" << endl;
+
     assert(locked()); // locking handled by caller
 
     if (!q->empty())
@@ -306,7 +308,19 @@ void Thread::wakeup(Queue *q)
 
         if (preemptive)
         {
-            reschedule(t->_link.rank().queue());
+			int target_core = _cpu_lookup_table.get_lowest_priority_core(t->_link.rank());
+			_cpu_lookup_table.print_table();
+
+			if (target_core != -1) 
+			{
+				db<Thread>(WRN) << "[=] wakeup to core = " << target_core << endl;
+				reschedule(target_core);
+			}
+			else 
+			{
+				db<Thread>(WRN) << "[=] wakeup to same core = " << CPU::id() << endl;
+				reschedule();
+			}
         }
     }
 }

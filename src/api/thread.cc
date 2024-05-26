@@ -214,6 +214,7 @@ void Thread::resume()
 {
     lock();
 
+	db<Thread>(WRN) << "<_> reeeeeeeeeeeeeeesume" << endl;
     //db<Thread>(TRC) << "Thread::resume(this=" << this << ")" << endl;
 
     if (_state == SUSPENDED)

@@ -7,50 +7,50 @@
 
 __BEGIN_SYS
 
-Condition::Condition()
-{
-    db<Synchronizer>(TRC) << "Condition() => " << this << endl;
-}
-
-
-Condition::~Condition()
-{
-    db<Synchronizer>(TRC) << "~Condition(this=" << this << ")" << endl;
-}
-
-
-void Condition::wait()
-{
-    db<Synchronizer>(TRC) << "Condition::wait(this=" << this << ")" << endl;
-
-    lock_for_acquiring();
-    sleep();
-    unlock_for_acquiring();
-}
-
-
-void Condition::signal()
-{
-    db<Synchronizer>(TRC) << "Condition::signal(this=" << this << ")" << endl;
-
-    lock_for_releasing();
-    wakeup();
-    unlock_for_releasing();
-}
-
-
-void Condition::broadcast()
-{
-    db<Synchronizer>(TRC) << "Condition::broadcast(this=" << this << ")" << endl;
-
-    lock_for_releasing();
-    wakeup_all();
-    unlock_for_releasing();
-}
-
-// This is an alternative implementation, which does impose ordering
-// on threads waiting at "wait". Nontheless, it's still susceptible to counter
-// overflow
+//Condition::Condition()
+//{
+//    db<Synchronizer>(TRC) << "Condition() => " << this << endl;
+//}
+//
+//
+//Condition::~Condition()
+//{
+//    db<Synchronizer>(TRC) << "~Condition(this=" << this << ")" << endl;
+//}
+//
+//
+//void Condition::wait()
+//{
+//    db<Synchronizer>(TRC) << "Condition::wait(this=" << this << ")" << endl;
+//
+//    lock_for_acquiring();
+//    sleep();
+//    unlock_for_acquiring();
+//}
+//
+//
+//void Condition::signal()
+//{
+//    db<Synchronizer>(TRC) << "Condition::signal(this=" << this << ")" << endl;
+//
+//    lock_for_releasing();
+//    wakeup();
+//    unlock_for_releasing();
+//}
+//
+//
+//void Condition::broadcast()
+//{
+//    db<Synchronizer>(TRC) << "Condition::broadcast(this=" << this << ")" << endl;
+//
+//    lock_for_releasing();
+//    wakeup_all();
+//    unlock_for_releasing();
+//}
+//
+//// This is an alternative implementation, which does impose ordering
+//// on threads waiting at "wait". Nontheless, it's still susceptible to counter
+//// overflow
 // class Condition: public Synchronizer_Common
 // {
 // private:

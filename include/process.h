@@ -18,6 +18,7 @@ extern "C"
 
 __BEGIN_SYS
 
+class Synchronizer_Common;
 class Thread
 {
     friend class Init_End;            // context->load()
@@ -50,6 +51,9 @@ public:
         WAITING,
         FINISHING
     };
+
+    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> SynchronizerList;
+    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> SemaphoreLink;
 
     // Thread Scheduling Criterion
     typedef Traits<Thread>::Criterion Criterion;
@@ -103,8 +107,33 @@ public:
 
     void leave_zone()
     {
-        criticalZonesCount--;
+        if (criticalZonesCount > 0)
+        {
+            criticalZonesCount--;
+        }
     };
+
+    void addSynchronizer(Synchronizer_Common *syncObj)
+    {
+        if (syncObj)
+        {
+            SemaphoreLink *syncronizerLink = new (SYSTEM) SemaphoreLink(syncObj);
+            if (syncronizerLink)
+                synchronizerList.insert(syncronizerLink);
+        }
+    }
+
+    void removeSynchronizer(Synchronizer_Common *syncObj)
+    {
+        if (syncObj)
+        {
+            SemaphoreLink *syncronizerLink = synchronizerList.remove(syncObj);
+            if (syncronizerLink)
+            {
+                delete syncronizerLink;
+            }
+        }
+    }
 
     void reset_protocol();
 
@@ -184,14 +213,17 @@ protected:
     int _natural_priority;
     int criticalZonesCount = 0;
 
-    SyncObject *_syncHolder = nullptr;
-    SyncObject *_syncWaiter = nullptr;
-
     Queue *_waiting;
     Thread *volatile _joining;
     Queue::Element _link;
 
     static bool _not_booting;
+
+    bool _is_holding = false;
+    bool _is_waiting = false;
+
+    SynchronizerList synchronizerList;
+
     static volatile unsigned int _thread_count;
     static Scheduler_Timer *_timer;
     static Scheduler<Thread> _scheduler;

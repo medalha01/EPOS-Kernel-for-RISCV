@@ -9,86 +9,34 @@ __BEGIN_SYS
 
 class Synchronizer_Common;
 
-// SyncObject class
-class SyncObject
+class SyncIterator
 {
-    friend Synchronizer_Common;
-    friend Thread;
+    friend class Synchronizer_Common;
+    friend class SyncObject;
+    friend class Thread;
 
 public:
-    typedef Thread::Queue ThreadQueue;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::SyncObject> SyncElement;
-    typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> SynchronizerList;
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> SemaphoreLink;
-
-    SyncObject(Thread *thread, bool holding)
-        : threadPointer(thread), isHolding(holding)
+    SyncIterator(Thread *thread, Synchronizer_Common *synchronizer)
     {
-        selfReferencePointer = new (SYSTEM) SyncElement(this);
-        if (selfReferencePointer)
-        {
-            if (holding)
-                threadPointer->_syncHolder = this;
-            else
-                threadPointer->_syncWaiter = this;
-        }
+        tp = thread;
+        syncObject = synchronizer;
     }
-
-    ~SyncObject()
-    {
-        // TODO esvaziar listas e destruir objetos vazios
-
-        if (selfReferencePointer)
-        {
-            delete selfReferencePointer;
-        }
-    }
-
-    void addSynchronizer(Synchronizer_Common *syncObj)
-    {
-        if (syncObj)
-        {
-            SemaphoreLink *syncronizerLink = new (SYSTEM) SemaphoreLink(syncObj);
-            if (syncronizerLink)
-                synchronizerList.insert(syncronizerLink);
-        }
-    }
-    void removeSynchronizer(Synchronizer_Common *syncObj)
-    {
-        if (syncObj)
-        {
-            SemaphoreLink *syncronizerLink = synchronizerList.remove(syncObj);
-            if (syncronizerLink)
-            {
-                delete syncronizerLink;
-            }
-        }
-    }
-
-    int getPriority()
-    {
-        return threadPointer ? threadPointer->criterion()._priority : Thread::IDLE;
-    }
-
-    Thread *threadPointer = nullptr;
-    SyncElement *selfReferencePointer = nullptr;
-    bool isHolding = false;
-    SynchronizerList synchronizerList;
+    Thread *tp;
+    Synchronizer_Common *syncObject;
+    int counter = 0;
 };
 
 class Synchronizer_Common
 {
     friend class Thread;
-    friend class SyncObject;
 
 protected:
-    typedef Thread::Queue Queue;
+    typedef Thread::Queue Sync_Queue;
+    typedef Thread::Queue::Element T_Sync_Element;
 
 public:
-    typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::SyncObject> SyncElement;
     typedef List<Synchronizer_Common, List_Elements::Doubly_Linked<Synchronizer_Common>> SynchronizerList;
     typedef EPOS::S::U::List_Elements::Doubly_Linked<EPOS::S::Synchronizer_Common> SemaphoreLink;
-    typedef List<SyncObject, List_Elements::Doubly_Linked<SyncObject>> SyncInteractionList;
 
 protected:
     Synchronizer_Common() {}
@@ -97,12 +45,6 @@ protected:
         Thread::lock();
 
         // Clean up granted queue
-        while (!_granted.empty())
-        {
-            Queue::Element *e = _granted.remove();
-            if (e)
-                delete e;
-        }
 
         if (!_waiting.empty())
         {
@@ -111,33 +53,20 @@ protected:
 
         while (!resource_holder_list.empty())
         {
-            SyncElement *e = resource_holder_list.remove();
+            T_Sync_Element *e = resource_holder_list.remove();
             if (e)
             {
-                if (e->object()->synchronizerList.empty())
-                {
-                    delete e->object();
-                }
-                else
-                {
-                    e->object()->removeSynchronizer(this);
-                }
+                e->object()->removeSynchronizer(this);
+                delete e->object();
             }
         }
 
         while (!resource_waiting_list.empty())
         {
-            SyncElement *e = resource_holder_list.remove();
+            T_Sync_Element *e = resource_holder_list.remove();
             if (e)
             {
-                if (e->object()->synchronizerList.empty())
-                {
-                    delete e->object();
-                }
-                else
-                {
-                    e->object()->removeSynchronizer(this);
-                }
+                delete e->object();
             }
         }
 
@@ -165,39 +94,39 @@ protected:
     {
         Thread::unlock();
     }
-    void unlock_for_acquiring()
-    {
-        Queue::Element *e = new (SYSTEM) Queue::Element(Thread::running());
-        if (e)
-            _granted.insert(e);
-        Thread::unlock();
-    }
 
-    SyncObject *getMostUrgentInWaiting()
+    Thread *getMostUrgentInWaiting()
     {
-        SyncElement *head_waiter = resource_waiting_list.head();
-        if (head_waiter == nullptr)
+        T_Sync_Element *current = resource_waiting_list.head();
+        if (current == nullptr)
         {
             return nullptr; // Handle the case where the waiting list is empty
         }
 
-        SyncObject *most_urgent = head_waiter->object();
-        SyncElement *current = head_waiter->next();
+        Thread *most_urgent = current->object();
 
         while (current != nullptr)
         {
-            SyncObject *current_object = current->object();
-            if (current_object->getPriority() < most_urgent->getPriority())
+            Thread *current_object = current->object();
+            if (current_object->priority() < most_urgent->priority())
             {
                 most_urgent = current_object;
             }
+            if (most_urgent->priority() == Thread::CEILING)
+            {
+                highest_priority = most_urgent->priority();
+                return most_urgent;
+            }
             current = current->next();
         }
+        highest_priority = most_urgent->priority();
         return most_urgent;
     }
 
     void activateCeiling(int priority = Thread::CEILING)
     {
+        ceilingIsActive = true;
+
         // Check if the highest priority is set to the ceiling value and the provided priority is lower than the highest priority
         if ((highest_priority) == Thread::CEILING || (priority < highest_priority))
         {
@@ -205,22 +134,24 @@ protected:
             highest_priority = priority;
 
             // Get the first element in the resource waiting list
-            SyncElement *current = resource_holder_list.head();
+            T_Sync_Element *current = resource_holder_list.head();
 
             // Iterate through the resource waiting list
             while (current != nullptr)
             {
-                SyncObject *current_object = current->object();
-                if (current_object && current_object->threadPointer)
+                Thread *current_object = current->object();
+
+                if (current_object)
                 {
-                    current_object->threadPointer->raise_priority(highest_priority);
+                    current_object->raise_priority(highest_priority);
                 }
+
                 // Move to the next element in the resource waiting list
                 current = current->next();
             }
         }
-        ceilingIsActive = true;
     }
+
     void shiftProtocol(Thread *exec_thread)
     {
         if (exec_thread && exec_thread->criticalZonesCount < 1)
@@ -229,19 +160,26 @@ protected:
         }
         else if (exec_thread)
         {
-            get_next_priority(exec_thread);
+            // TODO REAVALIAR MAS PARECE BOM PLANO
+            exec_thread->reset_protocol();
+            int most_urgent_from_syncs = get_new_priority(exec_thread);
+            if (most_urgent_from_syncs < exec_thread->_natural_priority)
+            {
+                exec_thread->raise_priority(most_urgent_from_syncs);
+            }
         }
     }
 
-    void get_next_priority(Thread *exec_thread)
+    int get_new_priority(Thread *exec_thread)
     {
-        if (!exec_thread->_syncHolder)
+        if (exec_thread->synchronizerList.empty())
         {
-            return exec_thread->reset_protocol();
+            return Thread::idle();
         }
-        SemaphoreLink *helper = exec_thread->_syncHolder->synchronizerList.head();
+        SemaphoreLink *helper = exec_thread->synchronizerList.head();
         Synchronizer_Common *current = helper->object();
-        int highest__t_priority = current->getMostUrgentPriority();
+
+        int highest_t_priority = current->getMostUrgentPriority();
 
         while (helper)
         {
@@ -252,30 +190,31 @@ protected:
                 continue;
             }
             int current_priority = current->getMostUrgentPriority();
-            if (current_priority < highest__t_priority)
+
+            if (current_priority < highest_t_priority)
             {
-                highest__t_priority = current_priority;
+                highest_t_priority = current_priority;
             }
-            if (highest__t_priority == Thread::CEILING && current->ceilingIsActive)
+            if (highest_t_priority == Thread::CEILING && current->ceilingIsActive)
             {
-                return exec_thread->raise_priority(highest__t_priority);
+                return Thread::CEILING;
             }
             helper = helper->next();
         }
+        return highest_t_priority;
+    }
 
-        if (highest__t_priority < exec_thread->_natural_priority)
+    void checkForThreadProtocol(Thread *exec_thread)
+    {
+        if (areThreadsWaiting())
         {
-            exec_thread->raise_priority(highest__t_priority);
-        }
-        else
-        {
-            exec_thread->reset_protocol();
+            exec_thread->raise_priority(get_new_priority(exec_thread));
         }
     }
 
     void checkForProtocol(Thread *exec_thread)
     {
-        if (waitingThreadsCount < 1)
+        if (!areThreadsWaiting())
         {
             deactivateCeiling();
         } // TODO LEAVING THREAD MUST ENTER PROTOCOL
@@ -285,166 +224,68 @@ protected:
         }
     }
 
+    void recalculatePriorities()
+    {
+        if (!areThreadsWaiting())
+        {
+            deactivateCeiling();
+        }
+
+        T_Sync_Element *current = resource_holder_list.head();
+        while (current != nullptr)
+        {
+            Thread *current_object = current->object();
+            if (current_object)
+            {
+                int new_prio = get_new_priority(current_object);
+                current_object->reset_protocol();
+                current_object->raise_priority(new_prio);
+            }
+            current = current->next();
+        }
+    }
+
     void deactivateCeiling()
     {
         highest_priority = Thread::IDLE;
         ceilingIsActive = false;
-
-        SyncElement *current = resource_holder_list.head();
-
-        // Iterate through the resource holder list
-        while (current != nullptr)
-        {
-            SyncObject *current_object = current->object();
-            if (current_object && current_object->threadPointer)
-            {
-                get_next_priority(current_object->threadPointer);
-                // resetThreadPriority(current_object->threadPointer); // TODO
-            }
-            // Move to the next element in the resource waiting list
-            current = current->next();
-        }
-    }
-    /*
-    void resetThreadPriority(Thread *exec_thread)
-    {
-        if (!exec_thread)
-            return;
-
-        SyncObject *syncWatcher = exec_thread->_syncHolder;
-        if (!syncWatcher)
-        {
-            exec_thread->restore_priority();
-            return;
-        }
-
-        SemaphoreLink *syncLink = syncWatcher->synchronizerList.head();
-        int starter = Thread::IDLE;
-
-        if (syncLink == nullptr)
-        {
-            exec_thread->restore_priority();
-            return;
-        }
-        while (syncLink != nullptr)
-        {
-            Synchronizer_Common *current = syncLink->object();
-            if (current && current->ceilingIsActive && current->highest_priority < starter)
-            {
-                starter = current->highest_priority;
-            }
-            syncLink = syncLink->next();
-        }
-
-        if (starter > exec_thread->_natural_priority)
-        {
-            exec_thread->restore_priority(); // TODO RESET THREAD UNPRIORITIZE
-            return;
-        }
-
-        exec_thread->raise_priority(starter);
-    }*/
-
-    void lock_for_releasing()
-    {
-        Thread::lock();
-        Queue::Element *e = _granted.remove();
-        if (e)
-            delete e;
-        Thread::deprioritize(&_granted);
-        Thread::deprioritize(&_waiting);
     }
 
-    void unlock_for_releasing()
-    {
-        Thread::unlock();
-    }
-
-    void insertSyncObject(SyncObject *resource, SyncInteractionList *list)
+    void insertSyncObject(Thread *resource, Sync_Queue *list)
     {
         if (resource && list)
         {
-            SyncElement *e = new (SYSTEM) SyncElement(resource);
+            T_Sync_Element *e = new (SYSTEM) T_Sync_Element(resource);
             if (e)
                 list->insert(e);
         }
     }
 
-    void removeSyncObject(SyncObject *resource, SyncInteractionList *list)
+    void removeSyncObject(Thread *resource, Sync_Queue *list)
     {
         if (resource && list)
         {
-            SyncElement *removedObject = list->remove(resource);
-
-            if (resource->synchronizerList.empty())
-            {
-                if (resource->isHolding)
-                {
-                    if (resource->threadPointer)
-                        resource->threadPointer->_syncHolder = nullptr;
-                }
-                else
-                {
-                    if (resource->threadPointer)
-                        resource->threadPointer->_syncWaiter = nullptr;
-                }
-                delete resource;
-            }
+            T_Sync_Element *removedObject = list->remove(resource);
 
             if (removedObject)
                 delete removedObject;
         }
     }
-
-    bool isThreadPresent(Thread *execThread, SyncInteractionList *targetList)
+    bool isThreadPresent(Thread *execThread, Sync_Queue *targetList)
     {
         if (!execThread || !targetList)
             return false;
 
-        SyncElement *syncObject = targetList->head();
-        while (syncObject != nullptr)
+        T_Sync_Element *temp_thread_link = targetList->head();
+        while (temp_thread_link != nullptr)
         {
-            if (execThread == syncObject->object()->threadPointer)
+            if (execThread == temp_thread_link->object())
             {
                 return true;
             }
-            syncObject = syncObject->next();
+            temp_thread_link = temp_thread_link->next();
         }
         return false;
-    }
-
-    SyncObject *getSyncObject(Thread *execThread, bool isHolder)
-    {
-        if (!execThread)
-            return nullptr;
-
-        SyncObject *resource = nullptr;
-
-        if (isHolder)
-        {
-            if (execThread->_syncHolder == nullptr)
-            {
-                resource = new (SYSTEM) SyncObject(execThread, isHolder);
-                execThread->_syncHolder = resource;
-            }
-            else
-            {
-                resource = execThread->_syncHolder;
-            }
-        }
-        else
-        {
-            if (execThread->_syncWaiter == nullptr)
-            {
-                resource = new (SYSTEM) SyncObject(execThread, isHolder);
-                execThread->_syncWaiter = resource;
-            }
-            else
-            {
-                resource = execThread->_syncWaiter;
-            }
-        }
-        return resource;
     }
 
     void sleep() { Thread::sleep(&_waiting); }
@@ -454,9 +295,16 @@ protected:
 public:
     int getMostUrgentPriority()
     {
-        SyncObject *urgent = getMostUrgentInWaiting();
-        highest_priority = urgent ? urgent->getPriority() : Thread::IDLE;
-        return Traits<Synchronizer>::INHERITANCE ? (urgent ? urgent->getPriority() : Thread::IDLE) : Thread::CEILING;
+        Thread *urgent = getMostUrgentInWaiting();
+        if (urgent)
+        {
+            highest_priority = urgent->priority();
+        }
+        else
+        {
+            highest_priority = Thread::IDLE;
+        }
+        return Traits<Synchronizer>::INHERITANCE ? (highest_priority) : Thread::CEILING;
     }
 
     bool areThreadsWaiting()
@@ -465,13 +313,15 @@ public:
     }
 
 protected:
-    Queue _waiting;
-    Queue _granted;
+    Sync_Queue _waiting;
+
     bool ceilingIsActive = false;
+
     int highest_priority = Thread::IDLE;
-    SyncInteractionList resource_holder_list;
-    SyncInteractionList resource_waiting_list;
-    // int amountOfZones = 0; // TODO: Implement an algorithm to optimize this.
+
+    Sync_Queue resource_holder_list;
+    Sync_Queue resource_waiting_list;
+
     int waitingThreadsCount = 0;
 };
 

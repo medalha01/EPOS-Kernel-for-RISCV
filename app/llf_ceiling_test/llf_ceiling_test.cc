@@ -152,6 +152,9 @@ void matrix_multiply(int index_a, int index_b, int index_c, int index_d, int ind
             matrices[index_e][i][j] = 0;
         }
     }
+    matrix_semaphore.v(); // Release the semaphore
+
+    matrix_semaphore.p(); // Wait to acquire the semaphore
 
     // Matrix multiplication logic
     for (int i = 0; i < n; i++)

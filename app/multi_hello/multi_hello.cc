@@ -17,7 +17,6 @@ int hello();
 
 int main()
 {
-
     for (UInt i = 0; i < Traits<Build>::CPUS; i++)
         hellos[i] = new Thread(hello);
 

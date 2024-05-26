@@ -200,10 +200,15 @@ public:
     static const bool preemptive = true;
 
 protected:
-    RT_Common(int i) : Priority(i), _period(0), _deadline(0), _capacity(0) {} // aperiodic
-    RT_Common(int i, Microsecond p, Microsecond d, Microsecond c) : Priority(i), _period(ticks(p)), _deadline(ticks(d ? d : p)), _capacity(ticks(c)) {}
+	RT_Common(int i)
+		: Priority(i), _period(0), _deadline(0), _capacity(0) {} // aperiodic
+	RT_Common(int i, Microsecond p, Microsecond d, Microsecond c)
+		: Priority(i),
+		  _period(ticks(p)),
+		  _deadline(ticks(d ? d : p)),
+		  _capacity(ticks(c)) {}
 
-public:
+  public:
     Microsecond period() { return time(_period); }
     Microsecond deadline() { return time(_deadline); }
     Microsecond capacity() { return time(_capacity); }
@@ -295,7 +300,7 @@ public:
 public: 
     GLLF(int p = APERIODIC): LLF(p) {}
     GLLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN) 
-		: LLF(p, d, c) { }; // TODO: verificar se isso está certo (acho q n)
+		: LLF(p, d, c) { }; 
 
     unsigned int queue() const { return current_head(); }
     void queue(unsigned int q) {}

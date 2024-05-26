@@ -29,8 +29,8 @@ struct Traits<Build> : public Traits_Tokens
 template <>
 struct Traits<Debug> : public Traits<Build>
 {
-    static const bool error = true;
-    static const bool warning = true;
+    static const bool error = false;
+    static const bool warning = false;
     static const bool info = false;
     static const bool trace = false;
 };
@@ -51,6 +51,10 @@ template <>
 struct Traits<Heaps> : public Traits<Build>
 {
     static const bool debugged = hysterically_debugged;
+    static const bool error = false;
+    static const bool warning = false;
+    static const bool info = false;
+    static const bool trace = false;
 };
 
 template <>
@@ -75,6 +79,7 @@ struct Traits<Setup> : public Traits<Build>
 template <>
 struct Traits<Init> : public Traits<Build>
 {
+	static const bool debugged = false;
 };
 
 template <>
@@ -117,7 +122,9 @@ struct Traits<System> : public Traits<Build>
     static const bool reboot = true;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE =
+        (Traits<Application>::MAX_THREADS + 1) *
+        Traits<Application>::STACK_SIZE;
 };
 
 template <>
@@ -127,6 +134,12 @@ struct Traits<Thread> : public Traits<Build>
     static const bool trace_idle = hysterically_debugged;
     static const bool simulate_capacity = false;
 
+	static const bool debugged = false;
+	static const bool error = false;
+    static const bool warning = false;
+    static const bool info = false;
+    static const bool trace = false;
+
     typedef GLLF Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
@@ -134,12 +147,15 @@ struct Traits<Thread> : public Traits<Build>
 template <>
 struct Traits<Scheduler<Thread>> : public Traits<Build>
 {
-    static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
+    //static const bool debugged =
+	//	Traits<Thread>::trace_idle || hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Synchronizer> : public Traits<Build>
 {
+	static const bool debugged = false;
     static const bool enabled = Traits<System>::multithread;
 };
 

@@ -15,8 +15,8 @@ void Timer::int_handler(Interrupt_Id i)
         _channels[ALARM]->_handler(i);
     }
 
-    // if (CPU::is_bootstrap() && _channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[CPU::id()] <= 0))
-    if (_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[CPU::id()] <= 0))
+	//if (_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[CPU::id()] <= 0))
+	if (CPU::is_bootstrap() && _channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[CPU::id()] <= 0))
     {
         _channels[SCHEDULER]->_current[CPU::id()] = _channels[SCHEDULER]->_initial;
         _channels[SCHEDULER]->_handler(i);

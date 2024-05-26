@@ -19,10 +19,16 @@ Semaphore::~Semaphore()
 void Semaphore::p()
 {
     db<Synchronizer>(TRC) << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
+    Thread *exec_thread = Thread::self();
+
+    if (isThreadPresent(exec_thread, &resource_holder_list))
+    {
+        producer = true;
+    }
+
     _lock();
     if (Traits<Synchronizer>::CEILING_PROTOCOL && !producer)
     {
-        Thread *exec_thread = Thread::self();
 
         if (fdec(_value) < 1)
         {
@@ -59,9 +65,15 @@ void Semaphore::v()
     db<Synchronizer>(TRC) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
 
     _lock();
+    Thread *exec_thread = Thread::self();
+
+    if (!isThreadPresent(exec_thread, &resource_holder_list))
+    {
+        producer = true;
+    }
+
     if (Traits<Synchronizer>::CEILING_PROTOCOL && !producer)
     {
-        Thread *exec_thread = Thread::self();
 
         if (finc(_value) < 0)
             wakeup();

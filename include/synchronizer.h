@@ -368,7 +368,7 @@ private:
 class Semaphore : protected Synchronizer_Common
 {
 public:
-    Semaphore(long v = 1, bool is_producer = true);
+    Semaphore(long v = 1, bool is_producer = false);
     ~Semaphore();
 
     void p();

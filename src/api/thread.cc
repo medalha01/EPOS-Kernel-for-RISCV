@@ -37,14 +37,6 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    //db<Thread>(TRC) << "Thread(entry=" << entry
-    //                << ",state=" << _state
-    //                << ",priority=" << _link.rank()
-    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
-    //                << ",s=" << stack_size
-    //                << "},context={b=" << _context
-    //                << "," << *_context << "}) => " << this << endl;
-
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     if ((_state != READY) && (_state != RUNNING))
@@ -113,13 +105,6 @@ Thread::~Thread()
 {
     lock();
 
-    //db<Thread>(TRC) << "~Thread(this=" << this
-    //                << ",state=" << _state
-    //                << ",priority=" << _link.rank()
-    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
-    //                << ",context={b=" << _context
-    //                << "," << *_context << "})" << endl;
-
     // The running thread cannot delete itself!
     assert(_state != RUNNING);
 
@@ -162,8 +147,6 @@ Thread::~Thread()
 int Thread::join()
 {
     lock();
-
-    //db<Thread>(TRC) << "Thread::join(this=" << this << ",state=" << _state << ")" << endl;
 
     // Precondition: no Thread::self()->join()
     assert(running() != this);
@@ -383,14 +366,13 @@ void Thread::wakeup(Queue *q)
 
 void Thread::wakeup_all(Queue *q)
 {
-    //db<Thread>(TRC) << "Thread::wakeup_all(running=" << running() << ",q=" << q << ")" << endl;
-
     assert(locked()); // locking handled by caller
 
     if (!q->empty())
     {
         assert(Criterion::QUEUES <= sizeof(unsigned long) * 8);
         unsigned long cpus = 0;
+		int priorities[CPU::cores()];
 
         while (!q->empty())
         {
@@ -398,19 +380,44 @@ void Thread::wakeup_all(Queue *q)
             t->_state = READY;
             t->_waiting = 0;
             _scheduler.resume(t);
-            cpus |= 1 << t->_link.rank().queue();
+
+			unsigned int id = t->_link.rank().queue();
+            cpus |= 1 << id; 
+			priorities[id] = t->_link.rank();
         }
 
-        if (preemptive)
-        {
-            for (unsigned long i = 0; i < Criterion::QUEUES; i++)
-            {
-                if (cpus & (1 << i))
-                {
-                    reschedule(i);
-                }
-            }
-        }
+		if (preemptive)
+		{
+			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL)
+			{
+				for (unsigned int i = 0; i < CPU::cores(); i++)
+				{
+					// This logic just checks which priorities threads from the queue had 
+					// and sends interrupts to new CPUs if the woken up threads have higher
+					// priorities than the ones currently running on them.
+					if (cpus & (1 << i))	
+					{
+						int priority = priorities[i];
+						int target_core = _cpu_lookup_table.get_lowest_priority_core(priority);
+
+						if (target_core != -1)
+						{
+							reschedule(target_core);
+						}
+					}
+				}
+			}
+			else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+			{
+				for (unsigned long i = 0; i < Criterion::QUEUES; i++)
+				{
+					if (cpus & (1 << i))
+					{
+						reschedule(i);
+					}
+				}
+			}
+		}
     }
 }
 

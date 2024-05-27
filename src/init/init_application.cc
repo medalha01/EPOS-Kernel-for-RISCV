@@ -18,11 +18,6 @@ private:
 public:
     Init_Application()
     {
-		_print("init_app\n");
-
-		// Initialize Application's heap
-		db<Init>(INF) << "Initializing application's heap: ";
-
 		if (CPU::is_bootstrap()) 
 		{
 			if (Traits<System>::multiheap)
@@ -55,6 +50,8 @@ public:
 			}
 		}
 
+		// Ensures all those heap operations were concluded successfully before moving on
+		// - potential undefined behaviour would be lurking had this not been here.
         CPU::smp_barrier(); 
     }
 };

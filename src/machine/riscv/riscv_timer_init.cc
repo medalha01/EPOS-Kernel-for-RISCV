@@ -17,6 +17,8 @@ void Timer::init()
         IC::int_vector(IC::INT_SYS_TIMER, int_handler);
 	}
 
+	// Other cores wait for the sys_timer handler to be up and running.
+	// Important to be able to receive and handle interrupts correctly.
 	CPU::smp_barrier();
 
     reset();

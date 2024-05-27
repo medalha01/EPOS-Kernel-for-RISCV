@@ -12,6 +12,7 @@ void IC::init()
     assert(CPU::int_disabled()); // will be reenabled at Thread::init() by Context::load()
 
     disable(); // will be enabled on demand as handlers are registered
+
     if (CPU::is_bootstrap())
     {
         // Set all exception handlers to exception()
@@ -27,6 +28,9 @@ void IC::init()
 		}
     }
     
+	// It is paramount that all cores wait for the bootstrap to initialize the interrupt vector,
+	// otherwise, bad things would happen if an interrupt were to occur, and the handler function
+	// has not yet been put into its correct position into the _int_vector - undefined behaviour.
 	CPU::smp_barrier();
 
 	IC::enable(INT_PLIC);

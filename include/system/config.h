@@ -12,7 +12,7 @@
 #define MACH riscv
 #define MMOD sifive_u
 #define NETW standalone
-#define APPL llf_ceiling_test
+#define APPL scheduler_llf_test
 #define __library__
 #define __rv64__
 #define __riscv__

@@ -171,7 +171,6 @@ protected:
         }
         else if (exec_thread)
         {
-            // TODO REAVALIAR MAS PARECE BOM PLANO
             exec_thread->reset_protocol();
             int most_urgent_from_syncs = get_new_priority(exec_thread);
             if (most_urgent_from_syncs < exec_thread->_natural_priority)
@@ -228,7 +227,6 @@ protected:
         if (!areThreadsWaiting())
         {
             deactivateCeiling();
-        } // TODO LEAVING THREAD MUST ENTER PROTOCOL
         else
         {
             shiftProtocol(exec_thread);

@@ -138,9 +138,9 @@ struct Traits<Thread> : public Traits<Build>
     static const bool trace_idle = hysterically_debugged;
     static const bool simulate_capacity = false;
 
-    //typedef GLLF Criterion;
-    typedef PLLF Criterion;
-    static const unsigned int smp_algorithm = PARTITIONED;
+    typedef GLLF Criterion;
+    //typedef PLLF Criterion;
+    static const unsigned int smp_algorithm = GLOBAL;
 
     static const unsigned int QUANTUM = 10000; // us
     //static const int priority_inversion_protocol = Traits<Build>::CEILING;

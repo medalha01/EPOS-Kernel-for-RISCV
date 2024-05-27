@@ -110,9 +110,7 @@ LLF::LLF(Microsecond p, Microsecond d, Microsecond c, unsigned int):
 	RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
 { }
 
-void LLF::handle(Event event) 
-{
-}
+
 
 void LLF::handle(Event event)
 {

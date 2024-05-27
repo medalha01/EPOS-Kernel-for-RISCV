@@ -26,6 +26,8 @@ Semaphore::~Semaphore()
 
 void Semaphore::p()
 {
+    _lock();
+
     db<Synchronizer>(TRC) << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
     Thread *exec_thread = Thread::self();
 
@@ -33,8 +35,6 @@ void Semaphore::p()
     {
         producer = true;
     }
-
-    _lock();
 
     if (Traits<Synchronizer>::CEILING_PROTOCOL && !producer)
     {
@@ -70,9 +70,10 @@ void Semaphore::p()
 
 void Semaphore::v()
 {
+    _lock();
+
     db<Synchronizer>(TRC) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
 
-    _lock();
     Thread *exec_thread = Thread::self();
 
     if (!isThreadPresent(exec_thread, &resource_holder_list))

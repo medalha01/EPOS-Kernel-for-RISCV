@@ -128,7 +128,7 @@ Setup::Setup()
     call_next();
 }
 
-void Setup::setup_flat_paging()
+ void Setup::setup_flat_paging()
 {
     // Single-level mapping, 2 MB pages with SV32 and 1 GB pages with SV39
     static const unsigned long PD_ENTRIES = 
@@ -218,7 +218,6 @@ void _entry() // machine mode
         Machine::clear_bss();
     }
 
-	// TODO: @arthur comments here
 	kout << "primeira barreira\n";
 	CPU::smp_barrier();
 	kout << "dps\n";
@@ -259,7 +258,6 @@ void _entry() // machine mode
 		CPU::mstatus(CPU::MPP_M);
 	}
 
-	// TODO: @arthur comment here 
 	kout << "\n\nsegunda barreira\n";
 	CPU::smp_barrier();
 	kout << "after\n";

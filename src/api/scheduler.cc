@@ -27,11 +27,13 @@ void RT_Common::handle(Event event) {
         db<Thread>(TRC) << "FINISH";
 
         _statistics.thread_destruction = elapsed();
+        _statistics.thread_deadline_lack = _deadline - elapsed();
     }
     if(event & ENTER) {
         db<Thread>(TRC) << "ENTER";
-
+        _statistics.thread_total_executions++;
         _statistics.thread_last_dispatch = elapsed();
+        _statistics.thread_wait_time = elapsed() - _statistics.thread_last_preemption;
     }
     if(event & LEAVE) {
         Tick cpu_time = elapsed() - _statistics.thread_last_dispatch;
@@ -40,9 +42,19 @@ void RT_Common::handle(Event event) {
 
         _statistics.thread_last_preemption = elapsed();
         _statistics.thread_execution_time += cpu_time;
+
 //        if(_statistics.job_released) {
             _statistics.job_utilization += cpu_time;
 //        }
+        if (cpu_time > _statistics.thread_max_execution_time) {
+            _statistics.thread_max_execution_time = cpu_time;
+        }
+        if (cpu_time < _statistics.thread_min_execution_time || _statistics.thread_min_execution_time == 0) {
+            _statistics.thread_min_execution_time = cpu_time;
+        }
+        if (elapsed() > _deadline) {
+            _statistics.thread_missed_deadline++;
+        }
     }
     if(periodic() && (event & JOB_RELEASE)) {
         db<Thread>(TRC) << "RELEASE";
@@ -56,10 +68,21 @@ void RT_Common::handle(Event event) {
     if(periodic() && (event & JOB_FINISH)) {
         db<Thread>(TRC) << "WAIT";
 
+        Tick job_time = elapsed() - _statistics.job_release;
+
+        _statistics.job_total_execution_time += job_time;
         _statistics.job_released = false;
         _statistics.job_finish = elapsed();
         _statistics.jobs_finished++;
-//        _statistics.job_utilization += elapsed() - _statistics.thread_last_dispatch;
+
+        _statistics.job_avg_execution_time = _statistics.job_total_execution_time / _statistics.jobs_finished;
+
+        if (_statistics.job_max_execution_time < job_time) {
+            _statistics.job_max_execution_time = job_time;
+        }
+        if (_statistics.job_min_execution_time > job_time || _statistics.job_min_execution_time == 0) {
+            _statistics.job_min_execution_time = job_time;
+        }
     }
     if(event & COLLECT) {
         db<Thread>(TRC) << "|COLLECT";

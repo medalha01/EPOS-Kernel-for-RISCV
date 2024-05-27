@@ -8,16 +8,16 @@ void Machine::pre_init(System_Info *si)
 {
     CPU::tvec(CPU::INT_DIRECT, &IC::entry);
 
-    if (CPU::cores() > 1)
-    {
-        CPU::smp_barrier();
-    }
+    //CPU::smp_barrier();
 
     if (CPU::is_bootstrap())
     {
         Display::init();
-        db<Init, Machine>(TRC) << "Machine::pre_init()" << endl;
     }
+
+	CPU::smp_barrier();
+
+	_print("final do pre init\n");
 }
 
 void Machine::init()

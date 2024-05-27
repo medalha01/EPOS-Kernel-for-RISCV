@@ -92,7 +92,9 @@ Setup::Setup()
 	}
 
 	// TODO: @arthur comment here
-	//CPU::smp_barrier();
+	kout << "b3\n";
+	CPU::smp_barrier();
+	kout << "out\n";
 
     db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si) << ",sp=" << CPU::sp() << ")" << endl;
     db<Setup>(INF) << "Setup:si=" << *si << endl;

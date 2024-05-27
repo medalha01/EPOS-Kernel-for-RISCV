@@ -8,14 +8,20 @@ __BEGIN_SYS
 
 void System::init()
 {
+	_print("system_init\n");
+
     if (CPU::is_bootstrap())
     {
         if (Traits<Alarm>::enabled)
+		{
             Alarm::init();
+		}
     }
+	
+	CPU::smp_barrier();
+
     if (Traits<Thread>::enabled) 
 	{
-		db<Thread>(WRN) << "antes do thread::init\n " <<endl;
         Thread::init();
 	}
 }

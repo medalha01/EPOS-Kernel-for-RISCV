@@ -313,7 +313,8 @@ public:
     static const unsigned int QUEUES = Traits<Machine>::CPUS;
 
 public:
-	PLLF(int p = APERIODIC) : LLF(p) {};
+	PLLF(int p = APERIODIC) 
+		: LLF(p), _queue(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : 0) {};
 		//: LLF(p), _queue((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()) {};
 		//: LLF(p, cpu), _queue((_priority == MAIN) ? CPU::id() : ++_next_queue %= CPU::cores()) {};
 

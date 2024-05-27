@@ -264,8 +264,9 @@ protected:
 
     void insertSyncObject(Thread *resource, Sync_Queue *list)
     {
+
         if (resource && list)
-        {
+        {   
             T_Sync_Element *e = new (SYSTEM) T_Sync_Element(resource);
             if (e)
                 list->insert(e);
@@ -368,7 +369,7 @@ private:
 class Semaphore : protected Synchronizer_Common
 {
 public:
-    Semaphore(long v = 1, bool is_producer = false);
+    Semaphore(long v = 1);
     ~Semaphore();
 
     void p();

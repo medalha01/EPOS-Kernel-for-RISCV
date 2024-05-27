@@ -6,8 +6,16 @@ __BEGIN_SYS
 
 extern OStream kout;
 
-Semaphore::Semaphore(long v, bool is_producer) : _value(v), producer(is_producer)
+Semaphore::Semaphore(long v) : _value(v)
 {
+    if (_value == 0)
+    {
+        producer = true;
+    }
+    else
+    {
+        producer = false;
+    }
     db<Synchronizer>(TRC) << "Semaphore(value=" << _value << ") => " << this << endl;
 }
 
@@ -27,6 +35,7 @@ void Semaphore::p()
     }
 
     _lock();
+
     if (Traits<Synchronizer>::CEILING_PROTOCOL && !producer)
     {
 
@@ -35,7 +44,6 @@ void Semaphore::p()
             waitingThreadsCount++;
             insertSyncObject(exec_thread, &resource_waiting_list);
             activateCeiling(getMostUrgentPriority());
-            _print("Activating ceiling protocol\n");
 
             sleep();
 

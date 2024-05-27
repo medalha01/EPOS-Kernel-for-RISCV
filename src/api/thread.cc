@@ -219,20 +219,35 @@ void Thread::resume()
 
         if (preemptive)
 		{
-			int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
-			//_cpu_lookup_table.print_table();
-
-			if (target_core != -1)
+			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL)
 			{
-				db<Thread>(WRN) << "[=] rs to c = " << target_core << endl;
+				int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
+				//_cpu_lookup_table.print_table();
+
+				if (target_core != -1)
+				{
+					db<Thread>(WRN) << "[=] rs to c = " << target_core << endl;
+					reschedule(target_core);
+				}
+				else 
+				{
+					db<Thread>(WRN) << "[=] rs to same = " << CPU::id() << endl;
+					//db<Thread>(WRN) << ">wr p = " << _link.rank() << endl;
+					//_cpu_lookup_table.print_table();
+					reschedule();
+				}
+
+			}
+			else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+			{
+				int target_core = this->criterion().queue();
+
+				db<Thread>(WRN) << "[=] prs to c = " << target_core << endl;
 				reschedule(target_core);
 			}
 			else 
 			{
-			  db<Thread>(WRN) << "[=] rs to same = " << CPU::id() << endl;
-			  //db<Thread>(WRN) << ">wr p = " << _link.rank() << endl;
-			  //_cpu_lookup_table.print_table();
-			  reschedule();
+				reschedule();
 			}
 		}
     }
@@ -318,19 +333,33 @@ void Thread::wakeup(Queue *q)
         t->_waiting = 0;
         _scheduler.resume(t);
 
-        if (preemptive)
-        {
-			int target_core = _cpu_lookup_table.get_lowest_priority_core(t->_link.rank());
-			_cpu_lookup_table.print_table();
-
-			if (target_core != -1) 
+		if (preemptive)
+		{
+			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL) 
 			{
-				//db<Thread>(WRN) << "[=] wu to c = " << target_core << endl;
+				int target_core = _cpu_lookup_table.get_lowest_priority_core(t->_link.rank());
+				_cpu_lookup_table.print_table();
+
+				if (target_core != -1) 
+				{
+					//db<Thread>(WRN) << "[=] wu to c = " << target_core << endl;
+					reschedule(target_core);
+				}
+				else 
+				{
+					//db<Thread>(WRN) << "[=] wu to same = " << CPU::id() << endl;
+					reschedule();
+				}
+			}
+			else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+			{
+				int target_core = t->criterion().queue();
+
+				db<Thread>(WRN) << "[=] pwu to c = " << target_core << endl;
 				reschedule(target_core);
 			}
 			else 
 			{
-				//db<Thread>(WRN) << "[=] wu to same = " << CPU::id() << endl;
 				reschedule();
 			}
         }

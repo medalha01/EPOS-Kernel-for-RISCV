@@ -94,7 +94,7 @@ void EDF::handle(Event event)
       _priority = elapsed() + _deadline;
 }
 
-LLF::LLF(Microsecond p, Microsecond d, Microsecond c): 
+LLF::LLF(Microsecond p, Microsecond d, Microsecond c, unsigned int): 
 	RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
 { }
 

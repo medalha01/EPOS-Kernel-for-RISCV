@@ -208,6 +208,8 @@ struct Traits_Tokens
     // Priority inversion protocols
     enum {CEILING, INHERITANCE};
 
+	enum {NO_SMP, GLOBAL, PARTITIONED};
+
     // Default aspects
     typedef ALIST<> ASPECTS;
 };

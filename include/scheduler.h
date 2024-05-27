@@ -88,8 +88,14 @@ public:
         Tick thread_creation;        // tick in which the thread was created
         Tick thread_destruction;     // tick in which the thread was destroyed
         Tick thread_execution_time;  // accumulated execution time (in ticks)
+        Tick thread_deadline_lack;  // total time beyond deadline
+        unsigned int thread_total_executions; // total number of times the thread was executed
+        Tick thread_wait_time;  // total wait time
+        Tick thread_max_execution_time; // maximum continuous execution time
+        Tick thread_min_execution_time; // minimum continuous execution time
         Tick thread_last_dispatch;   // tick in which the thread was last dispatched to the CPU
         Tick thread_last_preemption; // tick in which the thread left the CPU by the last time
+        unsigned int thread_missed_deadline; // count of missed deadlines
 
         // Job related statistics
         bool job_released;
@@ -99,6 +105,11 @@ public:
         Tick job_utilization;       // accumulated execution time (in ticks)
         unsigned int jobs_released; // number of jobs of a thread that were released so far (i.e. the number of times _alarm->v() was called by the Alarm::handler())
         unsigned int jobs_finished; // number of jobs of a thread that finished execution so far (i.e. the number of times alarm->p() was called at wait_next())
+        Tick job_total_execution_time; // total execution time of all jobs
+        Tick job_avg_execution_time;   // average execution time of a job
+        Tick job_max_execution_time;   // maximum execution time of a job
+        Tick job_min_execution_time;   // minimum execution time of a job
+
     };
 
     struct Real_Statistics
@@ -107,8 +118,14 @@ public:
         Tick thread_creation;        // tick in which the thread was created
         Tick thread_destruction;     // tick in which the thread was destroyed
         Tick thread_execution_time;  // accumulated execution time (in ticks)
+        Tick thread_deadline_lack;  // total time beyond deadline
+        unsigned int thread_total_executions; // total number of times the thread was executed
+        Tick thread_wait_time;  // total wait time
+        Tick thread_max_execution_time; // maximum continuous execution time
+        Tick thread_min_execution_time; // minimum continuous execution time
         Tick thread_last_dispatch;   // tick in which the thread was last dispatched to the CPU
         Tick thread_last_preemption; // tick in which the thread left the CPU by the last time
+        unsigned int thread_missed_deadline; // count of missed deadlines
 
         // Job related statistics
         bool job_released;
@@ -118,6 +135,11 @@ public:
         Tick job_utilization;       // accumulated execution time (in ticks)
         unsigned int jobs_released; // number of jobs of a thread that were released so far (i.e. the number of times _alarm->v() was called by the Alarm::handler())
         unsigned int jobs_finished; // number of jobs of a thread that finished execution so far (i.e. the number of times alarm->p() was called at wait_next())
+        Tick job_total_execution_time; // total execution time of all jobs
+        Tick job_avg_execution_time;   // average execution time of a job
+        Tick job_max_execution_time;   // maximum execution time of a job
+        Tick job_min_execution_time;   // minimum execution time of a job
+
     };
 
     typedef IF<Traits<System>::monitored, Real_Statistics, Dummy_Statistics>::Result Statistics;

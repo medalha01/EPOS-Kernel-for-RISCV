@@ -8,8 +8,6 @@ __BEGIN_SYS
 
 void System::init()
 {
-	_print("system_init\n");
-
     if (CPU::is_bootstrap())
     {
         if (Traits<Alarm>::enabled)
@@ -18,6 +16,7 @@ void System::init()
 		}
     }
 	
+	// Ensures the alarm timer is properly allocated by the bootstrap core.
 	CPU::smp_barrier();
 
     if (Traits<Thread>::enabled) 

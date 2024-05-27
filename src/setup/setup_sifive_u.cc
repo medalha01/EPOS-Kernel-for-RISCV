@@ -215,7 +215,9 @@ void _entry() // machine mode
     }
 
 	// TODO: @arthur comments here
-	//CPU::smp_barrier();
+	kout << "primeira barreira\n";
+	CPU::smp_barrier();
+	kout << "dps\n";
 
 	CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
 
@@ -254,7 +256,9 @@ void _entry() // machine mode
 	}
 
 	// TODO: @arthur comment here 
-	//CPU::smp_barrier();
+	kout << "\n\nsegunda barreira\n";
+	CPU::smp_barrier();
+	kout << "after\n";
 
 	CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
 	CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)

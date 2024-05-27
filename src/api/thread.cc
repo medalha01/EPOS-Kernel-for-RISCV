@@ -337,7 +337,7 @@ void Thread::wakeup(Queue *q)
     //db<Thread>(TRC) << "Thread::wakeup(running="
 	//	<< running() << ",q=" << q << ")" << endl;
 
-	//db<Thread>(WRN) << "wu:)" << endl;
+	db<Thread>(WRN) << "wu:)" << endl;
 
     assert(locked()); // locking handled by caller
 

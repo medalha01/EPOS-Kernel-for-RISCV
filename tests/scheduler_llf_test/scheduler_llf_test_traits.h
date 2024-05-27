@@ -14,7 +14,7 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = RV64;
     static const unsigned int MACHINE = RISCV;
     static const unsigned int MODEL = SiFive_U;
-    static const unsigned int CPUS = 2;
+    static const unsigned int CPUS = 4;
     //static const unsigned int CPUS = 4;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
@@ -142,8 +142,10 @@ struct Traits<Thread> : public Traits<Build>
     static const bool info = false;
     static const bool trace = false;
 
-    typedef GLLF Criterion;
-	static const unsigned int smp_algorithm = GLOBAL;
+    //typedef GLLF Criterion;
+	typedef PLLF Criterion;
+	//static const unsigned int smp_algorithm = GLOBAL;
+	static const unsigned int smp_algorithm = PARTITIONED;
     static const unsigned int QUANTUM = 10000; // us
 };
 

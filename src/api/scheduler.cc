@@ -6,6 +6,7 @@
 __BEGIN_SYS
 
 inline RT_Common::Tick RT_Common::elapsed() { return Alarm::elapsed(); }
+volatile unsigned int PLLF::_next_queue;
 
 RT_Common::Tick RT_Common::ticks(Microsecond time) {
     return Timer_Common::ticks(time, Alarm::timer()->frequency());

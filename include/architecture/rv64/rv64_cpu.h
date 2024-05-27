@@ -431,13 +431,13 @@ public:
             ASM("1: amoadd.d      %0, x0, (%1)         \n"
                 "   bne            %0, %2, 2f          \n"
                 "   amoswap.d      %4, %3, (%1)        \n"
-                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me), "r"(temp) : "t3", "cc", "memory");
+                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me), "r"(temp) : "cc", "memory");
 
         else
             ASM("1: amoadd.w      %0, x0, (%1)         \n"
                 "   bne            %0, %2, 2f          \n"
                 "   amoswap.w      %4, %3, (%1)        \n"
-                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me), "r"(temp) : "t3", "cc", "memory");
+                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me), "r"(temp) : "cc", "memory");
 
         return old;
     }

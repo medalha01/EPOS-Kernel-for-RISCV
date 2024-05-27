@@ -38,18 +38,16 @@ void Mutex::lock()
 
             // TODO NOW WE HOLD THE RESOURCE
         }
-        if (!isThreadPresent(exec_thread, &resource_holder_list))
-        {
-            exec_thread->enter_zone();
-            exec_thread->addSynchronizer(this);
-            // Insert the SyncObject into the resource holder list
-            insertSyncObject(exec_thread, &resource_holder_list);
-            checkForThreadProtocol(exec_thread);
-        }
+
+        exec_thread->enter_zone();
+        exec_thread->addSynchronizer(this);
+        // Insert the SyncObject into the resource holder list
+        insertSyncObject(exec_thread, &resource_holder_list);
+        checkForThreadProtocol(exec_thread);
     }
     else
     {
-        while (tsl(_locked))
+        if (tsl(_locked))
         {
             sleep();
         }
@@ -71,17 +69,17 @@ void Mutex::unlock()
         else
             wakeup();
 
-        if (isThreadPresent(exec_thread, &resource_holder_list))
-        {
-            exec_thread->leave_zone();
-            exec_thread->removeSynchronizer(this);
-            removeSyncObject(exec_thread, &resource_holder_list);
-            shiftProtocol(exec_thread);
-        }
+        exec_thread->leave_zone();
+        exec_thread->removeSynchronizer(this);
+        removeSyncObject(exec_thread, &resource_holder_list);
+        shiftProtocol(exec_thread);
     }
     else
     {
-        wakeup();
+        if (_waiting.empty())
+            _locked = false;
+        else
+            wakeup();
     }
     _unlock();
 }

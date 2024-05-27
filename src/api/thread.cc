@@ -103,7 +103,7 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 	if (CPU::is_smp() && _state == RUNNING) 
 	{
 		_cpu_lookup_table.set_thread_on_cpu(running());
-		_cpu_lookup_table.print_table();
+		//_cpu_lookup_table.print_table();
 	}
 
     unlock();
@@ -353,7 +353,7 @@ void Thread::wakeup(Queue *q)
 			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL) 
 			{
 				int target_core = _cpu_lookup_table.get_lowest_priority_core(t->_link.rank());
-				_cpu_lookup_table.print_table();
+				//_cpu_lookup_table.print_table();
 
 				if (target_core != -1) 
 				{
@@ -544,7 +544,7 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 	//db<Thread>(WRN) << "t d" << endl;
 	//_cpu_lookup_table.set_thread_on_cpu(next);
 
-	db<Thread>(WRN) << "[=] set on dispatch" << endl;
+	//db<Thread>(WRN) << "[=] set on dispatch" << endl;
 	_cpu_lookup_table.set_thread_on_cpu(next);
 
     if (charge && Criterion::timed)

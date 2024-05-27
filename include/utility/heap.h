@@ -38,14 +38,48 @@ public:
         free(addr, bytes);
     }
 
-    void *alloc(unsigned long bytes)
+	void *alloc(unsigned long bytes)
+	{
+		lock();
+		void * ptr = _helper_alloc(bytes);
+		unlock();
+		return ptr;
+	}
+
+	void free(void *ptr, unsigned long bytes)
+	{
+		lock();
+		_helper_free(ptr, bytes);
+		unlock();
+	}
+
+    static void typed_free(void *ptr)
     {
-        enter_heap();
-        db<Heaps>(TRC) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
+        long *addr = reinterpret_cast<long *>(ptr);
+        unsigned long bytes = *--addr;
+        Heap *heap = reinterpret_cast<Heap *>(*--addr);
+        heap->free(addr, bytes);
+    }
+
+    static void untyped_free(Heap *heap, void *ptr)
+    {
+        long *addr = reinterpret_cast<long *>(ptr);
+        unsigned long bytes = *--addr;
+        heap->free(addr, bytes);
+    }
+
+private:
+    void out_of_memory(unsigned long bytes);
+
+	static void lock()   { _lock_heap();   } 
+	static void unlock() { _unlock_heap(); } 
+
+    void * _helper_alloc(unsigned long bytes)
+    {
+        //db<Heaps>(TRC) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
 
         if (!bytes)
         {
-            leave_heap();
             return 0;
         }
 
@@ -70,9 +104,7 @@ public:
         Element *e = search_decrementing(bytes);
         if (!e)
         {
-
             out_of_memory(bytes);
-            leave_heap();
             return 0;
         }
 
@@ -86,29 +118,11 @@ public:
 
         db<Heaps>(TRC) << ") => " << reinterpret_cast<void *>(addr) << endl;
 
-        leave_heap();
         return addr;
     }
 
-    void free(void *ptr, unsigned long bytes)
+    void _helper_free(void *ptr, unsigned long bytes)
     {
-        enter_heap();
-
-        db<Heaps>(TRC) << "Heap::free(this=" << this << ",ptr=" << ptr << ",bytes=" << bytes << ")" << endl;
-
-        if (ptr && (bytes >= sizeof(Element)))
-        {
-            Element *e = new (ptr) Element(reinterpret_cast<char *>(ptr), bytes);
-            Element *m1, *m2;
-            insert_merging(e, &m1, &m2);
-        }
-
-        leave_heap();
-    }
-
-    void non_lock_free(void *ptr, unsigned long bytes)
-    {
-
         db<Heaps>(TRC) << "Heap::free(this=" << this << ",ptr=" << ptr << ",bytes=" << bytes << ")" << endl;
 
         if (ptr && (bytes >= sizeof(Element)))
@@ -118,30 +132,6 @@ public:
             insert_merging(e, &m1, &m2);
         }
     }
-
-    static void typed_free(void *ptr)
-    {
-        long *addr = reinterpret_cast<long *>(ptr);
-        unsigned long bytes = *--addr;
-        Heap *heap = reinterpret_cast<Heap *>(*--addr);
-
-        heap->non_lock_free(addr, bytes);
-    }
-
-    static void untyped_free(Heap *heap, void *ptr)
-    {
-        enter_heap();
-        long *addr = reinterpret_cast<long *>(ptr);
-        unsigned long bytes = *--addr;
-        heap->non_lock_free(addr, bytes);
-        leave_heap();
-    }
-
-private:
-    void out_of_memory(unsigned long bytes);
-
-    static void enter_heap() { _lock_heap(); }
-    static void leave_heap() { _unlock_heap(); }
 };
 
 __END_UTIL

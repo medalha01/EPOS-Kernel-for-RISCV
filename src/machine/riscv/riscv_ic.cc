@@ -70,12 +70,6 @@ void IC::dispatch()
 
     _int_vector[id](id);
 
-	// NOTE: wtf is this
-    //if (id > HARD_INT)
-    //{
-    //    complete(int2irq(id));
-    //}
-
     if (id >= EXCS)
 	{
 		// tell CPU::Context::pop(true) not to increment PC,
@@ -86,14 +80,11 @@ void IC::dispatch()
 
 void IC::int_not(Interrupt_Id id)
 {
-    //db<IC>(WRN) << "IC::int_not(i=" << id << ")" << endl;
 	if (id == INT_RESCHEDULER) 
 	{
-		// TODO: @arthur 
 		db<Thread>(WRN) << "int_not resch" << endl;
 		Thread::reschedule();	
 	}
-	//Machine::panic(__FILE__, __LINE__);
 }
 
 void IC::exception(Interrupt_Id id)

@@ -285,7 +285,7 @@ public:
 
 public:
     LLF(int p = APERIODIC) : RT_Common(p) {}
-    LLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
+    LLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN, unsigned int cpu = ANY);
 
     void handle(Event event);
 };
@@ -298,12 +298,34 @@ public:
 	
 public: 
     GLLF(int p = APERIODIC): LLF(p) {}
-    GLLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN) 
-		: LLF(p, d, c) { }; 
+    GLLF(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN, unsigned int cpu = ANY) 
+		: LLF(p, d, c, cpu) { }; 
 
     unsigned int queue() const { return current_head(); }
     void queue(unsigned int q) {}
     static unsigned int current_head() { return CPU::id(); }
+};
+
+// Partitioned Least Laxity First 
+class PLLF: public LLF
+{
+public:
+    static const unsigned int QUEUES = Traits<Machine>::CPUS;
+
+public:
+	PLLF(int p = APERIODIC) 
+		: LLF(p), _queue(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : 0) {};
+
+	PLLF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
+		: LLF(p, d, c, cpu), _queue((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()) {};
+
+    const volatile unsigned int & queue() const volatile { return _queue; }
+    void queue(unsigned int q) { _queue = q; }
+    static unsigned int current_queue() { return CPU::id(); }
+
+protected:
+    volatile unsigned int _queue;
+    static volatile unsigned int _next_queue;
 };
 
 __END_SYS
@@ -313,6 +335,10 @@ __BEGIN_UTIL
 template<typename T>
 class Scheduling_Queue<T, GLLF>:
 public Multihead_Scheduling_List<T> {};
+
+template<typename T>
+class Scheduling_Queue<T, PLLF>:
+public Scheduling_Multilist<T> {};
 
 __END_UTIL
 

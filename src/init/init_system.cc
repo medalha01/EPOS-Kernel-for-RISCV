@@ -16,16 +16,14 @@ private:
 public:
     Init_System()
     {
-        db<Init>(TRC) << "Init_System()" << endl;
-        CPU::smp_barrier();
+		_print("init system begin\n");
 
-        db<Init>(INF) << "Init:si=" << *System::info() << endl;
+        CPU::init();
+
+        CPU::smp_barrier();
 
         if (CPU::is_bootstrap())
         {
-            db<Init>(INF) << "Initializing the architecture: " << endl;
-            CPU::init();
-            db<Init>(INF) << "Initializing system's heap: " << endl;
             if (Traits<System>::multiheap)
             {
                 System::_heap_segment = new (&System::_preheap[0]) Segment(HEAP_SIZE, Segment::Flags::SYSD);
@@ -39,37 +37,24 @@ public:
                 System::_heap = new (&System::_preheap[sizeof(Segment)]) Heap(heap, System::_heap_segment->size());
             }
             else
+			{
                 System::_heap = new (&System::_preheap[0]) Heap(MMU::alloc(MMU::pages(HEAP_SIZE)), HEAP_SIZE);
-
-            db<Init>(INF) << "Initializing the machine: " << endl;
-            Machine::init();
-            CPU::smp_barrier();
+			}
         }
-        else // TODO: @arthur fix this initsystem (tudo cagado)
-        {
-            CPU::smp_barrier();
 
-            db<Init>(INF) << "Initializing the CPU: " << endl;
-            CPU::init();
-
-            db<Init>(INF) << "Initializing the machine: " << endl;
-            Timer::init();
-
-            // Machine::init()
-        }
+		db<Init>(INF) << "Initializing the machine: " << endl;
+		Machine::init();
 
         db<Init>(INF) << "Initializing system abstractions: " << endl;
         System::init();
 
         // Randomize the Random Numbers Generator's seed
-        if (Traits<Random>::enabled)
+        if (CPU::is_bootstrap() && Traits<Random>::enabled)
         {
-            db<Init>(INF) << "Randomizing the Random Numbers Generator's seed." << endl;
             if (Traits<TSC>::enabled)
+			{
                 Random::seed(TSC::time_stamp());
-
-            if (!Traits<TSC>::enabled)
-                db<Init>(INF) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
+			}
         }
 
         CPU::smp_barrier(); 

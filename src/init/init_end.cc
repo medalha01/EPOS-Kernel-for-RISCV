@@ -15,8 +15,7 @@ class Init_End
 public:
     Init_End()
     {
-        db<Thread>(TRC) << "Start of Init_End()" << endl;
-
+		// Just to make sure no monkey business happens up until this point :)
         CPU::smp_barrier();
 
         if (!Traits<System>::multithread)
@@ -29,10 +28,14 @@ public:
         {
             if (Memory_Map::BOOT_STACK != Memory_Map::NOT_USED)
             {
+				// Need to liberate a space relative to the number of cores, 
+				// just like it was originally allocated during the SiFive setup.
                 MMU::free(Memory_Map::BOOT_STACK, MMU::pages(Traits<Machine>::STACK_SIZE * CPU::cores()));
             }
         }
 
+		// Necessary for ensuring that the bootstrap core has freed the BOOT_STACK, 
+		// therefore liberating space for all cores to potentially use.
         CPU::smp_barrier();
 
         // Thread::self() and Task::self() can be safely called after the construction of MAIN
@@ -40,8 +43,6 @@ public:
         // It will return MAIN for CPU0 and IDLE for the others
 
         Thread *first = Thread::self();
-
-        CPU::smp_barrier();
 
         // Interrupts have been disabled at Thread::init() and will be reenabled by CPU::Context::load()
         // but we first reset the timer to avoid getting a time interrupt during load()

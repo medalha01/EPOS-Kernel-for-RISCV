@@ -11,11 +11,16 @@ void System::init()
     if (CPU::is_bootstrap())
     {
         if (Traits<Alarm>::enabled)
+		{
             Alarm::init();
+		}
     }
+	
+	// Ensures the alarm timer is properly allocated by the bootstrap core.
+	CPU::smp_barrier();
+
     if (Traits<Thread>::enabled) 
 	{
-		db<Thread>(WRN) << "antes do thread::init\n " <<endl;
         Thread::init();
 	}
 }

@@ -308,10 +308,8 @@ class CpuLookupTable
     typedef Traits<Thread>::Criterion Criterion;
 
 private:
-    // Criterion *threads_criterion_on_execution[Traits<Build>::CPUS];
-    Thread *_running_thread_by_core[Traits<Build>::CPUS];
-    // int _already_dispatched;
-    bool _already_dispatched[Traits<Build>::CPUS];
+    Thread * _running_thread_by_core[Traits<Build>::CPUS];
+	bool _already_dispatched[Traits<Build>::CPUS];
 
 public:
     CpuLookupTable()
@@ -320,10 +318,8 @@ public:
         for (unsigned int i = 0; i < CPU::cores(); i++)
         {
             _running_thread_by_core[i] = nullptr;
-            _already_dispatched[i] = false;
-            // threads_criterion_on_execution[i] = nullptr;
+			_already_dispatched[i] = false;
         }
-        //_already_dispatch = 0;
     }
 
     /* Helper method for printing the values of the CPU lookup table, for debugging purposes. */
@@ -361,10 +357,7 @@ public:
     {
         unsigned int id = CPU::id();
 
-        db<Thread>(WRN) << "set t = " << running->criterion()
-                        << ", c = " << id << endl;
-
-        _already_dispatched[id] = false;
+		_already_dispatched[id] = false;
         _running_thread_by_core[id] = running;
     }
 
@@ -397,31 +390,21 @@ public:
         int min = current_priority;
         int chosen = -1;
 
-        // db<Thread>(WRN) << "min = " << current_priority << endl;
-
-        // db<Thread>(WRN) << "clt start current priority = "
-        //<< current_priority << endl;
-
-        for (unsigned int i = 0; i < CPU::cores(); i++)
-        {
-            if (_running_thread_by_core[i] == nullptr)
-            {
-                // db<Thread>(WRN) << "clt idle return = " << i << endl;
-                return i;
-            }
+		for (unsigned int i = 0; i < CPU::cores(); i++)
+		{
+			if (_running_thread_by_core[i] == nullptr)
+			{
+				return i;
+			}
 
             Criterion *criterion = &_running_thread_by_core[i]->criterion();
 
-            // if (*criterion > min && !(_already_dispatched & (1 << id)))
-            if (*criterion > min && !_already_dispatched[i])
-            {
-                min = *criterion;
-                chosen = i;
-
-                // db<Thread>(WRN) << "clt iter c = " << i
-                //	<< ", p = " << min << endl;
-            }
-        }
+			if (*criterion > min && !_already_dispatched[i])
+			{
+				min = *criterion;
+				chosen = i;
+			}
+		}
 
         // print_table();
 

@@ -37,14 +37,6 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    //db<Thread>(TRC) << "Thread(entry=" << entry
-    //                << ",state=" << _state
-    //                << ",priority=" << _link.rank()
-    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
-    //                << ",s=" << stack_size
-    //                << "},context={b=" << _context
-    //                << "," << *_context << "}) => " << this << endl;
-
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     if ((_state != READY) && (_state != RUNNING))
@@ -67,19 +59,35 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 	// i.e. all of them will be free. As such, no IRQ is needed, we just take the first one.
 	if (CPU::is_smp() && _state != RUNNING) 
 	{
-		int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
-
-		//db<Thread>(WRN) << "chosen = " << target_core << endl;
-
-		//_cpu_lookup_table.print_table();
-
-		// If there is a suitable core (whether by lower priority, or running IDLE),
-		// then target_core should be different then -1, and we send an interrupt to that core.
-		if (target_core != -1) 
+		if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL)
 		{
-			//db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
-			reschedule(target_core);
-		} 
+			int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
+			//db<Thread>(WRN) << "chosen = " << target_core << endl;
+			//_cpu_lookup_table.print_table();
+
+			// If there is a suitable core (whether by lower priority, or running IDLE),
+			// then target_core should be different then -1, and we send an interrupt to that core.
+			if (target_core != -1) 
+			{
+				//db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
+				reschedule(target_core);
+			} 
+		}
+		else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+		{
+			unsigned int target_core = criterion().queue();		
+			db<Thread>(WRN) << "cons target = " << target_core << endl;
+
+			// There is already this check inside the reschedule method, but we can
+			// double it here because if the current core is the same as the target,
+			// then we would rather just end the constructor normally, as would
+			// usually happen without these new additions.
+			if (target_core != CPU::id())
+			{
+				db<Thread>(WRN) << "cons send to c = " << target_core << endl;
+				reschedule(target_core);
+			}
+		}
 	}
 
 	// As said previously, if MAIN is being constructed here, we can just
@@ -87,7 +95,7 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 	if (CPU::is_smp() && _state == RUNNING) 
 	{
 		_cpu_lookup_table.set_thread_on_cpu(running());
-		_cpu_lookup_table.print_table();
+		//_cpu_lookup_table.print_table();
 	}
 
     unlock();
@@ -96,13 +104,6 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 Thread::~Thread()
 {
     lock();
-
-    //db<Thread>(TRC) << "~Thread(this=" << this
-    //                << ",state=" << _state
-    //                << ",priority=" << _link.rank()
-    //                << ",stack={b=" << reinterpret_cast<void *>(_stack)
-    //                << ",context={b=" << _context
-    //                << "," << *_context << "})" << endl;
 
     // The running thread cannot delete itself!
     assert(_state != RUNNING);
@@ -147,14 +148,13 @@ int Thread::join()
 {
     lock();
 
-    //db<Thread>(TRC) << "Thread::join(this=" << this << ",state=" << _state << ")" << endl;
-
     // Precondition: no Thread::self()->join()
     assert(running() != this);
 
     // Precondition: a single joiner
     assert(!_joining);
 
+	// TODO: @arthur talvez adicionar coisa do PLLF aqui
     if (_state != FINISHING)
     {
         Thread *prev = running();
@@ -186,8 +186,6 @@ void Thread::pass()
 	{
         dispatch(prev, next, false);
 	}
-    //else
-    //    db<Thread>(WRN) << "Thread::pass => thread (" << this << ") not ready!" << endl;
 
     unlock();
 }
@@ -219,20 +217,35 @@ void Thread::resume()
 
         if (preemptive)
 		{
-			int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
-			//_cpu_lookup_table.print_table();
-
-			if (target_core != -1)
+			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL)
 			{
-				db<Thread>(WRN) << "[=] rs to c = " << target_core << endl;
+				int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
+				//_cpu_lookup_table.print_table();
+
+				if (target_core != -1)
+				{
+					db<Thread>(WRN) << "[=] rs to c = " << target_core << endl;
+					reschedule(target_core);
+				}
+				else 
+				{
+					db<Thread>(WRN) << "[=] rs to same = " << CPU::id() << endl;
+					//db<Thread>(WRN) << ">wr p = " << _link.rank() << endl;
+					//_cpu_lookup_table.print_table();
+					reschedule();
+				}
+
+			}
+			else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+			{
+				int target_core = this->criterion().queue();
+
+				db<Thread>(WRN) << "[=] prs to c = " << target_core << endl;
 				reschedule(target_core);
 			}
 			else 
 			{
-			  db<Thread>(WRN) << "[=] rs to same = " << CPU::id() << endl;
-			  //db<Thread>(WRN) << ">wr p = " << _link.rank() << endl;
-			  //_cpu_lookup_table.print_table();
-			  reschedule();
+				reschedule();
 			}
 		}
     }
@@ -307,7 +320,7 @@ void Thread::wakeup(Queue *q)
     //db<Thread>(TRC) << "Thread::wakeup(running="
 	//	<< running() << ",q=" << q << ")" << endl;
 
-	//db<Thread>(WRN) << "wu:)" << endl;
+	db<Thread>(WRN) << "wu:)" << endl;
 
     assert(locked()); // locking handled by caller
 
@@ -318,19 +331,33 @@ void Thread::wakeup(Queue *q)
         t->_waiting = 0;
         _scheduler.resume(t);
 
-        if (preemptive)
-        {
-			int target_core = _cpu_lookup_table.get_lowest_priority_core(t->_link.rank());
-			_cpu_lookup_table.print_table();
-
-			if (target_core != -1) 
+		if (preemptive)
+		{
+			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL) 
 			{
-				//db<Thread>(WRN) << "[=] wu to c = " << target_core << endl;
+				int target_core = _cpu_lookup_table.get_lowest_priority_core(t->_link.rank());
+				//_cpu_lookup_table.print_table();
+
+				if (target_core != -1) 
+				{
+					//db<Thread>(WRN) << "[=] wu to c = " << target_core << endl;
+					reschedule(target_core);
+				}
+				else 
+				{
+					//db<Thread>(WRN) << "[=] wu to same = " << CPU::id() << endl;
+					reschedule();
+				}
+			}
+			else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+			{
+				int target_core = t->criterion().queue();
+
+				db<Thread>(WRN) << "[=] pwu to c = " << target_core << endl;
 				reschedule(target_core);
 			}
 			else 
 			{
-				//db<Thread>(WRN) << "[=] wu to same = " << CPU::id() << endl;
 				reschedule();
 			}
         }
@@ -339,14 +366,13 @@ void Thread::wakeup(Queue *q)
 
 void Thread::wakeup_all(Queue *q)
 {
-    //db<Thread>(TRC) << "Thread::wakeup_all(running=" << running() << ",q=" << q << ")" << endl;
-
     assert(locked()); // locking handled by caller
 
     if (!q->empty())
     {
         assert(Criterion::QUEUES <= sizeof(unsigned long) * 8);
         unsigned long cpus = 0;
+		int priorities[CPU::cores()];
 
         while (!q->empty())
         {
@@ -354,19 +380,44 @@ void Thread::wakeup_all(Queue *q)
             t->_state = READY;
             t->_waiting = 0;
             _scheduler.resume(t);
-            cpus |= 1 << t->_link.rank().queue();
+
+			unsigned int id = t->_link.rank().queue();
+            cpus |= 1 << id; 
+			priorities[id] = t->_link.rank();
         }
 
-        if (preemptive)
-        {
-            for (unsigned long i = 0; i < Criterion::QUEUES; i++)
-            {
-                if (cpus & (1 << i))
-                {
-                    reschedule(i);
-                }
-            }
-        }
+		if (preemptive)
+		{
+			if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL)
+			{
+				for (unsigned int i = 0; i < CPU::cores(); i++)
+				{
+					// This logic just checks which priorities threads from the queue had 
+					// and sends interrupts to new CPUs if the woken up threads have higher
+					// priorities than the ones currently running on them.
+					if (cpus & (1 << i))	
+					{
+						int priority = priorities[i];
+						int target_core = _cpu_lookup_table.get_lowest_priority_core(priority);
+
+						if (target_core != -1)
+						{
+							reschedule(target_core);
+						}
+					}
+				}
+			}
+			else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+			{
+				for (unsigned long i = 0; i < Criterion::QUEUES; i++)
+				{
+					if (cpus & (1 << i))
+					{
+						reschedule(i);
+					}
+				}
+			}
+		}
     }
 }
 
@@ -528,7 +579,7 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
 	//db<Thread>(WRN) << "t d" << endl;
 	//_cpu_lookup_table.set_thread_on_cpu(next);
 
-	db<Thread>(WRN) << "[=] set on dispatch" << endl;
+	//db<Thread>(WRN) << "[=] set on dispatch" << endl;
 	_cpu_lookup_table.set_thread_on_cpu(next);
 
     if (charge && Criterion::timed)

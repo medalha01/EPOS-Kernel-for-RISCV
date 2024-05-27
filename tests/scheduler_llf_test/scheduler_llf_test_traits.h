@@ -140,10 +140,10 @@ struct Traits<Thread> : public Traits<Build>
     static const bool info = false;
     static const bool trace = false;
 
-    typedef GLLF Criterion;
+    typedef PLLF Criterion;
 	//typedef PLLF Criterion;
-	static const unsigned int smp_algorithm = GLOBAL;
-	//static const unsigned int smp_algorithm = PARTITIONED;
+	//static const unsigned int smp_algorithm = GLOBAL;
+	static const unsigned int smp_algorithm = PARTITIONED;
     static const unsigned int QUANTUM = 10000; // us
 };
 

@@ -136,6 +136,9 @@ struct Traits<Thread> : public Traits<Build>
     static const bool simulate_capacity = false;
 
     typedef GLLF Criterion;
+    static const unsigned int smp_algorithm = GLOBAL;
+
+    
     static const unsigned int QUANTUM = 10000; // us
     //static const int priority_inversion_protocol = Traits<Build>::CEILING;
 };

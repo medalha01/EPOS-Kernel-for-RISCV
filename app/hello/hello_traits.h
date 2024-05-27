@@ -122,6 +122,8 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const int priority_inversion_protocol = NONE;
 
     typedef GLLF Criterion;
+    static const unsigned int smp_algorithm = GLOBAL;
+
     static const unsigned int QUANTUM = 10000; // us
 };
 

@@ -337,7 +337,7 @@ public:
         if (sizeof(T) == sizeof(Reg64))
             ASM("amoswap.d %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "cc", "memory");
         else
-            ASM("amoswap.w %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "cc", "memory");
+            ASM("amoswap.w   %0, %2, (%1)" : "=&r"(old) : "r"(&lock), "r"(one) : "cc", "memory");
 
         return old;
     }
@@ -400,7 +400,7 @@ public:
     /*
     template <typename T>
     static T cas(volatile T &value, T compare, T replacement)
-    {
+    {        (owner, zero, me)
         register T old;
 
         if (sizeof(T) == sizeof(Reg64))
@@ -418,23 +418,48 @@ public:
     }*/
 
     template <typename T>
-    static T cas(volatile T &value, T compare, T replacement)
+    static T cas(volatile T &owner, T zero, T me)
     {
+        // Carregar o owner no old;
+        // Checar se o owner é zero;
+        // Se não for zero tem dono e retornamos owner;
+        // Se for zero, trocamos o owner por me;
+        // Saimos da função retornando "Zero"
         register T old;
+        T temp = 0;
         if (sizeof(T) == sizeof(Reg64))
-            ASM("1: amoswap.d      %0, %2, (%1)        \n"
+            ASM("1: amoadd.d      %0, x0, (%1)         \n"
                 "   bne            %0, %2, 2f          \n"
-                "   amoswap.d      %0, %3, (%1)        \n"
-                "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
+                "   amoswap.d      %4, %3, (%1)        \n"
+                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me), "r"(temp) : "t3", "cc", "memory");
+
         else
-            ASM("1: amoswap.w    %0, %2, (%1)        \n"
-                "   bne          %0, %2, 2f          \n"
-                "   amoswap.w    %0, %3, (%1)        \n"
-                "2:                         \n" : "=&r"(old) : "r"(&value), "r"(compare), "r"(replacement) : "t3", "cc", "memory");
-        asm volatile("fence rw,rw");
+            ASM("1: amoadd.w      %0, x0, (%1)         \n"
+                "   bne            %0, %2, 2f          \n"
+                "   amoswap.w      %4, %3, (%1)        \n"
+                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me), "r"(temp) : "t3", "cc", "memory");
 
         return old;
     }
+    /*
+    template <typename T>
+    static T cas(volatile T &owner, T zero, T me)
+    {
+        register T old;
+        if (sizeof(T) == sizeof(Reg64))
+            ASM("1: lr.d    %0, (%1)        \n"
+                "   bne     %0, %2, 2f      \n"
+                "   sc.d    t3, %3, (%1)    \n"
+                "   bnez    t3, 1b          \n"
+                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me) : "t3", "cc", "memory");
+        else
+            ASM("1: lr.w    %0, (%1)        \n"
+                "   bne     %0, %2, 2f      \n"
+                "   sc.w    t3, %3, (%1)    \n"
+                "   bnez    t3, 1b          \n"
+                "2:                         \n" : "=&r"(old) : "r"(&owner), "r"(zero), "r"(me) : "t3", "cc", "memory");
+        return old;
+    }*/
 
     static void flush_tlb() { ASM("sfence.vma" : : : "memory"); }
     static void flush_tlb(Reg addr) { ASM("sfence.vma %0" : : "r"(addr) : "memory"); }

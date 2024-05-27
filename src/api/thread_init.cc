@@ -14,9 +14,9 @@ extern "C"
 
 void Thread::init()
 {
-	db<Init, Thread>(TRC) << "Thread::init() started" << endl;
+	_print("thread_init\n");
 
-	if (Traits<Machine>::multi && CPU::is_bootstrap())
+	if (CPU::is_smp() && CPU::is_bootstrap())
 	{
 		// This is utilized only in multi queue schedulers;
 		IC::int_vector(IC::INT_RESCHEDULER, int_rescheduler);
@@ -59,7 +59,7 @@ void Thread::init()
 	CPU::int_disable();
 	_not_booting = true;
 
-	if (Traits<Machine>::multi)
+	if (CPU::is_smp())
 	{
 		IC::enable(IC::INT_RESCHEDULER);
 	}

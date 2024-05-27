@@ -15,6 +15,7 @@ class Init_End
 public:
     Init_End()
     {
+		_print("init_end\n");
         db<Thread>(TRC) << "Start of Init_End()" << endl;
 
         CPU::smp_barrier();

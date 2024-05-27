@@ -16,13 +16,20 @@ void IC::init()
     {
         // Set all exception handlers to exception()
         for (Interrupt_Id i = 0; i < EXCS; i++)
+		{
             _int_vector[i] = &exception;
+		}
 
         // Set all interrupt handlers to int_not()
         for (Interrupt_Id i = EXCS; i < INTS; i++)
+		{
             _int_vector[i] = &int_not;
+		}
     }
-    IC::enable(INT_PLIC);
+    
+	CPU::smp_barrier();
+
+	IC::enable(INT_PLIC);
     PLIC::threshold(0); // set the threshold to 0 so all enabled external interrupts will be dispatched
 }
 

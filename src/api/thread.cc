@@ -67,19 +67,35 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 	// i.e. all of them will be free. As such, no IRQ is needed, we just take the first one.
 	if (CPU::is_smp() && _state != RUNNING) 
 	{
-		int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
-
-		//db<Thread>(WRN) << "chosen = " << target_core << endl;
-
-		//_cpu_lookup_table.print_table();
-
-		// If there is a suitable core (whether by lower priority, or running IDLE),
-		// then target_core should be different then -1, and we send an interrupt to that core.
-		if (target_core != -1) 
+		if (Traits<Thread>::smp_algorithm == Traits_Tokens::GLOBAL)
 		{
-			//db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
-			reschedule(target_core);
-		} 
+			int target_core = _cpu_lookup_table.get_lowest_priority_core(_link.rank());
+			//db<Thread>(WRN) << "chosen = " << target_core << endl;
+			//_cpu_lookup_table.print_table();
+
+			// If there is a suitable core (whether by lower priority, or running IDLE),
+			// then target_core should be different then -1, and we send an interrupt to that core.
+			if (target_core != -1) 
+			{
+				//db<Thread>(WRN) << "env int = " << IC::INT_RESCHEDULER << endl;
+				reschedule(target_core);
+			} 
+		}
+		else if (Traits<Thread>::smp_algorithm == Traits_Tokens::PARTITIONED)
+		{
+			unsigned int target_core = criterion().queue();		
+			db<Thread>(WRN) << "cons target = " << target_core << endl;
+
+			// There is already this check inside the reschedule method, but we can
+			// double it here because if the current core is the same as the target,
+			// then we would rather just end the constructor normally, as would
+			// usually happen without these new additions.
+			if (target_core != CPU::id())
+			{
+				db<Thread>(WRN) << "cons send to c = " << target_core << endl;
+				reschedule(target_core);
+			}
+		}
 	}
 
 	// As said previously, if MAIN is being constructed here, we can just
@@ -155,6 +171,7 @@ int Thread::join()
     // Precondition: a single joiner
     assert(!_joining);
 
+	// TODO: @arthur talvez adicionar coisa do PLLF aqui
     if (_state != FINISHING)
     {
         Thread *prev = running();
@@ -186,8 +203,6 @@ void Thread::pass()
 	{
         dispatch(prev, next, false);
 	}
-    //else
-    //    db<Thread>(WRN) << "Thread::pass => thread (" << this << ") not ready!" << endl;
 
     unlock();
 }

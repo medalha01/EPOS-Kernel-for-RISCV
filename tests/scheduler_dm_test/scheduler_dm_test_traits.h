@@ -119,6 +119,8 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const int priority_inversion_protocol = CEILING;
 
     typedef DM Criterion;
+    static const unsigned int smp_algorithm = NONE;
+
     static const unsigned int QUANTUM = 10000; // us
 };
 

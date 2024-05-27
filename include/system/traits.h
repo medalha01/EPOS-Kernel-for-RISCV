@@ -112,6 +112,7 @@ class LM;
 class EDF;
 class LLF;
 class GLLF;
+class PLLF;
 class GRR;
 class Fixed_CPU;
 class CPU_Affinity;
@@ -208,6 +209,8 @@ struct Traits_Tokens
 
     // Priority inversion protocols
     //enum {CEILING, INHERITANCE};
+
+	enum {NO_SMP, GLOBAL, PARTITIONED};
 
     // Default aspects
     typedef ALIST<> ASPECTS;

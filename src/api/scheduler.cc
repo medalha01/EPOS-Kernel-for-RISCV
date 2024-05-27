@@ -6,6 +6,7 @@
 __BEGIN_SYS
 
 inline RT_Common::Tick RT_Common::elapsed() { return Alarm::elapsed(); }
+volatile unsigned int PLLF::_next_queue;
 
 RT_Common::Tick RT_Common::ticks(Microsecond time)
 {
@@ -105,7 +106,11 @@ void EDF::handle(Event event)
         _priority = elapsed() + _deadline;
 }
 
-LLF::LLF(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
+LLF::LLF(Microsecond p, Microsecond d, Microsecond c, unsigned int): 
+	RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c)
+{ }
+
+void LLF::handle(Event event) 
 {
 }
 

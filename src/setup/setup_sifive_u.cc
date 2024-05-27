@@ -66,7 +66,7 @@ public:
     Setup();
 
 private:
-    void say_hi();
+    //void say_hi();
     void setup_flat_paging();
     void setup_m2s();
     void enable_paging();
@@ -83,7 +83,8 @@ Setup::Setup()
 
 	if (CPU::is_bootstrap())
 	{
-		// SETUP doesn't handle global constructors, so we need to manually initialize any object with a non-empty default constructor
+		// SETUP doesn't handle global constructors, 
+		// so we need to manually initialize any object with a non-empty default constructor
 		new (&kout) OStream;
 		new (&kerr) OStream;
 		Display::init();
@@ -91,13 +92,13 @@ Setup::Setup()
 		kerr << endl;
 	}
 
-	// TODO: @arthur comment here
-	//CPU::smp_barrier();
+	// Prints are made ahead, therefore it is vital to ensure that the displays and output
+	// streams are correctly set up by the bootstrap core before proceeding.
+	CPU::smp_barrier();
 
     db<Setup>(TRC) << "Setup(si=" << reinterpret_cast<void *>(si) << ",sp=" << CPU::sp() << ")" << endl;
     db<Setup>(INF) << "Setup:si=" << *si << endl;
 
-    // Print basic facts about this EPOS instance
     // say_hi();
 
     if (Traits<Machine>::supervisor)
@@ -111,13 +112,16 @@ Setup::Setup()
             setup_m2s();
         }
 
-		// TODO: @arthur comment
+		// In the case of a kernel running on supervisor mode, we cannot enable the paging
+		// without first setting it up. Since bootstrap is the one setting things up, other
+		// cores ought to wait for it to finish those operations.
         CPU::smp_barrier();
 
         enable_paging();
     }
 
-	// TODO: @arthur comment
+	// In the case of a system with a supervisor, awaiting full paging initialization and enabling
+	// is good practice before moving on with potential allocations and other memory operations.
     CPU::smp_barrier();
 
     // SETUP ends here, so let's transfer control to the next stage (INIT or APP)
@@ -126,10 +130,10 @@ Setup::Setup()
 
 void Setup::setup_flat_paging()
 {
-    db<Setup>(TRC) << "Setup::setup_flat_paging()" << endl;
-
     // Single-level mapping, 2 MB pages with SV32 and 1 GB pages with SV39
-    static const unsigned long PD_ENTRIES = (Math::max(RAM_TOP, MIO_TOP) - Math::min(RAM_BASE, MIO_BASE) + sizeof(MMU::Huge_Page) - 1) / sizeof(MMU::Huge_Page);
+    static const unsigned long PD_ENTRIES = 
+		(Math::max(RAM_TOP, MIO_TOP) - Math::min(RAM_BASE, MIO_BASE) 
+		 + sizeof(MMU::Huge_Page) - 1) / sizeof(MMU::Huge_Page);
 
     Page_Directory *pd = reinterpret_cast<Page_Directory *>(FLAT_MEM_MAP);
     Phy_Addr page = Math::min(RAM_BASE, MIO_BASE);
@@ -215,7 +219,9 @@ void _entry() // machine mode
     }
 
 	// TODO: @arthur comments here
-	//CPU::smp_barrier();
+	kout << "primeira barreira\n";
+	CPU::smp_barrier();
+	kout << "dps\n";
 
 	CLINT::mtimecmp(-1ULL); // configure MTIMECMP so it won't trigger a timer interrupt before we can setup_m2s()
 
@@ -254,7 +260,9 @@ void _entry() // machine mode
 	}
 
 	// TODO: @arthur comment here 
-	//CPU::smp_barrier();
+	kout << "\n\nsegunda barreira\n";
+	CPU::smp_barrier();
+	kout << "after\n";
 
 	CPU::mepc(CPU::Reg(&_setup)); // entry = _setup
 	CPU::mret();                  // enter supervisor mode at setup (mepc) with interrupts enabled (mstatus.mpie = true)

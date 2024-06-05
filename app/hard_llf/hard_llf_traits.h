@@ -157,7 +157,7 @@ template <>
 struct Traits<Synchronizer> : public Traits<Build>
 {
     static const bool enabled = Traits<System>::multithread;
-    static const bool INHERITANCE = false;
+    static const bool INHERITANCE = true;
     static const bool CEILING_PROTOCOL = true;
 };
 

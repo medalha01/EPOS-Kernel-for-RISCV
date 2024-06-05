@@ -4,9 +4,8 @@
 **/*.log
 **/*.app
 **/*.cfg
-app
 img/
-tools/etc/
+etc/
 makefile
 makedefs
 

@@ -7,25 +7,6 @@
 
 __BEGIN_SYS
 
-class Synchronizer_Common;
-
-class SyncIterator
-{
-    friend class Synchronizer_Common;
-    friend class SyncObject;
-    friend class Thread;
-
-public:
-    SyncIterator(Thread *thread, Synchronizer_Common *synchronizer)
-    {
-        tp = thread;
-        syncObject = synchronizer;
-    }
-    Thread *tp;
-    Synchronizer_Common *syncObject;
-    int counter = 0;
-};
-
 class Synchronizer_Common
 {
     friend class Thread;
@@ -45,7 +26,6 @@ protected:
         Thread::lock();
 
         // Clean up granted queue
-
         if (!_waiting.empty())
         {
             db<Synchronizer>(WRN) << "~Synchronizer(this=" << this << ") called with active blocked clients!" << endl;
@@ -63,7 +43,7 @@ protected:
 
         while (!resource_waiting_list.empty())
         {
-            T_Sync_Element *e = resource_holder_list.remove();
+            T_Sync_Element *e = resource_waiting_list.remove(); // Corrected: remove from resource_waiting_list
             if (e)
             {
                 delete e->object();
@@ -78,17 +58,14 @@ protected:
     // Atomic operations
     bool tsl(volatile bool &lock)
     {
-        //_print("Atomic tsl called");
         return CPU::tsl(lock);
     }
     long finc(volatile long &number)
     {
-        //_print("Atomic finc called");
         return CPU::finc(number);
     }
     long fdec(volatile long &number)
     {
-        //_print("Atomic fdec called");
         return CPU::fdec(number);
     }
 
@@ -96,7 +73,6 @@ protected:
     void lock_for_acquiring()
     {
         Thread::lock();
-        // Thread::prioritize(&_granted);
     }
     void _lock()
     {
@@ -139,16 +115,13 @@ protected:
     {
         ceilingIsActive = true;
 
-        if ((priority < highest_priority))
+        if (priority < highest_priority)
         {
-            // Update the highest priority to the new lower priority
             highest_priority = priority;
         }
 
-        // Get the first element in the resource waiting list
         T_Sync_Element *current = resource_holder_list.head();
 
-        // Iterate through the resource waiting list
         while (current != nullptr)
         {
             Thread *current_object = current->object();
@@ -158,7 +131,6 @@ protected:
                 current_object->raise_priority(highest_priority);
             }
 
-            // Move to the next element in the resource waiting list
             current = current->next();
         }
     }
@@ -227,6 +199,7 @@ protected:
         if (!areThreadsWaiting())
         {
             deactivateCeiling();
+        }
         else
         {
             shiftProtocol(exec_thread);
@@ -262,9 +235,8 @@ protected:
 
     void insertSyncObject(Thread *resource, Sync_Queue *list)
     {
-
         if (resource && list)
-        {   
+        {
             T_Sync_Element *e = new (SYSTEM) T_Sync_Element(resource);
             if (e)
                 list->insert(e);
@@ -281,6 +253,7 @@ protected:
                 delete removedObject;
         }
     }
+
     bool isThreadPresent(Thread *execThread, Sync_Queue *targetList)
     {
         if (!execThread || !targetList)
@@ -318,7 +291,6 @@ public:
         {
             return Thread::CEILING;
         }
-        //_print("getMostUrgentPriority called");
         Thread *urgent = getMostUrgentInWaiting();
         if (urgent)
         {
@@ -338,15 +310,28 @@ public:
 
 protected:
     Sync_Queue _waiting;
-
     bool ceilingIsActive = false;
-
     int highest_priority = Thread::IDLE;
-
     Sync_Queue resource_holder_list;
     Sync_Queue resource_waiting_list;
-
     int waitingThreadsCount = 0;
+};
+
+class SyncIterator
+{
+    friend class Synchronizer_Common;
+    friend class SyncObject;
+    friend class Thread;
+
+public:
+    SyncIterator(Thread *thread, Synchronizer_Common *synchronizer)
+    {
+        tp = thread;
+        syncObject = synchronizer;
+    }
+    Thread *tp;
+    Synchronizer_Common *syncObject;
+    int counter = 0;
 };
 
 // Mutex class

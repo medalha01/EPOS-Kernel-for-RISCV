@@ -127,6 +127,7 @@ class Address_Space;
 class Segment;
 
 class Synchronizer;
+class Synchronizer_Common;
 class Mutex;
 class Semaphore;
 class Condition;
